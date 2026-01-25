@@ -123,14 +123,14 @@ export async function onRequestGet(context) {
       context.request.headers.get("x-user") ||
       context.request.headers.get("x-user-ref") ||
       "";
-    const rawRef =
+    const queryRef =
       url.searchParams.get("userId") ||
       url.searchParams.get("user_id") ||
       url.searchParams.get("id") ||
       url.searchParams.get("u") ||
       url.searchParams.get("username") ||
-      headerRef ||
       "";
+    const rawRef = headerRef || queryRef || "";
     if (!rawRef) {
       return jsonResponse(
         {
@@ -140,6 +140,7 @@ export async function onRequestGet(context) {
           unread_messages: 0,
           lastNotificationAt: 0,
           lastMessageAt: 0,
+          userId: null,
         },
         200
       );
@@ -154,6 +155,7 @@ export async function onRequestGet(context) {
           unread_messages: 0,
           lastNotificationAt: 0,
           lastMessageAt: 0,
+          userId: null,
         },
         200
       );
@@ -214,6 +216,7 @@ export async function onRequestGet(context) {
       unread_messages: unreadMessages,
       lastNotificationAt,
       lastMessageAt,
+      userId,
     };
     const etag = buildEtag([userId, unreadNotifications, unreadMessages, lastNotificationAt, lastMessageAt]);
     const ifNoneMatch = context.request.headers.get("if-none-match") || "";

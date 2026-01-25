@@ -19,6 +19,12 @@
   let started = false;
   let inflight = null;
   let channel = null;
+  let channelName = "";
+  let activeUserKey = "";
+  let cacheKey = CACHE_KEY;
+  let broadcastKey = BROADCAST_KEY;
+  let pollLockKey = POLL_LOCK_KEY;
+  let storageBound = false;
 
   const now = () => Date.now();
 
@@ -36,6 +42,50 @@
     if (user.username && String(user.username).trim()) return String(user.username).trim();
     if (user.email && String(user.email).trim()) return String(user.email).trim();
     return "";
+  };
+
+  const normalizeKey = (value) => String(value || "").trim();
+
+  const getUserKey = (auth) => {
+    const ref = getUserRef(auth);
+    return normalizeKey(ref);
+  };
+
+  const hashKey = (value) => {
+    const input = String(value || "");
+    let hash = 0;
+    for (let i = 0; i < input.length; i += 1) {
+      hash = (hash << 5) - hash + input.charCodeAt(i);
+      hash |= 0;
+    }
+    return (hash >>> 0).toString(36);
+  };
+
+  const buildScopedKey = (base, userKey) => (userKey ? `${base}:${userKey}` : base);
+
+  const syncUserContext = (userKey) => {
+    if (userKey === activeUserKey) return;
+    activeUserKey = userKey;
+    etag = "";
+    lastSummary = null;
+    lastSoundAt = 0;
+    cacheKey = buildScopedKey(CACHE_KEY, userKey);
+    broadcastKey = buildScopedKey(BROADCAST_KEY, userKey);
+    pollLockKey = buildScopedKey(POLL_LOCK_KEY, userKey);
+    if (inflight) {
+      try {
+        inflight.abort();
+      } catch (error) {}
+      inflight = null;
+    }
+    if (channel) {
+      try {
+        channel.close();
+      } catch (error) {}
+      channel = null;
+      channelName = "";
+    }
+    initChannels(userKey);
   };
 
   const isChatRoute = () => {
@@ -89,7 +139,7 @@
       maybePlaySound(summary);
     }
     lastSummary = summary;
-    cacheSummary(summary);
+    cacheSummary(summary, activeUserKey);
     broadcastSummary(summary, options);
   };
 
@@ -152,19 +202,20 @@
     window.addEventListener("click", handler, { once: true });
   };
 
-  const cacheSummary = (summary) => {
+  const cacheSummary = (summary, userKey) => {
     try {
-      const payload = { summary, savedAt: now() };
-      sessionStorage.setItem(CACHE_KEY, JSON.stringify(payload));
+      const payload = { summary, savedAt: now(), userKey: userKey || "" };
+      sessionStorage.setItem(cacheKey, JSON.stringify(payload));
     } catch (error) {}
   };
 
-  const readCachedSummary = () => {
+  const readCachedSummary = (userKey) => {
     try {
-      const raw = sessionStorage.getItem(CACHE_KEY);
+      const raw = sessionStorage.getItem(cacheKey);
       if (!raw) return null;
       const data = JSON.parse(raw);
       if (!data || !data.summary || !data.savedAt) return null;
+      if (userKey && data.userKey && data.userKey !== userKey) return null;
       if (now() - data.savedAt > CACHE_TTL_MS) return null;
       return data.summary;
     } catch (error) {
@@ -174,27 +225,28 @@
 
   const broadcastSummary = (summary, options = {}) => {
     if (options.fromBroadcast) return;
-    const payload = { summary, sentAt: now() };
+    const payload = { summary, sentAt: now(), userKey: activeUserKey };
     if (channel) {
       try {
         channel.postMessage(payload);
       } catch (error) {}
     }
     try {
-      localStorage.setItem(BROADCAST_KEY, JSON.stringify(payload));
+      localStorage.setItem(broadcastKey, JSON.stringify(payload));
     } catch (error) {}
   };
 
   const onBroadcast = (payload) => {
     if (!payload || !payload.summary) return;
+    if (activeUserKey && payload.userKey && payload.userKey !== activeUserKey) return;
     applySummary(payload.summary, { fromBroadcast: true });
   };
 
   const canPoll = () => {
     try {
-      const last = Number(localStorage.getItem(POLL_LOCK_KEY) || 0);
+      const last = Number(localStorage.getItem(pollLockKey) || 0);
       if (last && now() - last < POLL_INTERVAL_MS * 0.7) return false;
-      localStorage.setItem(POLL_LOCK_KEY, String(now()));
+      localStorage.setItem(pollLockKey, String(now()));
     } catch (error) {}
     return true;
   };
@@ -216,11 +268,14 @@
   const refresh = async (options = {}) => {
     const auth = readAuth();
     if (!auth || !auth.loggedIn) {
+      syncUserContext("");
       applyAvatarDot(false);
       applyMessageBadge(0);
       return;
     }
     const userRef = getUserRef(auth);
+    const userKey = normalizeKey(userRef);
+    syncUserContext(userKey);
     if (!userRef) return;
     if (document.visibilityState === "hidden" && !options.force) return;
     if (!options.force && !canPoll()) return;
@@ -236,10 +291,12 @@
     params.set("userId", userRef);
     const headers = {};
     if (etag) headers["if-none-match"] = etag;
+    headers["x-user-id"] = userRef;
     try {
       const response = await fetch(`${SUMMARY_URL}?${params.toString()}`, {
         headers,
         cache: "no-store",
+        credentials: "include",
         signal: controller.signal,
       });
       if (response.status === 304) return;
@@ -257,29 +314,47 @@
   };
 
   const initChannels = () => {
-    if (typeof BroadcastChannel === "function") {
-      channel = new BroadcastChannel("bk_notify_summary");
-      channel.addEventListener("message", (event) => {
-        onBroadcast(event && event.data);
+    const userKey = activeUserKey;
+    if (userKey && typeof BroadcastChannel === "function") {
+      const nextName = `bk_notify_summary_${hashKey(userKey)}`;
+      if (channelName !== nextName) {
+        if (channel) {
+          try {
+            channel.close();
+          } catch (error) {}
+          channel = null;
+        }
+        channelName = nextName;
+        channel = new BroadcastChannel(channelName);
+        channel.addEventListener("message", (event) => {
+          onBroadcast(event && event.data);
+        });
+      }
+    }
+    if (!storageBound) {
+      storageBound = true;
+      window.addEventListener("storage", (event) => {
+        if (event.key !== broadcastKey || !event.newValue) return;
+        try {
+          const payload = JSON.parse(event.newValue);
+          onBroadcast(payload);
+        } catch (error) {}
       });
     }
-    window.addEventListener("storage", (event) => {
-      if (event.key !== BROADCAST_KEY || !event.newValue) return;
-      try {
-        const payload = JSON.parse(event.newValue);
-        onBroadcast(payload);
-      } catch (error) {}
-    });
   };
 
   const init = () => {
     if (started) return;
     started = true;
     initAudio();
-    initChannels();
-    const cached = readCachedSummary();
-    if (cached) {
-      applySummary(cached, { skipSound: true });
+    const auth = readAuth();
+    const userKey = getUserKey(auth);
+    syncUserContext(userKey);
+    if (userKey) {
+      const cached = readCachedSummary(userKey);
+      if (cached) {
+        applySummary(cached, { skipSound: true });
+      }
     }
     refresh({ force: true });
     startPolling();
