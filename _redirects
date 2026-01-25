@@ -1,3 +1,5 @@
 /u /profile/public/ 200
 /u/ /profile/public/ 200
 /u/* /profile/public/ 200
+/profile/messages /profile/messages/index.html 200
+/profile/messages/ /profile/messages/index.html 200

@@ -61,6 +61,22 @@ function normalizeId(value) {
   return raw;
 }
 
+function sortPairIds(userA, userB) {
+  const left = normalizeId(userA);
+  const right = normalizeId(userB);
+  if (!left || !right) return ["", ""];
+  const bothNumeric = /^\d+$/.test(left) && /^\d+$/.test(right);
+  if (bothNumeric) {
+    return Number(left) <= Number(right) ? [left, right] : [right, left];
+  }
+  return String(left).localeCompare(String(right)) <= 0 ? [left, right] : [right, left];
+}
+
+export function buildConversationPairKey(userA, userB) {
+  const [first, second] = sortPairIds(userA, userB);
+  return first && second ? `${first}:${second}` : "";
+}
+
 function sanitizeUserKey(value) {
   return String(value || "")
     .trim()
@@ -495,6 +511,7 @@ export async function ensureChatSchema(db) {
         CREATE TABLE IF NOT EXISTS conversations (
           id TEXT PRIMARY KEY,
           type TEXT NOT NULL DEFAULT 'support',
+          pair_key TEXT,
           created_at INTEGER NOT NULL,
           updated_at INTEGER NOT NULL,
           last_message_id INTEGER,
@@ -552,7 +569,7 @@ export async function ensureChatSchema(db) {
   }
 
   const conversationColumns = await getTableColumns(db, "conversations");
-  const requiredConversationCols = ["last_message_id", "last_message_at", "last_message_preview"];
+  const requiredConversationCols = ["pair_key", "last_message_id", "last_message_at", "last_message_preview"];
   if (!requiredConversationCols.every((col) => conversationColumns.has(col))) {
     throw new Error("CHAT_SCHEMA_MIGRATION_REQUIRED");
   }
@@ -592,6 +609,7 @@ async function checkChatSchema(db) {
   const requiredConversationCols = [
     "id",
     "type",
+    "pair_key",
     "created_at",
     "updated_at",
     "last_message_id",
@@ -939,22 +957,8 @@ export async function createWelcomeMessageForNewUser(db, env, user, options = {}
 }
 
 export function buildDirectConversationId(userA, userB) {
-  const left = normalizeId(userA);
-  const right = normalizeId(userB);
-  if (!left || !right) return "";
-  const bothNumeric = /^\d+$/.test(left) && /^\d+$/.test(right);
-  let first = left;
-  let second = right;
-  if (bothNumeric) {
-    if (Number(left) > Number(right)) {
-      first = right;
-      second = left;
-    }
-  } else if (String(left).localeCompare(String(right)) > 0) {
-    first = right;
-    second = left;
-  }
-  return `${DIRECT_PREFIX}${first}:${second}`;
+  const pairKey = buildConversationPairKey(userA, userB);
+  return pairKey ? `${DIRECT_PREFIX}${pairKey}` : "";
 }
 
 function parseDirectConversationId(value) {
@@ -974,7 +978,7 @@ async function getConversationRow(db, conversationId) {
   try {
     return await db
       .prepare(
-        "SELECT id, type, created_at, updated_at, last_message_id, last_message_at, last_message_preview FROM conversations WHERE id = ? LIMIT 1"
+        "SELECT id, type, pair_key, created_at, updated_at, last_message_id, last_message_at, last_message_preview FROM conversations WHERE id = ? LIMIT 1"
       )
       .bind(conversationId)
       .first();
@@ -1031,31 +1035,104 @@ async function addParticipants(db, conversationId, participants) {
   }
 }
 
-async function createConversation(db, conversationId, type) {
-  const now = nowSeconds();
+async function ensureConversationPairKey(db, conversationId, pairKey) {
+  if (!db || !conversationId || !pairKey) return;
   try {
     await db
-      .prepare("INSERT INTO conversations (id, type, created_at, updated_at) VALUES (?, ?, ?, ?)")
-      .bind(conversationId, type || SUPPORT_TYPE, now, now)
+      .prepare("UPDATE conversations SET pair_key = ? WHERE id = ? AND (pair_key IS NULL OR pair_key = '')")
+      .bind(pairKey, conversationId)
       .run();
+  } catch (error) {}
+}
+
+async function ensureConversationType(db, conversationId, type) {
+  if (!db || !conversationId || !type) return;
+  try {
+    await db.prepare("UPDATE conversations SET type = ? WHERE id = ? AND type != ?").bind(type, conversationId, type).run();
+  } catch (error) {}
+}
+
+async function findConversationByPairKey(db, pairKey) {
+  if (!db || !pairKey) return null;
+  try {
+    return await db
+      .prepare(
+        "SELECT id, type, pair_key, updated_at FROM conversations WHERE pair_key = ? ORDER BY (type = ?) DESC, updated_at DESC LIMIT 1"
+      )
+      .bind(pairKey, SUPPORT_TYPE)
+      .first();
+  } catch (error) {
+    return null;
+  }
+}
+
+async function findConversationByParticipants(db, userA, userB) {
+  if (!db) return null;
+  const left = normalizeId(userA);
+  const right = normalizeId(userB);
+  if (!left || !right) return null;
+  try {
+    return await db
+      .prepare(
+        "SELECT c.id, c.type, c.pair_key, c.updated_at FROM conversations c JOIN conversation_participants a ON a.conversation_id = c.id AND a.user_id = ? JOIN conversation_participants b ON b.conversation_id = c.id AND b.user_id = ? ORDER BY (c.type = ?) DESC, c.updated_at DESC LIMIT 1"
+      )
+      .bind(left, right, SUPPORT_TYPE)
+      .first();
+  } catch (error) {
+    return null;
+  }
+}
+
+async function createConversation(db, conversationId, type, pairKey) {
+  const now = nowSeconds();
+  try {
+    if (pairKey) {
+      await db
+        .prepare("INSERT INTO conversations (id, type, pair_key, created_at, updated_at) VALUES (?, ?, ?, ?, ?)")
+        .bind(conversationId, type || SUPPORT_TYPE, pairKey, now, now)
+        .run();
+    } else {
+      await db
+        .prepare("INSERT INTO conversations (id, type, created_at, updated_at) VALUES (?, ?, ?, ?)")
+        .bind(conversationId, type || SUPPORT_TYPE, now, now)
+        .run();
+    }
     return true;
   } catch (error) {
     return false;
   }
 }
 
-async function getOrCreateSupportConversation(db, userId, adminId) {
+export async function getOrCreateSupportConversation(db, userId, adminId) {
   if (!db || !userId || !adminId) return null;
-  const existing = await db
-    .prepare(
-      "SELECT c.id FROM conversations c JOIN conversation_participants u ON u.conversation_id = c.id AND u.user_id = ? JOIN conversation_participants a ON a.conversation_id = c.id AND a.user_id = ? WHERE c.type = ? ORDER BY c.updated_at DESC LIMIT 1"
-    )
-    .bind(userId, adminId, SUPPORT_TYPE)
-    .first();
-  if (existing && existing.id) return String(existing.id);
+  const pairKey = buildConversationPairKey(userId, adminId);
+  let existing = pairKey ? await findConversationByPairKey(db, pairKey) : null;
+  if (!existing) existing = await findConversationByParticipants(db, userId, adminId);
+  if (existing && existing.id) {
+    const existingId = String(existing.id);
+    if (pairKey) await ensureConversationPairKey(db, existingId, pairKey);
+    await ensureConversationType(db, existingId, SUPPORT_TYPE);
+    await addParticipants(db, existingId, [
+      { userId, role: "user" },
+      { userId: adminId, role: "admin" },
+    ]);
+    return existingId;
+  }
   const conversationId = generateId();
-  const created = await createConversation(db, conversationId, SUPPORT_TYPE);
-  if (!created) return null;
+  const created = await createConversation(db, conversationId, SUPPORT_TYPE, pairKey);
+  if (!created) {
+    const fallback = pairKey ? await findConversationByPairKey(db, pairKey) : null;
+    const fallbackRow = fallback || (await findConversationByParticipants(db, userId, adminId));
+    if (!fallbackRow || !fallbackRow.id) return null;
+    const existingId = String(fallbackRow.id);
+    if (pairKey) await ensureConversationPairKey(db, existingId, pairKey);
+    await ensureConversationType(db, existingId, SUPPORT_TYPE);
+    await addParticipants(db, existingId, [
+      { userId, role: "user" },
+      { userId: adminId, role: "admin" },
+    ]);
+    return existingId;
+  }
   await addParticipants(db, conversationId, [
     { userId, role: "user" },
     { userId: adminId, role: "admin" },
@@ -1067,19 +1144,40 @@ async function ensureDirectConversation(db, userId, adminId) {
   return getOrCreateSupportConversation(db, userId, adminId);
 }
 
-async function getOrCreateDmConversation(db, userA, userB) {
+export async function getOrCreateDmConversation(db, userA, userB) {
   if (!db || !userA || !userB) return null;
-  const conversationId = buildDirectConversationId(userA, userB);
-  if (!conversationId) return null;
-  const existing = await getConversationRow(db, conversationId);
-  if (!existing) {
-    const created = await createConversation(db, conversationId, DM_TYPE);
-    if (!created) return null;
-    await addParticipants(db, conversationId, [
+  const pairKey = buildConversationPairKey(userA, userB);
+  if (!pairKey) return null;
+  let existing = await findConversationByPairKey(db, pairKey);
+  if (!existing) existing = await findConversationByParticipants(db, userA, userB);
+  if (existing && existing.id) {
+    const existingId = String(existing.id);
+    await ensureConversationPairKey(db, existingId, pairKey);
+    await addParticipants(db, existingId, [
       { userId: userA, role: "user" },
       { userId: userB, role: "user" },
     ]);
+    return existingId;
   }
+  const conversationId = buildDirectConversationId(userA, userB);
+  if (!conversationId) return null;
+  const created = await createConversation(db, conversationId, DM_TYPE, pairKey);
+  if (!created) {
+    const fallback = await findConversationByPairKey(db, pairKey);
+    const fallbackRow = fallback || (await findConversationByParticipants(db, userA, userB));
+    if (!fallbackRow || !fallbackRow.id) return null;
+    const existingId = String(fallbackRow.id);
+    await ensureConversationPairKey(db, existingId, pairKey);
+    await addParticipants(db, existingId, [
+      { userId: userA, role: "user" },
+      { userId: userB, role: "user" },
+    ]);
+    return existingId;
+  }
+  await addParticipants(db, conversationId, [
+    { userId: userA, role: "user" },
+    { userId: userB, role: "user" },
+  ]);
   return conversationId;
 }
 
@@ -1095,6 +1193,19 @@ async function ensureDmParticipants(db, conversationId, participants) {
     { userId: userB, role: "user" },
   ]);
   return await getConversationParticipants(db, conversationId);
+}
+
+function buildPairKeyFromParticipants(participants) {
+  if (!Array.isArray(participants)) return "";
+  const ids = [];
+  for (const participant of participants) {
+    const id = normalizeId(participant && participant.userId);
+    if (!id || ids.includes(id)) continue;
+    ids.push(id);
+    if (ids.length >= 2) break;
+  }
+  if (ids.length < 2) return "";
+  return buildConversationPairKey(ids[0], ids[1]);
 }
 
 async function buildMessagePayload(row, participants, requestUrl, secret) {
@@ -1581,16 +1692,27 @@ async function handleMultipartMessage(context, form) {
       const userA = await ensureUser({ id: parsed.userA }, db);
       const userB = await ensureUser({ id: parsed.userB }, db);
       if (!userA || !userB) return errorResponse("USER_NOT_FOUND", 404);
-      await createConversation(db, conversationId, DM_TYPE);
-      await addParticipants(db, conversationId, [
-        { userId: userA, role: "user" },
-        { userId: userB, role: "user" },
-      ]);
-      conversation = { type: DM_TYPE };
+      const pairKey = buildConversationPairKey(userA, userB);
+      const created = await createConversation(db, conversationId, DM_TYPE, pairKey);
+      if (!created) {
+        const fallback = pairKey ? await findConversationByPairKey(db, pairKey) : null;
+        const fallbackRow = fallback || (await findConversationByParticipants(db, userA, userB));
+        if (!fallbackRow || !fallbackRow.id) return errorResponse("CONVERSATION_FAILED", 500);
+        conversationId = String(fallbackRow.id);
+        conversation = { type: fallbackRow.type || DM_TYPE, pair_key: fallbackRow.pair_key || pairKey };
+      } else {
+        await addParticipants(db, conversationId, [
+          { userId: userA, role: "user" },
+          { userId: userB, role: "user" },
+        ]);
+        conversation = { type: DM_TYPE, pair_key: pairKey };
+      }
     }
     conversationType = conversation.type || SUPPORT_TYPE;
     participants = await getConversationParticipants(db, conversationId);
     participants = await ensureDmParticipants(db, conversationId, participants);
+    const resolvedPairKey = (conversation && conversation.pair_key) || buildPairKeyFromParticipants(participants);
+    if (resolvedPairKey) await ensureConversationPairKey(db, conversationId, resolvedPairKey);
   } else if (rawRecipientId) {
     if (isAdmin) {
       admin = adminAccess.admin || (await ensureAdminUser(db, context.env));
@@ -1707,16 +1829,27 @@ export async function onRequestGet(context) {
       const userA = await ensureUser({ id: parsed.userA }, dbTimed);
       const userB = await ensureUser({ id: parsed.userB }, dbTimed);
       if (!userA || !userB) return await timing.finalize(errorResponse("USER_NOT_FOUND", 404), db);
-      await createConversation(dbTimed, conversationId, DM_TYPE);
-      await addParticipants(dbTimed, conversationId, [
-        { userId: userA, role: "user" },
-        { userId: userB, role: "user" },
-      ]);
-      conversation = { id: conversationId, type: DM_TYPE };
+      const pairKey = buildConversationPairKey(userA, userB);
+      const created = await createConversation(dbTimed, conversationId, DM_TYPE, pairKey);
+      if (!created) {
+        const fallback = pairKey ? await findConversationByPairKey(dbTimed, pairKey) : null;
+        const fallbackRow = fallback || (await findConversationByParticipants(dbTimed, userA, userB));
+        if (!fallbackRow || !fallbackRow.id) return await timing.finalize(errorResponse("CONVERSATION_FAILED", 500), db);
+        conversationId = String(fallbackRow.id);
+        conversation = { id: conversationId, type: fallbackRow.type || DM_TYPE, pair_key: fallbackRow.pair_key || pairKey };
+      } else {
+        await addParticipants(dbTimed, conversationId, [
+          { userId: userA, role: "user" },
+          { userId: userB, role: "user" },
+        ]);
+        conversation = { id: conversationId, type: DM_TYPE, pair_key: pairKey };
+      }
     }
 
     let participants = await getConversationParticipants(dbTimed, conversationId);
     participants = await ensureDmParticipants(dbTimed, conversationId, participants);
+    const resolvedPairKey = (conversation && conversation.pair_key) || buildPairKeyFromParticipants(participants);
+    if (resolvedPairKey) await ensureConversationPairKey(dbTimed, conversationId, resolvedPairKey);
     let adminRef = null;
     if (conversation.type === SUPPORT_TYPE) {
       adminRef = adminAccess.admin || (await ensureAdminUser(dbTimed, context.env));
@@ -1881,16 +2014,27 @@ export async function onRequestPost(context) {
         const userA = await ensureUser({ id: parsed.userA }, dbTimed);
         const userB = await ensureUser({ id: parsed.userB }, dbTimed);
         if (!userA || !userB) return await timing.finalize(errorResponse("USER_NOT_FOUND", 404), db);
-        await createConversation(dbTimed, conversationId, DM_TYPE);
-        await addParticipants(dbTimed, conversationId, [
-          { userId: userA, role: "user" },
-          { userId: userB, role: "user" },
-        ]);
-        conversation = { type: DM_TYPE };
+        const pairKey = buildConversationPairKey(userA, userB);
+        const created = await createConversation(dbTimed, conversationId, DM_TYPE, pairKey);
+        if (!created) {
+          const fallback = pairKey ? await findConversationByPairKey(dbTimed, pairKey) : null;
+          const fallbackRow = fallback || (await findConversationByParticipants(dbTimed, userA, userB));
+          if (!fallbackRow || !fallbackRow.id) return await timing.finalize(errorResponse("CONVERSATION_FAILED", 500), db);
+          conversationId = String(fallbackRow.id);
+          conversation = { type: fallbackRow.type || DM_TYPE, pair_key: fallbackRow.pair_key || pairKey };
+        } else {
+          await addParticipants(dbTimed, conversationId, [
+            { userId: userA, role: "user" },
+            { userId: userB, role: "user" },
+          ]);
+          conversation = { type: DM_TYPE, pair_key: pairKey };
+        }
       }
       conversationType = conversation.type || SUPPORT_TYPE;
       participants = await getConversationParticipants(dbTimed, conversationId);
       participants = await ensureDmParticipants(dbTimed, conversationId, participants);
+      const resolvedPairKey = (conversation && conversation.pair_key) || buildPairKeyFromParticipants(participants);
+      if (resolvedPairKey) await ensureConversationPairKey(dbTimed, conversationId, resolvedPairKey);
     } else if (rawRecipientId) {
       if (isAdmin) {
         admin = adminAccess.admin || (await ensureAdminUser(dbTimed, context.env));

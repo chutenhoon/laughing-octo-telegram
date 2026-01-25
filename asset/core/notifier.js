@@ -384,7 +384,7 @@
         body,
         tag: "bk-notify",
         renotify: false,
-        data: { url: "/profile/messages/" },
+        data: { url: "/profile/messages" },
         icon: "/favicon-32x32.png",
       });
     }

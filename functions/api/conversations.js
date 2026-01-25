@@ -1,10 +1,11 @@
-import { generateId, jsonResponse } from "./auth/_utils.js";
+import { jsonResponse } from "./auth/_utils.js";
 import { SCHEMA_USER_VERSION } from "./admin/migrate.js";
 import {
   buildUserProfile,
   ensureAdminUser,
   ensureChatSchemaReady,
   ensureUser,
+  getOrCreateSupportConversation,
   resolveAdminAccess,
 } from "./messages.js";
 import {
@@ -166,32 +167,6 @@ function resolveLastType(preview) {
   if (normalized === "ảnh" || normalized === "anh") return "image";
   if (normalized === "tệp" || normalized === "tep") return "file";
   return "text";
-}
-
-async function getOrCreateSupportConversation(db, userId, adminId) {
-  if (!db || !userId || !adminId) return null;
-  const existing = await db
-    .prepare(
-      "SELECT c.id FROM conversations c JOIN conversation_participants u ON u.conversation_id = c.id AND u.user_id = ? JOIN conversation_participants a ON a.conversation_id = c.id AND a.user_id = ? WHERE c.type = ? ORDER BY c.updated_at DESC LIMIT 1"
-    )
-    .bind(userId, adminId, SUPPORT_TYPE)
-    .first();
-  if (existing && existing.id) return String(existing.id);
-  const now = Math.floor(Date.now() / 1000);
-  const conversationId = generateId();
-  await db
-    .prepare("INSERT INTO conversations (id, type, created_at, updated_at) VALUES (?, ?, ?, ?)")
-    .bind(conversationId, SUPPORT_TYPE, now, now)
-    .run();
-  await db
-    .prepare("INSERT OR IGNORE INTO conversation_participants (conversation_id, user_id, role) VALUES (?, ?, ?)")
-    .bind(conversationId, userId, "user")
-    .run();
-  await db
-    .prepare("INSERT OR IGNORE INTO conversation_participants (conversation_id, user_id, role) VALUES (?, ?, ?)")
-    .bind(conversationId, adminId, "admin")
-    .run();
-  return conversationId;
 }
 
 async function listUserConversations(db, userId, adminId, adminProfile, selfProfile) {

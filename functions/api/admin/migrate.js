@@ -1,7 +1,7 @@
 ﻿import { jsonResponse, readJsonBody } from "../auth/_utils.js";
 
 const DEFAULT_MIGRATION_ID = "2026-01-18-core";
-export const SCHEMA_USER_VERSION = 20260121;
+export const SCHEMA_USER_VERSION = 20260201;
 
 function safeEqual(a, b) {
   const left = String(a || "");
@@ -310,6 +310,7 @@ const TABLE_DEFS = {
     CREATE TABLE IF NOT EXISTS conversations (
       id TEXT PRIMARY KEY,
       type TEXT NOT NULL DEFAULT 'support',
+      pair_key TEXT,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL,
       last_message_id INTEGER,
@@ -473,6 +474,7 @@ const COLUMN_DEFS = {
   ],
   conversations: [
     { name: "type", def: "TEXT DEFAULT 'support'" },
+    { name: "pair_key", def: "TEXT" },
     { name: "created_at", def: "INTEGER" },
     { name: "updated_at", def: "INTEGER" },
     { name: "last_message_id", def: "INTEGER" },
@@ -758,6 +760,39 @@ async function backfillFollowCounters(db, report) {
     }
   } catch (error) {
     report.errors.push({ table: "users", action: "backfill", error: String(error) });
+  }
+}
+
+async function backfillConversationPairKeys(db, report) {
+  try {
+    const convoCols = await getColumns(db, "conversations");
+    const participantCols = await getColumns(db, "conversation_participants");
+    if (!convoCols.size || !participantCols.size) return;
+    if (!convoCols.has("pair_key")) return;
+    if (!participantCols.has("conversation_id") || !participantCols.has("user_id")) return;
+    await db
+      .prepare(
+        `
+        UPDATE conversations
+           SET pair_key = (
+             SELECT printf('%s:%s', MIN(cp.user_id), MAX(cp.user_id))
+               FROM conversation_participants cp
+              WHERE cp.conversation_id = conversations.id
+           )
+         WHERE (pair_key IS NULL OR pair_key = '')
+           AND EXISTS (
+             SELECT 1
+               FROM conversation_participants cp2
+              WHERE cp2.conversation_id = conversations.id
+              GROUP BY cp2.conversation_id
+             HAVING COUNT(DISTINCT cp2.user_id) = 2
+           )
+        `
+      )
+      .run();
+    report.backfills.push("conversations.pair_key");
+  } catch (error) {
+    report.errors.push({ table: "conversations", action: "backfill", error: String(error) });
   }
 }
 
@@ -1196,6 +1231,7 @@ export async function runMigrations(db, options = {}) {
   await backfillUsernames(db, report);
   await backfillFeaturedMedia(db, report);
   await backfillFollowCounters(db, report);
+  await backfillConversationPairKeys(db, report);
   await ensureIndexes(db, report);
   await ensureUniqueIndexIfColumns(db, report, "users", "idx_users_id", ["id"]);
   await ensureIndexIfColumns(db, report, "products", "idx_products_shop", ["shop_id"]);
@@ -1210,6 +1246,7 @@ export async function runMigrations(db, options = {}) {
   await ensureIndexIfColumns(db, report, "profile_featured_media", "idx_profile_featured_user_updated", ["user_id", "updated_at"]);
   await ensureIndexIfColumns(db, report, "conversations", "idx_conversations_type", ["type"]);
   await ensureIndexIfColumnsRaw(db, report, "conversations", "idx_conversations_updated_desc", "updated_at DESC", ["updated_at"]);
+  await ensureUniqueIndexIfColumns(db, report, "conversations", "idx_conversations_pair_key", ["pair_key"]);
   await ensureIndexIfColumns(db, report, "conversation_participants", "idx_conversation_participants_user_convo", [
     "user_id",
     "conversation_id",

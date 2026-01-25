@@ -1651,8 +1651,49 @@
           return Number.isFinite(updated) ? updated : 0;
         };
 
-        const sortConversationList = (items) => {
-          const list = Array.isArray(items) ? items.slice() : [];
+        const resolveConversationKey = (item) => {
+          if (!item) return "";
+          const userId = normalizeUserId(item.userId || (item.user && item.user.id) || "");
+          if (userId) return `user:${userId}`;
+          const convoId = String(item.conversationId || "").trim();
+          return convoId ? `convo:${convoId}` : "";
+        };
+
+        const pickConversation = (current, candidate, options = {}) => {
+          if (!current) return candidate;
+          if (!candidate) return current;
+          const preferId = String(options.preferId || "");
+          const currentId = String(current.conversationId || "");
+          const candidateId = String(candidate.conversationId || "");
+          if (preferId) {
+            if (candidateId && candidateId === preferId) return candidate;
+            if (currentId && currentId === preferId) return current;
+          }
+          const currentSupport = isSupportConversation(current);
+          const candidateSupport = isSupportConversation(candidate);
+          if (currentSupport !== candidateSupport) return candidateSupport ? candidate : current;
+          const currentTime = getConversationSortTime(current);
+          const candidateTime = getConversationSortTime(candidate);
+          if (currentTime !== candidateTime) return candidateTime > currentTime ? candidate : current;
+          if (candidateId && !currentId) return candidate;
+          if (currentId && !candidateId) return current;
+          if (!candidateId || !currentId) return current;
+          return candidateId.localeCompare(currentId) > 0 ? candidate : current;
+        };
+
+        const dedupeConversationList = (items, options = {}) => {
+          const list = Array.isArray(items) ? items : [];
+          const map = new Map();
+          list.forEach((item) => {
+            const key = resolveConversationKey(item);
+            if (!key) return;
+            map.set(key, pickConversation(map.get(key), item, options));
+          });
+          return Array.from(map.values());
+        };
+
+        const sortConversationList = (items, options = {}) => {
+          const list = dedupeConversationList(items, options);
           list.sort((a, b) => {
             const aPinned = isSupportConversation(a);
             const bPinned = isSupportConversation(b);
@@ -1941,6 +1982,7 @@
           let directCandidate = null;
           if (hasCache) {
             conversationList = cachedList.slice();
+            conversationList = sortConversationList(conversationList, { preferId: queryConversationId });
             hasLoadedConversationList = true;
             renderThreadList(conversationList);
             updateSidebarCount(conversationList.length);
@@ -2009,7 +2051,7 @@
               }
             }
             await ensurePrefillConversation();
-            conversationList = sortConversationList(conversationList);
+            conversationList = sortConversationList(conversationList, { preferId: queryConversationId });
             if (queryConversationId && !requestedApplied) {
               const requested = conversationList.find(
                 (item) => String(item.conversationId || "") === String(queryConversationId)

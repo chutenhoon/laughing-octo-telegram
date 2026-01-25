@@ -8,7 +8,7 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   const notification = event.notification;
-  const targetUrl = (notification && notification.data && notification.data.url) || "/profile/messages/";
+  const targetUrl = (notification && notification.data && notification.data.url) || "/profile/messages";
   if (notification) notification.close();
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientsArr) => {

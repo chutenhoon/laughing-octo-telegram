@@ -569,7 +569,7 @@
           return `${base}${encodeURIComponent(username)}`;
         };
           const buildMessagesUrl = (username, userId, conversationId) => {
-            const base = root + (isFile ? "profile/messages/index.html" : "profile/messages/");
+            const base = root + (isFile ? "profile/messages/index.html" : "profile/messages");
             const nextUsername = String(username || "").trim();
             const nextUserId = String(userId || "").trim();
             const nextConversationId = String(conversationId || "").trim();

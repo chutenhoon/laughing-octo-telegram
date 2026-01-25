@@ -1,5 +1,12 @@
 import { jsonResponse, normalizeEmail, normalizeUsername, readJsonBody } from "../auth/_utils.js";
-import { buildDirectConversationId, buildUserProfile, ensureChatSchemaReady, ensureUser, getSessionUser } from "../messages.js";
+import {
+  buildUserProfile,
+  ensureChatSchemaReady,
+  ensureUser,
+  getOrCreateDmConversation,
+  getOrCreateSupportConversation,
+  getSessionUser,
+} from "../messages.js";
 import { touchConversationVersions } from "../chat_state.js";
 
 const CACHE_CONTROL = "no-store, no-cache, must-revalidate";
@@ -88,29 +95,6 @@ async function resolveUserId(db, raw) {
   return idValue != null ? String(idValue) : "";
 }
 
-async function ensureConversation(db, conversationId, viewerId, targetId) {
-  if (!db || !conversationId) return false;
-  const existing = await db.prepare("SELECT id FROM conversations WHERE id = ? LIMIT 1").bind(conversationId).first();
-  if (!existing) {
-    const now = Math.floor(Date.now() / 1000);
-    await db
-      .prepare("INSERT INTO conversations (id, type, created_at, updated_at) VALUES (?, ?, ?, ?)")
-      .bind(conversationId, "dm", now, now)
-      .run();
-  }
-  await db
-    .prepare("INSERT OR IGNORE INTO conversation_participants (conversation_id, user_id, role) VALUES (?, ?, ?)")
-    .bind(conversationId, viewerId, "user")
-    .run();
-  if (targetId && String(targetId) !== String(viewerId)) {
-    await db
-      .prepare("INSERT OR IGNORE INTO conversation_participants (conversation_id, user_id, role) VALUES (?, ?, ?)")
-      .bind(conversationId, targetId, "user")
-      .run();
-  }
-  return true;
-}
-
 export async function onRequestPost(context) {
   const db = context?.env?.DB;
   if (!db) return withNoStore(jsonResponse({ ok: false, error: "DB_NOT_CONFIGURED" }, 500));
@@ -137,14 +121,21 @@ export async function onRequestPost(context) {
       return withNoStore(jsonResponse({ ok: false, error: "USER_NOT_FOUND" }, 404));
     }
 
-    const conversationId = buildDirectConversationId(viewerId, targetId);
-    if (!conversationId) return withNoStore(jsonResponse({ ok: false, error: "CONVERSATION_FAILED" }, 500));
-    await ensureConversation(db, conversationId, viewerId, targetId);
-
     const viewerRow = await findUserRow(db, viewerId);
     const targetRow = String(targetId) === String(viewerId) ? viewerRow : await findUserRow(db, targetId);
     const viewerProfile = buildUserProfile(viewerRow, viewerId);
     const targetProfile = buildUserProfile(targetRow, targetId);
+    const viewerIsAdmin = viewerProfile && viewerProfile.is_admin === true;
+    const targetIsAdmin = targetProfile && targetProfile.is_admin === true;
+    let conversationId = "";
+    if (viewerIsAdmin || targetIsAdmin) {
+      const adminId = viewerIsAdmin ? viewerId : targetId;
+      const userId = viewerIsAdmin ? targetId : viewerId;
+      conversationId = await getOrCreateSupportConversation(db, userId, adminId);
+    } else {
+      conversationId = await getOrCreateDmConversation(db, viewerId, targetId);
+    }
+    if (!conversationId) return withNoStore(jsonResponse({ ok: false, error: "CONVERSATION_FAILED" }, 500));
     const displayTitle =
       targetProfile &&
       (targetProfile.display_name || targetProfile.name || targetProfile.username || targetProfile.email || "");

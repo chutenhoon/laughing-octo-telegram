@@ -243,15 +243,27 @@ function initBackgroundPreview() {
     preview.classList.remove("is-hidden");
   };
 
+  const tryPlay = () => {
+    if (!video.paused || typeof video.play !== "function") return;
+    const attempt = video.play();
+    if (attempt && typeof attempt.catch === "function") {
+      attempt.catch(() => {});
+    }
+  };
+
   if (video.readyState >= 2) {
     hidePreview();
+    tryPlay();
   } else {
     const onReady = () => {
       hidePreview();
+      tryPlay();
     };
     video.addEventListener("loadeddata", onReady, { once: true });
     video.addEventListener("canplay", onReady, { once: true });
   }
+
+  video.addEventListener("playing", hidePreview, { once: true });
 
   video.addEventListener(
     "error",
@@ -4395,7 +4407,7 @@ function setupUserMenu(auth) {
   const followingUrl = root + (isFile ? "profile/following/index.html" : "profile/following/");
   const historyUrl = root + (isFile ? "profile/history/index.html" : "profile/history/");
   const topupsUrl = root + (isFile ? "profile/topups/index.html" : "profile/topups/");
-  const messagesUrl = root + (isFile ? "profile/messages/index.html" : "profile/messages/");
+  const messagesUrl = root + (isFile ? "profile/messages/index.html" : "profile/messages");
   const notificationsUrl = root + (isFile ? "profile/notifications/index.html" : "profile/notifications/");
   const badgesUrl = root + (isFile ? "profile/badges/index.html" : "profile/badges/");
   const securityUrl = root + (isFile ? "profile/security/index.html" : "profile/security/");
