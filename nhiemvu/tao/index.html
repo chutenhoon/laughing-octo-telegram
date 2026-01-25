@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Xin quy&#7873;n &#273;&#259;ng b&#224;i nhi&#7879;m v&#7909; | polyflux.xyz</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="../../apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="../../favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="../../favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="../../android-chrome-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="../../android-chrome-512x512.png" />
+    <link rel="manifest" href="../../site.webmanifest" />
+    <link rel="icon" href="../../favicon.ico" />
+    <meta name="description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta property="og:title" content="polyflux.xyz" />
+    <meta property="og:description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta property="og:image" content="../../asset/logo-preview.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="vi_VN" />
+    <meta property="og:site_name" content="polyflux.xyz" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="polyflux.xyz" />
+    <meta name="twitter:description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta name="twitter:image" content="../../asset/logo-preview.png" />
+<link rel="stylesheet" href="../../asset/base.css" />
+  </head>
+  <body>
+    <video class="video-bg" autoplay muted loop playsinline>
+      <source src="../../asset/bg-donut.mp4" type="video/mp4" />
+    </video>
+    <div class="video-overlay"></div>
+
+    <header class="wrap">
+      <nav class="nav glass">
+        <a href="/" class="brand" style="display: flex; align-items: center; gap: 12px; text-decoration: none;">
+          <img src="../../asset/logo.png" alt="PolyFlux" />
+          <span>polyflux<b>.xyz</b></span>
+        </a>
+        <div class="nav-links">
+          <a href="/sanpham/" data-nav="sanpham">S&#7843;n Ph&#7849;m <span class="badge">HOT</span></a>
+          <a href="/dichvu/" data-nav="dichvu">D&#7883;ch V&#7909;</a>
+          <a href="/nhiemvu/" data-nav="nhiemvu">Nhi&#7879;m V&#7909;</a>
+          <a href="/profile/topups/" data-nav="topups">N&#7841;p ti&#7873;n</a>
+        </div>
+        <div class="nav-actions">
+                    <button class="btn balance-btn" data-balance type="button">0 VND</button>
+          <a class="btn login-btn" href="/login/">Login</a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="wrap">
+      <section class="section">
+        <div class="auth-guard" data-auth-guard>
+          <span><strong>Y&#234;u c&#7847;u &#273;&#259;ng nh&#7853;p:</strong> B&#7841;n c&#7847;n &#273;&#259;ng nh&#7853;p &#273;&#7875; g&#7917;i &#273;&#417;n xin quy&#7873;n &#273;&#259;ng b&#224;i nhi&#7879;m v&#7909;.</span>
+          <a class="btn" data-auth-login href="#">&#272;&#259;ng nh&#7853;p</a>
+        </div>
+
+        <div class="card light" data-auth-lock="login">
+          <h3>Xin quy&#7873;n &#273;&#259;ng b&#224;i nhi&#7879;m v&#7909;</h3>
+          <p class="hero-sub">
+            &#272;i&#7873;n th&#244;ng tin b&#234;n d&#432;&#7899;i &#273;&#7875; &#273;&#432;&#7907;c duy&#7879;t quy&#7873;n &#273;&#259;ng b&#224;i.
+          </p>
+          <div class="form-grid two-col">
+            <div class="form-field">
+              <label for="task-fullname">H&#7885; t&#234;n</label>
+              <input id="task-fullname" placeholder="Nh&#7853;p h&#7885; t&#234;n &#273;&#7847;y &#273;&#7911;" />
+            </div>
+            <div class="form-field">
+              <label for="task-phone">S&#7889; &#273;i&#7879;n tho&#7841;i</label>
+              <input id="task-phone" placeholder="S&#7889; &#273;i&#7879;n tho&#7841;i li&#234;n h&#7879;" />
+            </div>
+            <div class="form-field">
+              <label for="task-contact">Li&#234;n h&#7879; (Telegram / Email) <span class="required">*</span></label>
+              <input id="task-contact" placeholder="@username ho&#7863;c you@example.com" />
+            </div>
+            <div class="form-field">
+              <label for="task-budget">Ng&#226;n s&#225;ch d&#7921; ki&#7871;n (VND) <span class="required">*</span></label>
+              <input id="task-budget" placeholder="VD: 200000" />
+            </div>
+          </div>
+          <div class="form-field">
+            <label for="task-desc">L&#253; do &#273;&#259;ng k&#253;</label>
+            <textarea id="task-desc" placeholder="T&#7841;i sao b&#7841;n mu&#7889;n &#273;&#432;&#7907;c duy&#7879;t quy&#7873;n &#273;&#259;ng b&#224;i?"></textarea>
+          </div>
+          <button class="btn primary" type="button" data-requires-login>G&#7917;i</button>
+          <div class="form-note">
+            <strong>L&#432;u &#253;:</strong>
+            <ul>
+              <li>&#272;&#417;n &#273;&#259;ng k&#253; c&#7911;a b&#7841;n s&#7869; &#273;&#432;&#7907;c admin xem x&#233;t trong th&#7901;i gian s&#7899;m nh&#7845;t.</li>
+              <li>B&#7841;n s&#7869; nh&#7853;n &#273;&#432;&#7907;c th&#244;ng b&#225;o khi &#273;&#417;n &#273;&#432;&#7907;c duy&#7879;t ho&#7863;c t&#7915; ch&#7889;i.</li>
+              <li>Sau khi &#273;&#432;&#7907;c duy&#7879;t, b&#7841;n c&#243; th&#7875; &#273;&#259;ng b&#224;i &#7903; &#273;&#226;y.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        <div class="footer-grid">
+          <div>
+            <h4>About polyflux.xyz</h4>
+            <p>
+              The #1 trusted marketplace for digital assets on polyflux.xyz. Buy accounts, emails, tools and more with
+              instant delivery.
+            </p>
+          </div>
+          <div>
+            <h4>&#272;i&#7873;u h&#432;&#7899;ng</h4>
+            <p><a href="/sanpham/">S&#7843;n ph&#7849;m</a></p>
+            <p><a href="/dichvu/">D&#7883;ch v&#7909;</a></p>
+            <p><a href="/nhiemvu/">Nhi&#7879;m v&#7909;</a></p>
+            <p><a href="/profile/">T&#224;i kho&#7843;n c&#7911;a t&#244;i</a></p>
+          </div>
+          <div>
+            <h4>Thanh to&#225;n &amp; b&#7843;o m&#7853;t</h4>
+            <p>20+ ph&#432;&#417;ng th&#7913;c thanh to&#225;n, x&#7917; l&#253; t&#7921; &#273;&#7897;ng.</p>
+            <p>L&#7883;ch s&#7917; &#273;&#417;n h&#224;ng minh b&#7841;ch.</p>
+            <p>2FA &amp; c&#7843;nh b&#225;o &#273;&#259;ng nh&#7853;p kh&#7843; nghi.</p>
+          </div>
+          <div>
+            <h4>Xin quy&#7873;n &#273;&#259;ng b&#224;i</h4>
+            <p>B&#7841;n mu&#7889;n &#273;&#432;&#7907;c duy&#7879;t quy&#7873;n &#273;&#259;ng b&#224;i nhi&#7879;m v&#7909;?</p>
+            <a href="./index.html" class="btn primary" style="margin-top: 8px; display: inline-flex; align-items: center; gap: 6px;">
+              Xin quy&#7873;n &#273;&#259;ng b&#224;i
+            </a>
+          </div>
+        </div>
+      </footer>
+    </main>
+
+    <nav class="mobile-nav">
+      <div class="mobile-nav-top">
+        <a href="/" class="mobile-brand" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+          <img src="../../asset/logo.png" alt="PolyFlux" />
+          <span>polyflux<b>.xyz</b></span>
+        </a>
+        <div class="mobile-actions">
+                    <button class="btn balance-btn" data-balance type="button">0 VND</button>
+          <a class="btn login-btn" href="/login/">Login</a>
+        
+          <button class="menu-btn" id="mobile-menu" type="button" aria-label="Menu">
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="mobile-links">
+        <a href="/sanpham/" data-nav="sanpham">S&#7843;n Ph&#7849;m</a>
+        <a href="/dichvu/" data-nav="dichvu">D&#7883;ch V&#7909;</a>
+        <a href="/nhiemvu/" data-nav="nhiemvu">Nhi&#7879;m V&#7909;</a>
+        <a href="/profile/topups/" data-nav="topups">N&#7841;p ti&#7873;n</a>
+      </div>
+    </nav>
+
+    <script src="../../asset/render.js"></script>
+  </body>
+</html>
+
+
+

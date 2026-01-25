@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Admin Panel | polyflux.xyz</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="../android-chrome-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="../android-chrome-512x512.png" />
+    <link rel="manifest" href="../site.webmanifest" />
+    <link rel="icon" href="../favicon.ico" />
+    <meta name="description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta property="og:title" content="polyflux.xyz" />
+    <meta property="og:description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta property="og:image" content="../asset/logo-preview.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="vi_VN" />
+    <meta property="og:site_name" content="polyflux.xyz" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="polyflux.xyz" />
+    <meta name="twitter:description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta name="twitter:image" content="../asset/logo-preview.png" />
+<link rel="stylesheet" href="../asset/base.css" />
+  </head>
+  <body class="seller-shell admin-shell">
+    <video class="video-bg" autoplay muted loop playsinline>
+      <source src="../asset/bg-donut.mp4" type="video/mp4" />
+    </video>
+    <div class="video-overlay"></div>
+
+    <div class="card seller-guard" id="admin-auth" style="display: none;">
+      <h3>Admin Access</h3>
+      <p class="hero-sub">&#272;&#259;ng nh&#7853;p b&#7857;ng t&#224;i kho&#7843;n &#273;&#432;&#7907;c c&#7845;p &#273;&#7875; truy c&#7853;p panel qu&#7843;n tr&#7883;.</p>
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="admin-user">T&#224;i kho&#7843;n</label>
+          <input id="admin-user" autocomplete="username" />
+        </div>
+        <div class="form-field">
+          <label for="admin-pass">M&#7853;t kh&#7849;u</label>
+          <input id="admin-pass" type="password" autocomplete="current-password" />
+        </div>
+        <button class="btn primary" id="admin-login" type="button">&#272;&#259;ng nh&#7853;p</button>
+        <div class="empty-state" id="admin-error" style="display: none;"></div>
+      </div>
+    </div>
+
+    <main class="seller-layout" id="admin-panel" style="display: none;">
+      <aside class="seller-sidebar glass">
+        <a href="/" class="seller-brand" style="text-decoration: none;">
+          <img src="../asset/logo.png" alt="PolyFlux" />
+          <span>polyflux<b>.xyz</b></span>
+        </a>
+        <nav class="seller-nav" id="admin-nav">
+          <button
+            class="active"
+            type="button"
+            data-view="overview"
+            data-title="T&#7893;ng quan"
+            data-sub="T&#7893;ng h&#7907;p t&#236;nh h&#236;nh h&#7879; th&#7889;ng v&#224; doanh thu."
+          >
+            T&#7893;ng quan
+          </button>
+          <button
+            type="button"
+            data-view="finance"
+            data-title="Doanh thu"
+            data-sub="Bi&#7875;u &#273;&#7891; v&#224; ph&#226;n r&#227; doanh thu to&#224;n h&#7879; th&#7889;ng."
+          >
+            Doanh thu
+          </button>
+          <button
+            type="button"
+            data-view="users"
+            data-title="Ng&#432;&#7901;i d&#249;ng"
+            data-sub="Theo d&#245;i danh s&#225;ch v&#224; tr&#7841;ng th&#225;i t&#224;i kho&#7843;n."
+          >
+            Ng&#432;&#7901;i d&#249;ng
+          </button>
+          <button
+            type="button"
+            data-view="shops"
+            data-title="Gian h&#224;ng"
+            data-sub="Duy&#7879;t gian h&#224;ng v&#224; theo d&#245;i hi&#7879;u su&#7845;t."
+          >
+            Gian h&#224;ng
+          </button>
+          <button
+            type="button"
+            data-view="orders"
+            data-title="&#272;&#417;n h&#224;ng"
+            data-sub="Gi&#225;m s&#225;t c&#225;c &#273;&#417;n h&#224;ng v&#224; thanh to&#225;n."
+          >
+            &#272;&#417;n h&#224;ng
+          </button>
+          <button
+            type="button"
+            data-view="tickets"
+            data-title="Khi&#7871;u n&#7841;i"
+            data-sub="Qu&#7843;n l&#253; ticket h&#7895; tr&#7907; v&#224; tranh ch&#7845;p."
+          >
+            Khi&#7871;u n&#7841;i
+          </button>
+          <button
+            type="button"
+            data-view="system"
+            data-title="H&#7879; th&#7889;ng"
+            data-sub="Qu&#7843;n l&#253; b&#7843;o tr&#236; h&#7879; th&#7889;ng."
+          >
+            H&#7879; th&#7889;ng
+          </button>
+          <button
+            type="button"
+            data-view="settings"
+            data-title="C&#224;i &#273;&#7863;t"
+            data-sub="C&#7845;u h&#236;nh h&#7879; th&#7889;ng v&#224; ph&#226;n quy&#7873;n."
+          >
+            C&#224;i &#273;&#7863;t
+          </button>
+          <button
+            type="button"
+            data-view="admin-roles"
+            data-title="Duy&#7879;t c&#7897;ng t&#225;c vi&#234;n"
+            data-sub="Duy&#7879;t seller m&#7899;i v&#224; quy&#7873;n &#273;&#259;ng b&#224;i nhi&#7879;m v&#7909;."
+          >
+            Duy&#7879;t c&#7897;ng t&#225;c vi&#234;n
+          </button>
+        </nav>
+      </aside>
+
+      <section class="seller-main">
+        <div class="seller-topbar glass">
+          <div>
+            <h1 id="admin-page-title">T&#7893;ng quan</h1>
+            <p class="hero-sub" id="admin-page-sub">T&#7893;ng h&#7907;p t&#236;nh h&#236;nh h&#7879; th&#7889;ng v&#224; doanh thu.</p>
+          </div>
+          <div class="seller-topbar-actions">
+            <span class="seller-pill">Admin Online</span>
+            <button class="btn ghost" id="admin-logout" type="button">&#272;&#259;ng xu&#7845;t</button>
+          </div>
+        </div>
+
+        <div class="seller-content">
+          <section class="seller-section active" data-view="overview">
+            <div class="seller-stat-grid">
+              <div class="seller-card">
+                <span class="seller-stat-label">T&#7893;ng ng&#432;&#7901;i d&#249;ng</span>
+                <div class="seller-stat-value" id="admin-total-users">--</div>
+                <span class="seller-stat-note">C&#7853;p nh&#7853;t theo tu&#7847;n</span>
+              </div>
+              <div class="seller-card">
+                <span class="seller-stat-label">Seller &#273;&#227; duy&#7879;t</span>
+                <div class="seller-stat-value" id="admin-total-sellers">--</div>
+                <span class="seller-stat-note">T&#7893;ng seller &#273;&#227; duy&#7879;t</span>
+              </div>
+              <div class="seller-card">
+                <span class="seller-stat-label">Doanh thu h&#244;m nay</span>
+                <div class="seller-stat-value" id="admin-revenue-today">--</div>
+                <span class="seller-stat-note">So v&#7899;i h&#244;m qua</span>
+              </div>
+              <div class="seller-card">
+                <span class="seller-stat-label">Doanh thu to&#224;n h&#7879; th&#7889;ng</span>
+                <div class="seller-stat-value" id="admin-revenue-total">--</div>
+                <span class="seller-stat-note">Lifetime</span>
+              </div>
+            </div>
+            <div class="seller-card">
+              <h3>Ho&#7841;t &#273;&#7897;ng h&#7879; th&#7889;ng</h3>
+              <p class="hero-sub">Gateway thanh to&#225;n, kho giao h&#224;ng v&#224; h&#7879; th&#7889;ng b&#225;o c&#225;o &#273;ang ho&#7841;t &#273;&#7897;ng &#7893;n &#273;&#7883;nh.</p>
+              <div class="admin-inline-meta" style="margin-top: 10px;">
+                <span>B&#7843;o tr&#236;: <span class="admin-status-pill warn" id="admin-maintenance-status">--</span></span>
+              </div>
+            </div>
+            <div class="admin-insight-grid" style="margin-top: 16px;">
+              <div class="seller-card">
+                <span class="seller-stat-label">&#272;&#417;n n&#7841;p/chuy&#7875;n ti&#7873;n ch&#7901; duy&#7879;t</span>
+                <div class="seller-stat-value" id="admin-pending-finance">--</div>
+                <span class="seller-stat-note">C&#7853;p nh&#7853;t g&#7847;n &#273;&#226;y</span>
+                <button class="btn sm ghost" type="button" data-jump="orders">Xem chi ti&#7871;t</button>
+              </div>
+              <div class="seller-card">
+                <span class="seller-stat-label">Gian h&#224;ng ch&#7901; duy&#7879;t</span>
+                <div class="seller-stat-value" id="admin-pending-stores">--</div>
+                <div class="admin-inline-meta" style="margin-top: 6px;">
+                  <span>Ch&#7901; duy&#7879;t s&#7917;a: <strong id="admin-pending-store-updates">--</strong></span>
+                </div>
+                <button class="btn sm ghost" type="button" data-jump="shops">Duy&#7879;t ngay</button>
+              </div>
+              <div class="seller-card">
+                <span class="seller-stat-label">Seller ch&#432;a duy&#7879;t</span>
+                <div class="seller-stat-value" id="admin-pending-sellers">--</div>
+                <span class="seller-stat-note">Y&#234;u c&#7847;u gia nh&#7853;p</span>
+                <button class="btn sm ghost" type="button" data-jump="admin-roles">Xem y&#234;u c&#7847;u</button>
+              </div>
+              <div class="seller-card">
+                <span class="seller-stat-label">B&#7843;o h&#224;nh/ho&#224;n ti&#7873;n ch&#7901;</span>
+                <div class="seller-stat-value" id="admin-pending-refunds">--</div>
+                <span class="seller-stat-note">C&#7847;n x&#7917; l&#253; s&#7899;m</span>
+                <button class="btn sm ghost" type="button" data-jump="tickets">Xem danh s&#225;ch</button>
+              </div>
+            </div>
+            <div class="seller-card" style="margin-top: 16px;">
+              <div class="chart-head">
+                <div>
+                  <h3>T&#236;nh h&#236;nh h&#7879; th&#7889;ng</h3>
+                  <p class="hero-sub">T&#7893;ng quan nhanh c&#225;c ch&#7881; s&#7889; quan tr&#7885;ng.</p>
+                </div>
+              </div>
+              <div class="admin-insight-grid" style="margin-top: 12px;">
+                <div class="admin-mini-chart">
+                  <div>
+                    <span class="form-hint">Doanh thu h&#244;m nay</span>
+                    <strong id="admin-mini-revenue">--</strong>
+                  </div>
+                  <svg viewBox="0 0 120 56" preserveAspectRatio="none">
+                    <path id="admin-mini-revenue-line" class="chart-line" d=""></path>
+                  </svg>
+                </div>
+                <div class="admin-mini-chart">
+                  <div>
+                    <span class="form-hint">Ng&#432;&#7901;i d&#249;ng ho&#7841;t &#273;&#7897;ng</span>
+                    <strong id="admin-mini-active-users">--</strong>
+                  </div>
+                  <svg viewBox="0 0 120 56" preserveAspectRatio="none">
+                    <path id="admin-mini-user-line" class="chart-line" d=""></path>
+                  </svg>
+                </div>
+                <div class="admin-mini-chart">
+                  <div>
+                    <span class="form-hint">T&#7927; l&#7879; duy&#7879;t gian h&#224;ng</span>
+                    <strong id="admin-approval-rate">--</strong>
+                  </div>
+                  <div class="donut-chart" id="admin-approval-donut"></div>
+                </div>
+              </div>
+            </div>
+            <div class="seller-card" style="margin-top: 16px;">
+              <div class="chart-head">
+                <div>
+                  <h3>Vi&#7879;c c&#7847;n x&#7917; l&#253;</h3>
+                  <p class="hero-sub">&#431;u ti&#234;n c&#225;c h&#7841;ng m&#7909;c &#273;ang ch&#7901; duy&#7879;t.</p>
+                </div>
+              </div>
+              <div class="admin-task-list" id="admin-task-list" style="margin-top: 12px;">
+                <div class="admin-pending-item">
+                  <div>
+                    <strong>Duy&#7879;t n&#7841;p/chuy&#7875;n ti&#7873;n</strong>
+                    <div class="admin-pending-meta" id="admin-task-finance">-- y&#234;u c&#7847;u</div>
+                  </div>
+                  <button class="btn sm" type="button" data-jump="orders">X&#7917; l&#253;</button>
+                </div>
+                <div class="admin-pending-item">
+                  <div>
+                    <strong>Duy&#7879;t gian h&#224;ng</strong>
+                    <div class="admin-pending-meta" id="admin-task-stores">-- y&#234;u c&#7847;u</div>
+                  </div>
+                  <button class="btn sm" type="button" data-jump="shops">Xem</button>
+                </div>
+                <div class="admin-pending-item">
+                  <div>
+                    <strong>Duy&#7879;t c&#7897;ng t&#225;c vi&#234;n</strong>
+                    <div class="admin-pending-meta" id="admin-task-approvals">-- y&#234;u c&#7847;u</div>
+                  </div>
+                  <button class="btn sm" type="button" data-jump="admin-roles">Xem</button>
+                </div>
+                <div class="admin-pending-item">
+                  <div>
+                    <strong>B&#7843;o h&#224;nh/ho&#224;n ti&#7873;n</strong>
+                    <div class="admin-pending-meta" id="admin-task-refunds">-- y&#234;u c&#7847;u</div>
+                  </div>
+                  <button class="btn sm" type="button" data-jump="tickets">Xem</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="seller-section" data-view="finance">
+            <div class="seller-card seller-chart-card">
+              <div class="chart-head">
+                <div>
+                  <h3>Bi&#7875;u &#273;&#7891; thu nh&#7853;p</h3>
+                  <p class="hero-sub">Theo d&#245;i doanh thu theo khung th&#7901;i gian.</p>
+                </div>
+                <div class="admin-filter-row" id="admin-revenue-filters">
+                  <button class="btn ghost active" type="button" data-admin-range="1d">1 ng&#224;y</button>
+                  <button class="btn ghost" type="button" data-admin-range="3d">3 ng&#224;y</button>
+                  <button class="btn ghost" type="button" data-admin-range="7d">7 ng&#224;y</button>
+                  <button class="btn ghost" type="button" data-admin-range="28d">28 ng&#224;y</button>
+                  <button class="btn ghost" type="button" data-admin-range="1y">1 n&#259;m</button>
+                  <button class="btn ghost" type="button" data-admin-range="life">Lifetime</button>
+                </div>
+              </div>
+              <div class="admin-metric-grid admin-revenue-grid" style="margin-top: 8px;">
+                <div class="admin-metric">
+                  <span>Doanh thu</span>
+                  <strong id="admin-revenue-period-total">--</strong>
+                </div>
+                <div class="admin-metric">
+                  <span>Doanh thu admin (ph&#237; giao d&#7883;ch)</span>
+                  <strong id="admin-revenue-admin">--</strong>
+                </div>
+                <div class="admin-metric">
+                  <span>Doanh thu gian h&#224;ng admin</span>
+                  <strong id="admin-revenue-admin-store">--</strong>
+                </div>
+                <div class="admin-metric">
+                  <span>Ph&#237; b&#225;n h&#224;ng</span>
+                  <strong id="admin-revenue-fee">--</strong>
+                </div>
+                <div class="admin-metric">
+                  <span>Doanh thu job</span>
+                  <strong id="admin-revenue-job">--</strong>
+                </div>
+                <div class="admin-metric">
+                  <span>Ph&#237; giao d&#7883;ch nhi&#7879;m v&#7909;</span>
+                  <strong id="admin-revenue-job-fee">--</strong>
+                </div>
+              </div>
+              <div class="admin-chart-shell" style="margin-top: 14px;">
+                <div class="admin-chart-y" id="admin-chart-y"></div>
+                <div class="admin-chart-area">
+                  <div class="chart-wrap">
+                    <svg class="chart-svg" viewBox="0 0 600 240" preserveAspectRatio="none">
+                      <defs>
+                        <linearGradient id="chart-gradient" x1="0" x2="0" y1="0" y2="1">
+                          <stop offset="0%" stop-color="#8b7cff" stop-opacity="0.35" />
+                          <stop offset="100%" stop-color="#8b7cff" stop-opacity="0" />
+                        </linearGradient>
+                      </defs>
+                      <g class="chart-grid">
+                        <line x1="0" y1="40" x2="600" y2="40" />
+                        <line x1="0" y1="80" x2="600" y2="80" />
+                        <line x1="0" y1="120" x2="600" y2="120" />
+                        <line x1="0" y1="160" x2="600" y2="160" />
+                        <line x1="0" y1="200" x2="600" y2="200" />
+                      </g>
+                      <path id="admin-chart-area" class="chart-area" d=""></path>
+                      <path id="admin-chart-line" class="chart-line" d=""></path>
+                      <circle id="admin-chart-dot" class="chart-dot" r="4" cx="0" cy="0"></circle>
+                    </svg>
+                  </div>
+                  <div class="admin-chart-x" id="admin-chart-x"></div>
+                  <div class="admin-chart-axis-note" id="admin-chart-axis-note">Tr&#7909;c X: Gi&#7901;</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="seller-card">
+              <div class="chart-head">
+                <div>
+                  <h3>Ngu&#7891;n doanh thu</h3>
+                  <p class="hero-sub">Theo d&#245;i ngu&#7891;n ti&#7873;n theo gian h&#224;ng, job v&#224; giao d&#7883;ch.</p>
+                </div>
+              </div>
+              <div class="table-tools" style="margin-top: 12px;">
+                <div class="form-field">
+                  <label>T&#236;m ngu&#7891;n</label>
+                  <input id="admin-revenue-search" placeholder="Gian h&#224;ng, job, giao d&#7883;ch" />
+                </div>
+                <div class="form-field">
+                  <label>Lo&#7841;i ngu&#7891;n</label>
+                  <select id="admin-revenue-type-filter">
+                    <option value="all">T&#7845;t c&#7843;</option>
+                    <option value="transaction_fee">Ph&#237; giao d&#7883;ch</option>
+                    <option value="admin_store">Doanh thu gian h&#224;ng admin</option>
+                    <option value="reseller">Ph&#237; b&#225;n h&#224;ng</option>
+                    <option value="service_fee">Ph&#237; nhi&#7879;m v&#7909;</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>S&#7855;p x&#7871;p</label>
+                  <select id="admin-revenue-sort">
+                    <option value="recent">M&#7899;i nh&#7845;t</option>
+                    <option value="total_high">T&#7893;ng cao</option>
+                    <option value="fee_high">Ph&#237; cao</option>
+                  </select>
+                </div>
+              </div>
+              <div class="seller-table-wrap" style="margin-top: 12px;">
+                <table class="seller-table">
+                  <thead>
+                    <tr>
+                      <th>Ngu&#7891;n</th>
+                      <th>Gian h&#224;ng</th>
+                      <th>Job</th>
+                      <th>Giao d&#7883;ch</th>
+                      <th>Ph&#237;</th>
+                      <th>T&#7893;ng</th>
+                      <th>%</th>
+                      <th>Ng&#224;y</th>
+                      <th>Thao t&#225;c</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-revenue-source-body"></tbody>
+                </table>
+              </div>
+              <div class="empty-state is-hidden" id="admin-revenue-source-empty">Ch&#432;a c&#243; d&#7919; li&#7879;u</div>
+              <div class="empty-state is-hidden" id="admin-revenue-source-error">Kh&#244;ng th&#7875; t&#7843;i d&#7919; li&#7879;u, vui l&#242;ng th&#7917; l&#7841;i</div>
+              <div class="table-pagination" id="admin-revenue-source-pagination"></div>
+            </div>
+
+            <div class="seller-card">
+              <div class="chart-head">
+                <div>
+                  <h3>S&#7889; d&#432; admin</h3>
+                  <p class="hero-sub">Minh b&#7841;ch d&#242;ng ti&#7873;n v&#224; l&#7883;ch s&#7917; r&#250;t.</p>
+                </div>
+              </div>
+              <div class="admin-metric-grid" style="margin-top: 12px;">
+                <div class="admin-metric">
+                  <span>S&#7889; d&#432; kh&#7843; d&#7909;ng</span>
+                  <strong id="admin-balance-available">--</strong>
+                </div>
+                <div class="admin-metric">
+                  <span>S&#7889; d&#432; ch&#7901;</span>
+                  <strong id="admin-balance-hold">--</strong>
+                </div>
+                <div class="admin-metric">
+                  <span>T&#7893;ng s&#7889; d&#432;</span>
+                  <strong id="admin-balance-total">--</strong>
+                </div>
+              </div>
+              <div class="table-tools" style="margin-top: 16px;">
+                <div class="form-field">
+                  <label>Tr&#7841;ng th&#225;i</label>
+                  <select id="admin-withdraw-status">
+                    <option value="all">T&#7845;t c&#7843;</option>
+                    <option value="success">Th&#224;nh c&#244;ng</option>
+                    <option value="processing">&#272;ang x&#7917; l&#253;</option>
+                    <option value="rejected">B&#7883; t&#7915; ch&#7889;i</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>T&#236;m giao d&#7883;ch</label>
+                  <input id="admin-withdraw-search" placeholder="M&#227; giao d&#7883;ch" />
+                </div>
+                <div class="form-field">
+                  <label>S&#7855;p x&#7871;p</label>
+                  <select id="admin-withdraw-sort">
+                    <option value="recent">M&#7899;i nh&#7845;t</option>
+                    <option value="amount_high">S&#7889; ti&#7873;n cao</option>
+                  </select>
+                </div>
+              </div>
+              <div class="seller-table-wrap" style="margin-top: 12px;">
+                <table class="seller-table">
+                  <thead>
+                    <tr>
+                      <th>M&#227; giao d&#7883;ch</th>
+                      <th>S&#7889; ti&#7873;n</th>
+                      <th>Tr&#7841;ng th&#225;i</th>
+                      <th>Ph&#432;&#417;ng th&#7913;c</th>
+                      <th>Ng&#224;y</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-withdrawal-body"></tbody>
+                </table>
+              </div>
+              <div class="empty-state is-hidden" id="admin-withdrawal-empty">Ch&#432;a c&#243; d&#7919; li&#7879;u</div>
+              <div class="empty-state is-hidden" id="admin-withdrawal-error">Kh&#244;ng th&#7875; t&#7843;i d&#7919; li&#7879;u, vui l&#242;ng th&#7917; l&#7841;i</div>
+              <div class="table-pagination" id="admin-withdrawal-pagination"></div>
+              <div class="chart-head" style="margin-top: 18px;">
+                <div>
+                  <h3>Chi ti&#7871;t ngu&#7891;n ti&#7873;n</h3>
+                  <p class="hero-sub">&#272;&#7889;i so&#225;t c&#225;c ngu&#7891;n ti&#7873;n v&#224;o qu&#7929; admin.</p>
+                </div>
+              </div>
+              <div class="table-tools" style="margin-top: 12px;">
+                <div class="form-field">
+                  <label>T&#236;m ngu&#7891;n</label>
+                  <input id="admin-balance-source-search" placeholder="Gian h&#224;ng, giao d&#7883;ch" />
+                </div>
+                <div class="form-field">
+                  <label>S&#7855;p x&#7871;p</label>
+                  <select id="admin-balance-source-sort">
+                    <option value="recent">M&#7899;i nh&#7845;t</option>
+                    <option value="total_high">T&#7893;ng cao</option>
+                  </select>
+                </div>
+              </div>
+              <div class="seller-table-wrap" style="margin-top: 12px;">
+                <table class="seller-table">
+                  <thead>
+                    <tr>
+                      <th>Ngu&#7891;n</th>
+                      <th>Gian h&#224;ng</th>
+                      <th>Giao d&#7883;ch</th>
+                      <th>Ph&#237;</th>
+                      <th>T&#7893;ng</th>
+                      <th>%</th>
+                      <th>Ng&#224;y</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-balance-source-body"></tbody>
+                </table>
+              </div>
+              <div class="empty-state is-hidden" id="admin-balance-source-empty">Ch&#432;a c&#243; d&#7919; li&#7879;u</div>
+              <div class="empty-state is-hidden" id="admin-balance-source-error">Kh&#244;ng th&#7875; t&#7843;i d&#7919; li&#7879;u, vui l&#242;ng th&#7917; l&#7841;i</div>
+              <div class="table-pagination" id="admin-balance-source-pagination"></div>
+            </div>
+          </section>
+
+                    <section class="seller-section" data-view="users">
+            <div class="seller-stat-grid">
+              <div class="seller-card">
+                <span class="seller-stat-label">T&#7893;ng user</span>
+                <div class="seller-stat-value" id="admin-users-total">--</div>
+                <span class="seller-stat-note">C&#7853;p nh&#7853;t g&#7847;n &#273;&#226;y</span>
+              </div>
+              <div class="seller-card">
+                <span class="seller-stat-label">&#272;ang online</span>
+                <div class="seller-stat-value" id="admin-users-online">--</div>
+                <span class="seller-stat-note">&#431;&#7899;c l&#432;&#7907;ng theo phi&#234;n</span>
+              </div>
+              <div class="seller-card">
+                <span class="seller-stat-label">Offline</span>
+                <div class="seller-stat-value" id="admin-users-offline">--</div>
+                <span class="seller-stat-note">C&#7853;p nh&#7853;t theo danh s&#225;ch</span>
+              </div>
+            </div>
+            <div class="seller-card">
+              <div class="chart-head">
+                <div>
+                  <h3>Ng&#432;&#7901;i d&#249;ng m&#7899;i</h3>
+                  <p class="hero-sub">Danh s&#225;ch t&#224;i kho&#7843;n v&#7915;a &#273;&#259;ng k&#253;.</p>
+                </div>
+                <button class="btn" id="admin-users-export" type="button">Xu&#7845;t danh s&#225;ch</button>
+              </div>
+              <div class="table-tools" style="margin-top: 12px;">
+                <div class="form-field">
+                  <label>T&#236;m user</label>
+                  <input id="admin-users-search" placeholder="Username ho&#7863;c email" />
+                </div>
+                <div class="form-field">
+                  <label>Tr&#7841;ng th&#225;i</label>
+                  <select id="admin-users-status-filter">
+                    <option value="all">T&#7845;t c&#7843;</option>
+                    <option value="active">Active</option>
+                    <option value="pending">Pending</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>S&#7855;p x&#7871;p</label>
+                  <select id="admin-users-sort">
+                    <option value="recent">M&#7899;i nh&#7845;t</option>
+                    <option value="name">Theo t&#234;n</option>
+                  </select>
+                </div>
+              </div>
+              <div class="seller-table-wrap" style="margin-top: 12px;">
+                <table class="seller-table">
+                  <thead>
+                    <tr>
+                      <th>Username</th>
+                      <th>Email</th>
+                      <th>Tr&#7841;ng th&#225;i</th>
+                      <th>Online</th>
+                      <th>Ng&#224;y t&#7841;o</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-users-body"></tbody>
+                </table>
+              </div>
+              <div class="empty-state is-hidden" id="admin-users-empty">Ch&#432;a c&#243; d&#7919; li&#7879;u</div>
+              <div class="empty-state is-hidden" id="admin-users-error">Kh&#244;ng th&#7875; t&#7843;i d&#7919; li&#7879;u, vui l&#242;ng th&#7917; l&#7841;i</div>
+              <div class="table-pagination" id="admin-users-pagination"></div>
+            </div>
+          </section>
+
+                    <section class="seller-section" data-view="shops">
+            <div class="seller-card">
+              <div class="chart-head">
+                <div>
+                  <h3>Duy&#7879;t gian h&#224;ng m&#7899;i</h3>
+                  <p class="hero-sub">C&#225;c gian h&#224;ng m&#7899;i &#273;ang ch&#7901; admin ph&#234; duy&#7879;t.</p>
+                </div>
+                <button class="btn primary" id="admin-store-bulk-approve" type="button">Ph&#234; duy&#7879;t h&#224;ng lo&#7841;t</button>
+              </div>
+              <div class="table-tools" style="margin-top: 12px;">
+                <div class="form-field">
+                  <label>T&#236;m gian h&#224;ng</label>
+                  <input id="admin-store-approve-search" placeholder="T&#234;n gian h&#224;ng ho&#7863;c seller" />
+                </div>
+                <div class="form-field">
+                  <label>S&#7855;p x&#7871;p</label>
+                  <select id="admin-store-approve-sort">
+                    <option value="recent">M&#7899;i nh&#7845;t</option>
+                    <option value="rating">&#272;&#225;nh gi&#225; cao</option>
+                  </select>
+                </div>
+              </div>
+              <div class="seller-table-wrap" style="margin-top: 12px;">
+                <table class="seller-table">
+                  <thead>
+                    <tr>
+                      <th>Gian h&#224;ng</th>
+                      <th>Ng&#432;&#7901;i b&#225;n</th>
+                      <th>Danh m&#7909;c</th>
+                      <th>Tr&#7841;ng th&#225;i</th>
+                      <th>Thao t&#225;c</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-store-approve-body"></tbody>
+                </table>
+              </div>
+              <div class="empty-state is-hidden" id="admin-store-approve-empty">Ch&#432;a c&#243; d&#7919; li&#7879;u</div>
+              <div class="empty-state is-hidden" id="admin-store-approve-error">Kh&#244;ng th&#7875; t&#7843;i d&#7919; li&#7879;u, vui l&#242;ng th&#7917; l&#7841;i</div>
+              <div class="table-pagination" id="admin-store-approve-pagination"></div>
+            </div>
+
+            <div class="seller-card">
+              <div class="chart-head">
+                <div>
+                  <h3>Y&#234;u c&#7847;u ch&#7881;nh s&#7917;a gian h&#224;ng</h3>
+                  <p class="hero-sub">So s&#225;nh thay &#273;&#7893;i tr&#432;&#7899;c khi duy&#7879;t.</p>
+                </div>
+              </div>
+              <div class="table-tools" style="margin-top: 12px;">
+                <div class="form-field">
+                  <label>T&#236;m gian h&#224;ng</label>
+                  <input id="admin-store-update-search" placeholder="T&#234;n gian h&#224;ng ho&#7863;c seller" />
+                </div>
+                <div class="form-field">
+                  <label>S&#7855;p x&#7871;p</label>
+                  <select id="admin-store-update-sort">
+                    <option value="recent">M&#7899;i nh&#7845;t</option>
+                    <option value="rating">&#272;&#225;nh gi&#225; cao</option>
+                  </select>
+                </div>
+              </div>
+              <div class="seller-table-wrap" style="margin-top: 12px;">
+                <table class="seller-table">
+                  <thead>
+                    <tr>
+                      <th>Gian h&#224;ng</th>
+                      <th>Ng&#432;&#7901;i b&#225;n</th>
+                      <th>Danh m&#7909;c</th>
+                      <th>Ng&#224;y g&#7917;i</th>
+                      <th>Thao t&#225;c</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-store-update-body"></tbody>
+                </table>
+              </div>
+              <div class="empty-state is-hidden" id="admin-store-update-empty">Ch&#432;a c&#243; d&#7919; li&#7879;u</div>
+              <div class="empty-state is-hidden" id="admin-store-update-error">Kh&#244;ng th&#7875; t&#7843;i d&#7919; li&#7879;u, vui l&#242;ng th&#7917; l&#7841;i</div>
+              <div class="table-pagination" id="admin-store-update-pagination"></div>
+            </div>
+
+            <div class="seller-card is-hidden" id="admin-store-diff-card">
+              <div class="chart-head">
+                <div>
+                  <h3 id="admin-store-diff-title">So s&#225;nh thay &#273;&#7893;i</h3>
+                  <p class="hero-sub">&#272;&#7889;i chi&#7871;u th&#244;ng tin tr&#432;&#7899;c v&#224; sau khi s&#7917;a.</p>
+                </div>
+                <button class="btn ghost" id="admin-store-diff-close" type="button">&#272;&#243;ng</button>
+              </div>
+              <div class="diff-grid" style="margin-top: 12px;">
+                <div class="diff-card">
+                  <strong>Hi&#7879;n t&#7841;i</strong>
+                  <div class="diff-item" id="admin-store-diff-old"></div>
+                </div>
+                <div class="diff-card">
+                  <strong>Thay &#273;&#7893;i &#273;&#7873; xu&#7845;t</strong>
+                  <div class="diff-item" id="admin-store-diff-new"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="seller-card">
+              <div class="chart-head">
+                <div>
+                  <h3>Ki&#7875;m tra kho h&#224;ng</h3>
+                  <p class="hero-sub">T&#236;m theo user, gian h&#224;ng ho&#7863;c s&#7843;n ph&#7849;m.</p>
+                </div>
+                <div class="seller-topbar-actions">
+                  <button class="btn ghost" id="admin-inventory-export-txt" type="button">Xu&#7845;t TXT</button>
+                  <button class="btn" id="admin-inventory-export-excel" type="button">Xu&#7845;t Excel</button>
+                </div>
+              </div>
+              <div class="table-tools" style="margin-top: 12px;">
+                <div class="form-field">
+                  <label>User</label>
+                  <input id="admin-inventory-user" placeholder="Username ho&#7863;c email" />
+                </div>
+                <div class="form-field">
+                  <label>Gian h&#224;ng</label>
+                  <select id="admin-inventory-store">
+                    <option value="all">T&#7845;t c&#7843;</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>S&#7843;n ph&#7849;m</label>
+                  <select id="admin-inventory-product">
+                    <option value="all">T&#7845;t c&#7843;</option>
+                  </select>
+                </div>
+                <button class="btn primary" id="admin-inventory-search-btn" type="button">Tra c&#7913;u kho</button>
+                <button class="btn ghost" id="admin-inventory-reset-btn" type="button">X&#243;a b&#7897; l&#7885;c</button>
+              </div>
+              <div class="seller-table-wrap" style="margin-top: 12px;">
+                <table class="seller-table">
+                  <thead>
+                    <tr>
+                      <th>S&#7843;n ph&#7849;m</th>
+                      <th>Gian h&#224;ng</th>
+                      <th>T&#7891;n kho</th>
+                      <th>C&#7853;p nh&#7853;t</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-inventory-body"></tbody>
+                </table>
+              </div>
+              <div class="empty-state is-hidden" id="admin-inventory-empty">Ch&#432;a c&#243; d&#7919; li&#7879;u</div>
+              <div class="empty-state is-hidden" id="admin-inventory-error">Kh&#244;ng th&#7875; t&#7843;i d&#7919; li&#7879;u, vui l&#242;ng th&#7917; l&#7841;i</div>
+              <div class="table-pagination" id="admin-inventory-pagination"></div>
+            </div>
+          </section>
+
+                    <section class="seller-section" data-view="orders">
+            <div class="seller-card">
+              <div class="chart-head">
+                <div>
+                  <h3>Giao d&#7883;ch ch&#7901; x&#7917; l&#253;</h3>
+                  <p class="hero-sub">Theo d&#245;i nhanh c&#225;c y&#234;u c&#7847;u n&#7841;p/chuy&#7875;n ti&#7873;n v&#224; giao d&#7883;ch ch&#7901;.</p>
+                </div>
+              </div>
+              <div class="admin-pending-list" style="margin-top: 12px;">
+                <div class="admin-pending-item">
+                  <div>
+                    <strong>&#272;&#417;n n&#7841;p/chuy&#7875;n ti&#7873;n ch&#7901;</strong>
+                    <div class="admin-pending-meta" id="admin-pending-topup">-- y&#234;u c&#7847;u</div>
+                  </div>
+                  <button class="btn sm" id="admin-view-topup" type="button">Xem</button>
+                </div>
+                <div class="admin-pending-item">
+                  <div>
+                    <strong>&#272;&#417;n r&#250;t ch&#7901; x&#7917; l&#253;</strong>
+                    <div class="admin-pending-meta" id="admin-pending-withdraw">-- y&#234;u c&#7847;u</div>
+                  </div>
+                  <button class="btn sm" id="admin-view-withdraw" type="button">Xem</button>
+                </div>
+                <div class="admin-pending-item">
+                  <div>
+                    <strong>&#272;&#417;n d&#7883;ch v&#7909; ch&#7901;</strong>
+                    <div class="admin-pending-meta" id="admin-pending-service">-- y&#234;u c&#7847;u</div>
+                  </div>
+                  <button class="btn sm" id="admin-view-service" type="button">Xem</button>
+                </div>
+              </div>
+            </div>
+            <div class="seller-card">
+              <div class="chart-head">
+                <div>
+                  <h3>Ki&#7875;m tra &#273;&#417;n h&#224;ng</h3>
+                  <p class="hero-sub">Nh&#7853;p ID &#273;&#417;n h&#224;ng &#273;&#7875; tra c&#7913;u nhanh.</p>
+                </div>
+              </div>
+              <div class="form-grid two-col" style="margin-top: 12px;">
+                <div class="form-field">
+                  <label>ID &#273;&#417;n h&#224;ng</label>
+                  <input id="admin-order-id" placeholder="VD: ORD-9XQK" />
+                </div>
+                <button class="btn primary admin-inline-btn" id="admin-order-check" type="button">Ki&#7875;m tra</button>
+              </div>
+              <div class="empty-state" id="admin-order-result" style="margin-top: 12px;">
+                Ch&#432;a c&#243; k&#7871;t qu&#7843; tra c&#7913;u.
+              </div>
+            </div>
+            <div class="seller-card">
+              <div class="chart-head">
+                <div>
+                  <h3>L&#7883;ch s&#7917; &#273;&#417;n h&#224;ng</h3>
+                  <p class="hero-sub">Theo d&#245;i l&#7883;ch s&#7917; &#273;&#417;n h&#224;ng to&#224;n h&#7879; th&#7889;ng.</p>
+                </div>
+                <button class="btn" id="admin-orders-export" type="button">Xu&#7845;t b&#225;o c&#225;o</button>
+              </div>
+              <div class="table-tools" style="margin-top: 12px;">
+                <div class="form-field">
+                  <label>T&#236;m &#273;&#417;n</label>
+                  <input id="admin-orders-search" placeholder="M&#227; &#273;&#417;n ho&#7863;c gian h&#224;ng" />
+                </div>
+                <div class="form-field">
+                  <label>Tr&#7841;ng th&#225;i</label>
+                  <select id="admin-orders-status">
+                    <option value="all">T&#7845;t c&#7843;</option>
+                    <option value="Paid">Paid</option>
+                    <option value="Pending">Pending</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>S&#7855;p x&#7871;p</label>
+                  <select id="admin-orders-sort">
+                    <option value="recent">M&#7899;i nh&#7845;t</option>
+                    <option value="total_high">T&#7893;ng cao</option>
+                  </select>
+                </div>
+              </div>
+              <div class="seller-table-wrap" style="margin-top: 12px;">
+                <table class="seller-table">
+                  <thead>
+                    <tr>
+                      <th>M&#227; &#273;&#417;n</th>
+                      <th>Gian h&#224;ng</th>
+                      <th>Ng&#432;&#7901;i mua</th>
+                      <th>T&#7893;ng</th>
+                      <th>Tr&#7841;ng th&#225;i</th>
+                      <th>Ng&#224;y</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-orders-body"></tbody>
+                </table>
+              </div>
+              <div class="empty-state is-hidden" id="admin-orders-empty">Ch&#432;a c&#243; d&#7919; li&#7879;u</div>
+              <div class="empty-state is-hidden" id="admin-orders-error">Kh&#244;ng th&#7875; t&#7843;i d&#7919; li&#7879;u, vui l&#242;ng th&#7917; l&#7841;i</div>
+              <div class="table-pagination" id="admin-orders-pagination"></div>
+            </div>
+          </section>
+
+                    <section class="seller-section" data-view="tickets">
+            <div class="seller-card">
+              <div class="chart-head">
+                <div>
+                  <h3>Khi&#7871;u n&#7841;i &amp; tranh ch&#7845;p</h3>
+                  <p class="hero-sub">Theo d&#245;i ticket v&#224; ph&#226;n lo&#7841;i m&#7913;c &#273;&#7897; &#432;u ti&#234;n.</p>
+                </div>
+                <button class="btn" id="admin-complaints-export" type="button">Xu&#7845;t danh s&#225;ch</button>
+              </div>
+              <div class="table-tools" style="margin-top: 12px;">
+                <div class="form-field">
+                  <label>T&#236;m ticket</label>
+                  <input id="admin-complaints-search" placeholder="M&#227; ticket ho&#7863;c user" />
+                </div>
+                <div class="form-field">
+                  <label>M&#7913;c &#273;&#7897;</label>
+                  <select id="admin-complaints-level">
+                    <option value="all">T&#7845;t c&#7843;</option>
+                    <option value="high">Kh&#7849;n</option>
+                    <option value="medium">Trung b&#236;nh</option>
+                    <option value="low">Th&#7845;p</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>Tr&#7841;ng th&#225;i</label>
+                  <select id="admin-complaints-status">
+                    <option value="all">T&#7845;t c&#7843;</option>
+                    <option value="open">&#272;ang x&#7917; l&#253;</option>
+                    <option value="pending">Ch&#7901; ph&#7843;n h&#7891;i</option>
+                    <option value="resolved">&#272;&#227; x&#7917; l&#253;</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>S&#7855;p x&#7871;p</label>
+                  <select id="admin-complaints-sort">
+                    <option value="recent">M&#7899;i nh&#7845;t</option>
+                    <option value="priority">&#431;u ti&#234;n</option>
+                  </select>
+                </div>
+              </div>
+              <div class="seller-table-wrap" style="margin-top: 12px;">
+                <table class="seller-table">
+                  <thead>
+                    <tr>
+                      <th>M&#227; ticket</th>
+                      <th>Kh&#225;ch h&#224;ng</th>
+                      <th>M&#7913;c &#273;&#7897;</th>
+                      <th>Tr&#7841;ng th&#225;i</th>
+                      <th>Ng&#224;y</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-complaints-body"></tbody>
+                </table>
+              </div>
+              <div class="empty-state is-hidden" id="admin-complaints-empty">Ch&#432;a c&#243; d&#7919; li&#7879;u</div>
+              <div class="empty-state is-hidden" id="admin-complaints-error">Kh&#244;ng th&#7875; t&#7843;i d&#7919; li&#7879;u, vui l&#242;ng th&#7917; l&#7841;i</div>
+              <div class="table-pagination" id="admin-complaints-pagination"></div>
+            </div>
+          </section>
+
+          <section class="seller-section" data-view="system">
+            <div class="seller-card">
+              <div class="chart-head">
+                <div>
+                  <h3>Ch&#7871; &#273;&#7897; b&#7843;o tr&#236;</h3>
+                  <p class="hero-sub">B&#7853;t l&#7899;p ph&#7911; b&#7843;o tr&#236; tr&#234;n to&#224;n b&#7897; trang web.</p>
+                </div>
+                <span class="admin-status-pill warn" id="admin-maintenance-pill">--</span>
+              </div>
+              <div class="admin-action-row" style="margin-top: 12px;">
+                <button class="btn primary" id="admin-maintenance-toggle" type="button">--</button>
+              </div>
+              <div class="form-grid two-col" style="margin-top: 12px;">
+                <div class="form-field" style="grid-column: 1 / -1;">
+                  <label>Th&#244;ng b&#225;o b&#7843;o tr&#236;</label>
+                  <textarea id="admin-maintenance-message" rows="3" placeholder="VD: H&#7879; th&#7889;ng &#273;ang n&#226;ng c&#7845;p, vui l&#242;ng quay l&#7841;i sau."></textarea>
+                </div>
+                <div class="form-field" style="grid-column: 1 / -1;">
+                  <label>Ph&#7841;m vi kh&#243;a</label>
+                  <div class="form-field inline">
+                    <label><input type="checkbox" data-maintenance-scope="home" /> Trang ch&#7911;</label>
+                  </div>
+                  <div class="form-field inline">
+                    <label><input type="checkbox" data-maintenance-scope="products" /> S&#7843;n ph&#7849;m</label>
+                  </div>
+                  <div class="form-field inline">
+                    <label><input type="checkbox" data-maintenance-scope="services" /> D&#7883;ch v&#7909;</label>
+                  </div>
+                  <div class="form-field inline">
+                    <label><input type="checkbox" data-maintenance-scope="tasks_market" /> Nhi&#7879;m v&#7909; marketplace</label>
+                  </div>
+                  <div class="form-field inline">
+                    <label><input type="checkbox" data-maintenance-scope="task_posting" /> &#272;&#259;ng b&#224;i nhi&#7879;m v&#7909;</label>
+                  </div>
+                  <div class="form-field inline">
+                    <label><input type="checkbox" data-maintenance-scope="seller_panel" /> Panel seller</label>
+                  </div>
+                  <div class="form-field inline">
+                    <label><input type="checkbox" data-maintenance-scope="profile" /> H&#7891; s&#417; / T&#224;i kho&#7843;n</label>
+                  </div>
+                  <div class="form-field inline">
+                    <label><input type="checkbox" data-maintenance-scope="checkout" /> Thanh to&#225;n</label>
+                  </div>
+                </div>
+                <button class="btn ghost" id="admin-maintenance-save" type="button" style="grid-column: 1 / -1;">L&#432;u c&#7845;u h&#236;nh</button>
+              </div>
+              <div class="admin-inline-meta" style="margin-top: 10px;">
+                <span id="admin-maintenance-mode">Ph&#7841;m vi: To&#224;n b&#7897; trang</span>
+                <span>B&#7887; tr&#7889;ng ph&#7841;m vi &#273;&#7875; kh&#243;a to&#224;n b&#7897; website.</span>
+              </div>
+            </div>
+          </section>
+
+                    <section class="seller-section" data-view="settings">
+            <div class="seller-card">
+              <h3>C&#224;i &#273;&#7863;t ph&#237; giao d&#7883;ch</h3>
+              <p class="hero-sub">Thi&#7871;t l&#7853;p m&#7913;c ph&#237; minh b&#7841;ch v&#224; d&#7877; theo d&#245;i.</p>
+              <div class="form-grid two-col" style="margin-top: 12px;">
+                <div class="form-field">
+                  <label>M&#7913;c ph&#237; m&#7863;c &#273;&#7883;nh (%)</label>
+                  <input id="admin-fee-default" type="number" step="0.1" />
+                </div>
+                <div class="form-field">
+                  <label>Ng&#432;&#7905;ng giao d&#7883;ch th&#7845;p (VND)</label>
+                  <input id="admin-fee-threshold" type="number" />
+                </div>
+                <div class="form-field">
+                  <label>Ph&#237; cho giao d&#7883;ch d&#432;&#7899;i ng&#432;&#7905;ng (%)</label>
+                  <select id="admin-fee-low-rate">
+                    <option value="1">1%</option>
+                    <option value="2">2%</option>
+                  </select>
+                </div>
+                <div class="form-field" style="grid-column: 1 / -1;">
+                  <label>Ghi ch&#250; &#225;p d&#7909;ng</label>
+                  <div class="form-hint">M&#7863;c &#273;&#7883;nh 5.5% cho t&#7845;t c&#7843; giao d&#7883;ch. &#272;&#417;n d&#432;&#7899;i ng&#432;&#7905;ng &#225;p d&#7909;ng m&#7913;c ri&#234;ng.</div>
+                </div>
+                <button class="btn primary" id="admin-fee-save" type="button" style="grid-column: 1 / -1;">L&#432;u c&#7845;u h&#236;nh</button>
+              </div>
+            </div>
+          </section>
+
+                    <section class="seller-section" data-view="admin-roles">
+            <div class="seller-card">
+              <div class="chart-head">
+                <div>
+                  <h3>Duy&#7879;t c&#7897;ng t&#225;c vi&#234;n</h3>
+                  <p class="hero-sub">Duy&#7879;t seller m&#7899;i v&#224; quy&#7873;n &#273;&#259;ng b&#224;i nhi&#7879;m v&#7909;.</p>
+                </div>
+                <button class="btn ghost" id="admin-approvals-reset" type="button">X&#243;a b&#7897; l&#7885;c</button>
+              </div>
+              <div class="table-tools" style="margin-top: 12px;">
+                <div class="form-field">
+                  <label>T&#236;m y&#234;u c&#7847;u</label>
+                  <input id="admin-approvals-search" placeholder="User ho&#7863;c email" />
+                </div>
+                <div class="form-field">
+                  <label>Lo&#7841;i</label>
+                  <select id="admin-approvals-type">
+                    <option value="all">T&#7845;t c&#7843;</option>
+                    <option value="seller">Seller m&#7899;i</option>
+                    <option value="task-post">Quy&#7873;n &#273;&#259;ng b&#224;i</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>Tr&#7841;ng th&#225;i</label>
+                  <select id="admin-approvals-status">
+                    <option value="all">T&#7845;t c&#7843;</option>
+                    <option value="pending">Ch&#7901; duy&#7879;t</option>
+                    <option value="approved">&#272;&#227; duy&#7879;t</option>
+                    <option value="rejected">T&#7915; ch&#7889;i</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>S&#7855;p x&#7871;p</label>
+                  <select id="admin-approvals-sort">
+                    <option value="recent">M&#7899;i nh&#7845;t</option>
+                    <option value="user">Theo user</option>
+                  </select>
+                </div>
+              </div>
+              <div class="seller-table-wrap" style="margin-top: 12px;">
+                <table class="seller-table">
+                  <thead>
+                    <tr>
+                      <th>Ng&#432;&#7901;i g&#7917;i</th>
+                      <th>Lo&#7841;i y&#234;u c&#7847;u</th>
+                      <th>Th&#244;ng tin g&#7917;i</th>
+                      <th>Tr&#7841;ng th&#225;i</th>
+                      <th>Ng&#224;y</th>
+                      <th>Thao t&#225;c</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-approvals-body"></tbody>
+                </table>
+              </div>
+              <div class="empty-state is-hidden" id="admin-approvals-empty">Ch&#432;a c&#243; d&#7919; li&#7879;u</div>
+              <div class="empty-state is-hidden" id="admin-approvals-error">Kh&#244;ng th&#7875; t&#7843;i d&#7919; li&#7879;u, vui l&#242;ng th&#7917; l&#7841;i</div>
+              <div class="table-pagination" id="admin-approvals-pagination"></div>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <div class="admin-modal" id="admin-modal" aria-hidden="true">
+      <div class="admin-modal-card">
+        <h3 id="admin-modal-title">X&#225;c nh&#7853;n thao t&#225;c</h3>
+        <p id="admin-modal-message"></p>
+        <div class="form-field is-hidden" id="admin-modal-field">
+          <label id="admin-modal-label">N&#7897;i dung</label>
+          <textarea id="admin-modal-input" rows="4"></textarea>
+        </div>
+        <div class="admin-modal-actions">
+          <button class="btn ghost" id="admin-modal-cancel" type="button">H&#7911;y</button>
+          <button class="btn primary" id="admin-modal-confirm" type="button">X&#225;c nh&#7853;n</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="../asset/render.js"></script>
+    <script src="../asset/panel-data.js"></script>
+    <script src="../asset/admin-panel.js"></script>
+  </body>
+</html>
+
+
+

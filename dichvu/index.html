@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>D&#7883;ch v&#7909; | polyflux.xyz</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="../android-chrome-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="../android-chrome-512x512.png" />
+    <link rel="manifest" href="../site.webmanifest" />
+    <link rel="icon" href="../favicon.ico" />
+    <meta name="description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta property="og:title" content="polyflux.xyz" />
+    <meta property="og:description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta property="og:image" content="../asset/logo-preview.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="vi_VN" />
+    <meta property="og:site_name" content="polyflux.xyz" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="polyflux.xyz" />
+    <meta name="twitter:description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta name="twitter:image" content="../asset/logo-preview.png" />
+<link rel="stylesheet" href="../asset/base.css" />
+  </head>
+  <body>
+    <video class="video-bg" autoplay muted loop playsinline>
+      <source src="../asset/bg-donut.mp4" type="video/mp4" />
+    </video>
+    <div class="video-overlay"></div>
+
+    <header class="wrap">
+      <nav class="nav glass">
+        <a href="/" class="brand" style="display: flex; align-items: center; gap: 12px; text-decoration: none;">
+          <img src="../asset/logo.png" alt="PolyFlux" />
+          <span>polyflux<b>.xyz</b></span>
+        </a>
+        <div class="nav-links">
+          <a href="/sanpham/" data-nav="sanpham">S&#7843;n Ph&#7849;m <span class="badge">HOT</span></a>
+          <a href="/dichvu/" data-nav="dichvu">D&#7883;ch V&#7909;</a>
+          <a href="/nhiemvu/" data-nav="nhiemvu">Nhi&#7879;m V&#7909;</a>
+          <a href="/profile/topups/" data-nav="topups">N&#7841;p ti&#7873;n</a>
+        </div>
+        <div class="nav-actions">
+                    <button class="btn balance-btn" data-balance type="button">0 VND</button>
+          <a class="btn login-btn" href="/login/">Login</a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="wrap">
+      <section class="section product-page">
+        <div class="category-tabs glass" id="service-tabs">
+          <button class="category-pill active" data-category="interaction" type="button" data-i18n-key="service.category.interaction">D&#7883;ch V&#7909; T&#432;&#417;ng T&#225;c</button>
+          <button class="category-pill" data-category="software" type="button" data-i18n-key="service.category.software">D&#7883;ch V&#7909; Ph&#7847;n M&#7873;m</button>
+          <button class="category-pill" data-category="blockchain" type="button" data-i18n-key="service.category.blockchain">Blockchain</button>
+          <button class="category-pill" data-category="other" type="button" data-i18n-key="service.category.other">D&#7883;ch V&#7909; Kh&#225;c</button>
+        </div>
+
+        <div class="product-layout">
+          <aside class="product-sidebar" id="filter-panel">
+            <div class="card filter-card">
+              <div class="filter-head">
+                <h3 data-i18n-key="filter.title">L&#7885;c</h3>
+                <p data-i18n-key="filter.descCategories">Ch&#7885;n 1 ho&#7863;c nhi&#7873;u danh m&#7909;c</p>
+              </div>
+              <div class="filter-list" id="filter-list"></div>
+              <div class="form-field" style="margin-top: 14px;">
+                <label for="filter-search" data-i18n-key="filter.searchLabel">T&#236;m ki&#7871;m</label>
+                <input id="filter-search" placeholder="Nh&#7853;p t&#234;n d&#7883;ch v&#7909;..." data-i18n-placeholder="filter.searchPlaceholder.service" />
+              </div>
+              <button class="btn primary" id="filter-apply" type="button" data-i18n-key="filter.apply">T&#236;m ki&#7871;m</button>
+            </div>
+          </aside>
+
+          <div class="product-main">
+            <div class="mobile-filter-bar">
+              <button class="btn filter-toggle" id="filter-toggle" type="button" aria-expanded="false" aria-controls="filter-panel">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 6h16l-5.5 6.2v4.9l-5 2.7v-7.6L4 6z" fill="currentColor" />
+                </svg>
+                <span data-i18n-key="filter.title">L&#7885;c</span>
+              </button>
+            </div>
+            <div class="product-head">
+              <div>
+                <h2 id="category-title">D&#7883;ch v&#7909; T&#432;&#417;ng t&#225;c</h2>
+                <p class="hero-sub" data-i18n-key="service.header.subtitle">S&#7855;p x&#7871;p theo nhu c&#7847;u v&#224; ch&#7885;n nhanh d&#7883;ch v&#7909; ph&#249; h&#7907;p.</p>
+              </div>
+              <div class="sort-tabs" role="tablist">
+                <button class="sort-pill active" data-sort="popular" type="button" data-i18n-key="sort.popular">Ph&#7893; bi&#7871;n</button>
+                <button class="sort-pill" data-sort="rating" type="button" data-i18n-key="sort.rating">&#272;&#225;nh gi&#225;</button>
+                <button class="sort-pill" data-sort="newest" type="button" data-i18n-key="sort.newest">M&#7899;i nh&#7845;t</button>
+              </div>
+            </div>
+
+            <div class="product-grid-luxe" id="service-list"></div>
+            <div class="table-pagination" id="service-pagination"></div>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        <div class="footer-grid">
+          <div>
+            <h4>About polyflux.xyz</h4>
+            <p>
+              The #1 trusted marketplace for digital assets on polyflux.xyz. Buy accounts, emails, tools and more with
+              instant delivery.
+            </p>
+          </div>
+          <div>
+            <h4>&#272;i&#7873;u h&#432;&#7899;ng</h4>
+            <p><a href="/sanpham/">S&#7843;n ph&#7849;m</a></p>
+            <p><a href="/dichvu/">D&#7883;ch v&#7909;</a></p>
+            <p><a href="/nhiemvu/">Nhi&#7879;m v&#7909; marketplace</a></p>
+            <p><a href="/profile/">T&#224;i kho&#7843;n c&#7911;a t&#244;i</a></p>
+          </div>
+          <div>
+            <h4>Thanh to&#225;n &amp; b&#7843;o m&#7853;t</h4>
+            <p>20+ ph&#432;&#417;ng th&#7913;c thanh to&#225;n, x&#7917; l&#253; t&#7921; &#273;&#7897;ng.</p>
+            <p>L&#7883;ch s&#7917; &#273;&#417;n h&#224;ng minh b&#7841;ch.</p>
+            <p>2FA &amp; c&#7843;nh b&#225;o &#273;&#259;ng nh&#7853;p kh&#7843; nghi.</p>
+          </div>
+          <div>
+            <h4>Tham gia b&#225;n h&#224;ng</h4>
+            <p>Mu&#7889;n m&#7903; gian h&#224;ng tr&#234;n polyflux.xyz?</p>
+            <a href="/seller/join/" class="btn primary" style="margin-top: 8px; display: inline-flex; align-items: center; gap: 6px;">
+              Tham gia b&#225;n h&#224;ng
+            </a>
+          </div>
+        </div>
+      </footer>
+    </main>
+
+    <nav class="mobile-nav">
+      <div class="mobile-nav-top">
+        <a href="/" class="mobile-brand" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+          <img src="../asset/logo.png" alt="PolyFlux" />
+          <span>polyflux<b>.xyz</b></span>
+        </a>
+        <div class="mobile-actions">
+                    <button class="btn balance-btn" data-balance type="button">0 VND</button>
+          <a class="btn login-btn" href="/login/">Login</a>
+        
+          <button class="menu-btn" id="mobile-menu" type="button" aria-label="Menu">
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="mobile-links">
+        <a href="/sanpham/" data-nav="sanpham">S&#7843;n Ph&#7849;m</a>
+        <a href="/dichvu/" data-nav="dichvu">D&#7883;ch V&#7909;</a>
+        <a href="/nhiemvu/" data-nav="nhiemvu">Nhi&#7879;m V&#7909;</a>
+        <a href="/profile/topups/" data-nav="topups">N&#7841;p ti&#7873;n</a>
+      </div>
+    </nav>
+
+    <script src="../asset/render.js"></script>
+    <script>
+      (async function init() {
+        const services = await loadJSON("../data/mock-services.json");
+        const sellers = await loadJSON("../data/mock-sellers.json");
+        const state = {
+          category: "interaction",
+          sort: "popular",
+          search: "",
+          subcategories: new Set(),
+        };
+        const getLanguage = () => (typeof getCurrentLanguage === "function" ? getCurrentLanguage() : "vi");
+        const translate = (key, fallback, vars) =>
+          typeof formatI18n === "function" ? formatI18n(getLanguage(), key, fallback, vars) : fallback || key;
+        const categoryKeys = {
+          interaction: "service.category.interaction",
+          software: "service.category.software",
+          blockchain: "service.category.blockchain",
+          other: "service.category.other",
+        };
+        const getCategoryLabel = (key) => {
+          const labelKey = categoryKeys[key];
+          return labelKey ? translate(labelKey, key) : key;
+        };
+        const categoryFallback = {
+          interaction: "TT",
+          software: "PM",
+          blockchain: "BC",
+          other: "KH",
+        };
+
+        const categoryMatchers = {
+          interaction: ["facebook", "tiktok", "google", "telegram", "shopee", "discord", "twitter", "youtube", "zalo", "instagram", "like", "comment", "share", "follow", "view", "tuong tac"],
+          software: ["tool", "software", "phan mem", "checker", "cong cu"],
+          blockchain: ["blockchain", "crypto", "coin", "token", "nft", "web3"],
+          other: [],
+        };
+
+        const filterOptions = {
+          interaction: [
+            { value: "Facebook", label: "D&#7883;ch v&#7909; Facebook", labelKey: "service.filter.facebook", typeKey: "service.type.facebook", typeLabel: "Facebook", match: ["facebook"] },
+            { value: "TikTok", label: "D&#7883;ch v&#7909; TikTok", labelKey: "service.filter.tiktok", typeKey: "service.type.tiktok", typeLabel: "TikTok", match: ["tiktok"] },
+            { value: "Google", label: "D&#7883;ch v&#7909; Google", labelKey: "service.filter.google", typeKey: "service.type.google", typeLabel: "Google", match: ["google"] },
+            { value: "Telegram", label: "D&#7883;ch v&#7909; Telegram", labelKey: "service.filter.telegram", typeKey: "service.type.telegram", typeLabel: "Telegram", match: ["telegram"] },
+            { value: "Shopee", label: "D&#7883;ch v&#7909; Shopee", labelKey: "service.filter.shopee", typeKey: "service.type.shopee", typeLabel: "Shopee", match: ["shopee"] },
+            { value: "Discord", label: "D&#7883;ch v&#7909; Discord", labelKey: "service.filter.discord", typeKey: "service.type.discord", typeLabel: "Discord", match: ["discord"] },
+            { value: "Twitter", label: "D&#7883;ch v&#7909; Twitter", labelKey: "service.filter.twitter", typeKey: "service.type.twitter", typeLabel: "Twitter", match: ["twitter"] },
+            { value: "YouTube", label: "D&#7883;ch v&#7909; YouTube", labelKey: "service.filter.youtube", typeKey: "service.type.youtube", typeLabel: "YouTube", match: ["youtube"] },
+            { value: "Zalo", label: "D&#7883;ch v&#7909; Zalo", labelKey: "service.filter.zalo", typeKey: "service.type.zalo", typeLabel: "Zalo", match: ["zalo"] },
+            { value: "Instagram", label: "D&#7883;ch v&#7909; Instagram", labelKey: "service.filter.instagram", typeKey: "service.type.instagram", typeLabel: "Instagram", match: ["instagram"] },
+            {
+              value: "OtherInteraction",
+              label: "D&#7883;ch v&#7909; T&#432;&#417;ng t&#225;c Kh&#225;c",
+              labelKey: "service.filter.otherInteraction",
+              typeKey: "service.type.otherInteraction",
+              typeLabel: "T&#432;&#417;ng t&#225;c kh&#225;c",
+              match: ["engagement", "tuong tac"],
+            },
+          ],
+          software: [
+            {
+              value: "CodingTool",
+              label: "D&#7883;ch v&#7909; L&#7853;p tr&#236;nh C&#244;ng c&#7909;",
+              labelKey: "service.filter.codingTool",
+              typeKey: "service.type.codingTool",
+              typeLabel: "L&#7853;p tr&#236;nh",
+              match: ["tool", "cong cu", "software"],
+            },
+            {
+              value: "Design",
+              label: "D&#7883;ch v&#7909; &#272;&#7891; h&#7885;a",
+              labelKey: "service.filter.design",
+              typeKey: "service.type.design",
+              typeLabel: "&#272;&#7891; h&#7885;a",
+              match: ["design", "do hoa"],
+            },
+            { value: "Video", label: "D&#7883;ch v&#7909; Video", labelKey: "service.filter.video", typeKey: "service.type.video", typeLabel: "Video", match: ["video"] },
+            {
+              value: "OtherTool",
+              label: "D&#7883;ch v&#7909; C&#244;ng c&#7909; Kh&#225;c",
+              labelKey: "service.filter.otherTool",
+              typeKey: "service.type.otherTool",
+              typeLabel: "C&#244;ng c&#7909; kh&#225;c",
+              match: ["khac", "other", "checker"],
+            },
+          ],
+          blockchain: [],
+          other: [],
+        };
+
+        const filterMatchers = new Map();
+        Object.keys(filterOptions).forEach((key) => {
+          filterOptions[key].forEach((option) => {
+            filterMatchers.set(option.value, option.match || [option.value]);
+          });
+        });
+
+        const getServiceText = (service) => {
+          const name = service && service.name ? service.name : "";
+          const short = service && service.short ? service.short : "";
+          return `${name} ${short}`.toLowerCase();
+        };
+
+        const matchKeywords = (text, keywords) => {
+          if (!keywords || !keywords.length) return false;
+          return keywords.some((keyword) => text.includes(String(keyword).toLowerCase()));
+        };
+
+        const getServiceCategory = (service) => {
+          const text = getServiceText(service);
+          const order = ["interaction", "software", "blockchain"]; 
+          for (const key of order) {
+            if (matchKeywords(text, categoryMatchers[key] || [])) return key;
+          }
+          return "other";
+        };
+
+        const getServiceDetailPath = (serviceId) => {
+          const root = getProjectRoot();
+          const isFile = window.location.protocol === "file:";
+          const base = isFile ? "dichvu/[id]/index.html" : "dichvu/[id]/";
+          const suffix = serviceId ? `?id=${encodeURIComponent(serviceId)}` : "";
+          return root + base + suffix;
+        };
+
+        const renderSellerBadge = (seller) => {
+          if (!seller || !seller.badge) return "";
+          const raw = String(seller.badge || "").trim().toUpperCase();
+          if (!raw) return "";
+          if (raw === "ADMIN") {
+            return `<span class="seller-badge admin">${translate("seller.badge.admin", "Admin")}</span>`;
+          }
+          if (raw === "VERIFIED") {
+            return `<span class="seller-badge verified">${translate("seller.badge.verified")}</span>`;
+          }
+          if (raw.startsWith("MERCHANT-")) {
+            const tier = raw.replace("MERCHANT-", "");
+            const tierClass = tier.toLowerCase();
+            const label = translate("seller.badge.merchant", undefined, { tier });
+            return `<span class="seller-badge merchant merchant-${tierClass}">${label}</span>`;
+          }
+          return "";
+        };
+
+        const categoryTitle = document.getElementById("category-title");
+        const filterList = document.getElementById("filter-list");
+        const search = document.getElementById("filter-search");
+        const applyBtn = document.getElementById("filter-apply");
+        const filterPanel = document.getElementById("filter-panel");
+        const filterToggle = document.getElementById("filter-toggle");
+        const pagination = document.getElementById("service-pagination");
+        const PAGE_SIZE = 10;
+        const PAGE_WINDOW = 5;
+        let currentPage = 1;
+        let pageWindowStart = 1;
+        let currentItems = [];
+        let totalPages = 1;
+
+        const setFilterOpen = (open) => {
+          if (!filterPanel || !filterToggle) return;
+          filterPanel.classList.toggle("open", open);
+          filterToggle.setAttribute("aria-expanded", open ? "true" : "false");
+        };
+
+        const renderSubcategories = () => {
+          if (!filterList) return;
+          const options = filterOptions[state.category] || [];
+          if (!options.length) {
+            filterList.innerHTML = "";
+            return;
+          }
+
+          const servicesInCategory = services.filter((service) => getServiceCategory(service) === state.category);
+          const counted = options.map((option) => {
+            const matches = option.match || [option.value];
+            const count = servicesInCategory.filter((service) => matchKeywords(getServiceText(service), matches)).length;
+            return { ...option, count };
+          });
+
+          filterList.innerHTML = counted
+            .map((option) => {
+              const checked = state.subcategories.has(option.value) ? "checked" : "";
+              const label = option.labelKey ? translate(option.labelKey, option.label) : option.label;
+              return `
+                <label class="filter-item">
+                  <input type="checkbox" value="${option.value}" ${checked} />
+                  <span>${label}</span>
+                  <em>(${option.count})</em>
+                </label>
+              `;
+            })
+            .join("");
+        };
+
+        const deriveMeta = (service) => {
+          const id = service && service.id ? service.id : "service";
+          const seed = id.split("").reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+          const stock = 10 + (seed % 80);
+          const sold = 20 + (seed % 320);
+          const rating = (4 + (seed % 10) / 10).toFixed(1);
+          return { stock, sold, rating };
+        };
+
+        const resolveTypeLabel = (service) => {
+          const text = getServiceText(service);
+          const options = filterOptions[state.category] || [];
+          for (const option of options) {
+            if (matchKeywords(text, option.match || [option.value])) {
+              if (option.typeKey) return translate(option.typeKey, option.typeLabel || option.label);
+              return option.typeLabel || option.label;
+            }
+          }
+          return getCategoryLabel(state.category) || "--";
+        };
+
+        const renderPagination = (total) => {
+          if (!pagination) return;
+          pagination.innerHTML = "";
+          if (total <= 1) return;
+
+          const windowEnd = Math.min(pageWindowStart + PAGE_WINDOW - 1, total);
+          const fragment = document.createDocumentFragment();
+
+          for (let page = pageWindowStart; page <= windowEnd; page += 1) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = page === currentPage ? "btn primary" : "btn ghost";
+            btn.textContent = String(page);
+            btn.dataset.page = String(page);
+            fragment.appendChild(btn);
+          }
+
+          if (total > PAGE_WINDOW) {
+            const nextBtn = document.createElement("button");
+            nextBtn.type = "button";
+            nextBtn.className = "btn ghost";
+            nextBtn.textContent = "+";
+            nextBtn.dataset.pageWindow = "next";
+            fragment.appendChild(nextBtn);
+          }
+
+          pagination.appendChild(fragment);
+        };
+
+        const renderServiceGrid = () => {
+          const grid = document.getElementById("service-list");
+          if (!grid) return;
+
+          const seller = sellers && sellers.length ? sellers[0] : null;
+          let list = Array.isArray(currentItems) ? currentItems.slice() : [];
+
+          if (state.sort === "rating") {
+            list.sort((a, b) => {
+              const ra = parseFloat(deriveMeta(a).rating) || 0;
+              const rb = parseFloat(deriveMeta(b).rating) || 0;
+              return rb - ra;
+            });
+          } else if (state.sort === "newest") {
+            list.sort((a, b) => String(b.id || "").localeCompare(String(a.id || "")));
+          } else {
+            list.sort((a, b) => (b.price || 0) - (a.price || 0));
+          }
+
+          if (!list.length) {
+            grid.innerHTML = `
+              <div class="card empty-state product-empty" style="grid-column: 1 / -1;">
+                <strong>${translate("empty.noData")}</strong>
+                <div style="margin-top:4px;">${translate("empty.adjustCategory")}</div>
+              </div>
+            `;
+            if (pagination) pagination.innerHTML = "";
+            return;
+          }
+
+          totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+          if (currentPage > totalPages) currentPage = totalPages;
+          const start = (currentPage - 1) * PAGE_SIZE;
+          const pageItems = list.slice(start, start + PAGE_SIZE);
+
+          grid.innerHTML = pageItems
+            .map((service) => {
+              const meta = deriveMeta(service);
+              const sellerName = seller ? seller.name : "PolyFlux Official";
+              const sellerBadge = renderSellerBadge(seller);
+              const typeLabel = resolveTypeLabel(service);
+              const fallbackLabel = categoryFallback[getServiceCategory(service)] || "DV";
+              const media = service.image
+                ? `<img src="${service.image}" alt="${service.name}" loading="lazy" />`
+                : `<div class="product-fallback">${fallbackLabel}</div>`;
+              const priceLabel = formatPriceRange({ price: service.price, priceMax: service.priceMax });
+              const priceAttrs =
+                typeof service.priceMax === "number" && service.priceMax > service.price
+                  ? `data-base-min="${service.price}" data-base-max="${service.priceMax}" data-base-currency="VND"`
+                  : `data-base-amount="${service.price}" data-base-currency="VND"`;
+
+              return `
+                <a class="product-card" href="${getServiceDetailPath(service.id)}">
+                  <div class="product-media">${media}</div>
+                  <div class="product-body">
+                    <div class="product-price" ${priceAttrs}>${priceLabel}</div>
+                    <h3 class="product-title">${service.name || translate("service.defaultName")}</h3>
+                    <div class="product-meta">
+                      <div class="meta-col">
+                        <span>${translate("label.stock")}: <strong>${meta.stock}</strong></span>
+                        <span>${translate("label.sold")}: <strong>${meta.sold}</strong></span>
+                        <span>${translate("label.rating")}: <strong>${meta.rating}</strong></span>
+                      </div>
+                      <div class="meta-col meta-right">
+                        <span class="seller-line"><span class="seller-label">${translate("label.seller")}:</span><span class="seller-value"><strong class="seller-name">${sellerName}</strong>${sellerBadge}</span></span>
+                      </div>
+                    </div>
+                    ${typeLabel ? `<div class="product-type">${translate("label.type")}: <strong>${typeLabel}</strong></div>` : ""}
+                    <p class="product-desc">${service.short || ""}</p>
+                  </div>
+                </a>
+              `;
+            })
+            .join("");
+          if (window.BKCurrency && typeof window.BKCurrency.applyToDom === "function") {
+            window.BKCurrency.applyToDom(grid);
+          }
+          renderPagination(totalPages);
+        };
+
+        const apply = () => {
+          const filtered = services.filter((service) => {
+            if (getServiceCategory(service) !== state.category) return false;
+            if (state.subcategories.size) {
+              const text = getServiceText(service);
+              let matched = false;
+              state.subcategories.forEach((value) => {
+                const matches = filterMatchers.get(value) || [value];
+                if (matchKeywords(text, matches)) matched = true;
+              });
+              if (!matched) return false;
+            }
+            if (state.search && !getServiceText(service).includes(state.search.toLowerCase())) return false;
+            return true;
+          });
+
+          currentItems = filtered;
+          currentPage = 1;
+          pageWindowStart = 1;
+          renderServiceGrid();
+        };
+
+        const setCategory = (key) => {
+          state.category = key;
+          state.subcategories = new Set();
+          if (categoryTitle) {
+            const labelKey = categoryKeys[key];
+            categoryTitle.textContent = labelKey ? translate(labelKey, "Service") : "Service";
+            if (labelKey) categoryTitle.dataset.i18nKey = labelKey;
+          }
+          document.querySelectorAll(".category-pill").forEach((btn) => {
+            btn.classList.toggle("active", btn.dataset.category === key);
+          });
+          renderSubcategories();
+          apply();
+        };
+
+        document.querySelectorAll(".category-pill").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const key = btn.dataset.category;
+            if (!key || key === state.category) return;
+            setCategory(key);
+          });
+        });
+
+        document.querySelectorAll(".sort-pill").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const key = btn.dataset.sort;
+            if (!key || key === state.sort) return;
+            state.sort = key;
+            document.querySelectorAll(".sort-pill").forEach((el) => el.classList.toggle("active", el === btn));
+            apply();
+          });
+        });
+
+        if (filterList) {
+          filterList.addEventListener("change", (event) => {
+            const target = event.target;
+            if (!target || target.tagName !== "INPUT") return;
+            const value = target.value;
+            if (target.checked) {
+              state.subcategories.add(value);
+            } else {
+              state.subcategories.delete(value);
+            }
+            apply();
+          });
+        }
+
+        if (search) {
+          search.addEventListener("input", () => {
+            state.search = search.value.trim();
+            apply();
+          });
+        }
+
+        if (applyBtn) {
+          applyBtn.addEventListener("click", () => {
+            apply();
+            setFilterOpen(false);
+          });
+        }
+
+        if (filterPanel && filterToggle) {
+          const filterCard = filterPanel.querySelector(".filter-card");
+          filterToggle.addEventListener("click", () => {
+            setFilterOpen(!filterPanel.classList.contains("open"));
+          });
+          filterPanel.addEventListener("click", (event) => {
+            if (event.target === filterPanel) setFilterOpen(false);
+          });
+          if (filterCard) {
+            filterCard.addEventListener("click", (event) => {
+              event.stopPropagation();
+            });
+          }
+        }
+
+        if (pagination) {
+          pagination.addEventListener("click", (event) => {
+            const button = event.target.closest("button");
+            if (!button) return;
+            if (button.dataset.page) {
+              currentPage = Number(button.dataset.page);
+              renderServiceGrid();
+              const grid = document.getElementById("service-list");
+              if (grid) grid.scrollIntoView({ behavior: "smooth", block: "start" });
+              return;
+            }
+            if (button.dataset.pageWindow === "next") {
+              const nextStart = pageWindowStart + PAGE_WINDOW;
+              pageWindowStart = nextStart > totalPages ? 1 : nextStart;
+              currentPage = pageWindowStart;
+              renderServiceGrid();
+              const grid = document.getElementById("service-list");
+              if (grid) grid.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+          });
+        }
+
+        setCategory(state.category);
+
+        const syncI18n = () => {
+          const labelKey = categoryKeys[state.category];
+          if (categoryTitle && labelKey) {
+            categoryTitle.textContent = translate(labelKey);
+            categoryTitle.dataset.i18nKey = labelKey;
+          }
+          renderSubcategories();
+          renderServiceGrid();
+        };
+
+        document.addEventListener("bk:i18n", syncI18n);
+      })();
+    </script>
+  </body>
+</html>
+
+
+
+

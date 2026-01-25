@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Nhi&#7879;m v&#7909; | polyflux.xyz</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="../android-chrome-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="../android-chrome-512x512.png" />
+    <link rel="manifest" href="../site.webmanifest" />
+    <link rel="icon" href="../favicon.ico" />
+    <meta name="description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta property="og:title" content="polyflux.xyz" />
+    <meta property="og:description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta property="og:image" content="../asset/logo-preview.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="vi_VN" />
+    <meta property="og:site_name" content="polyflux.xyz" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="polyflux.xyz" />
+    <meta name="twitter:description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta name="twitter:image" content="../asset/logo-preview.png" />
+<link rel="stylesheet" href="../asset/base.css" />
+  </head>
+  <body>
+    <video class="video-bg" autoplay muted loop playsinline>
+      <source src="../asset/bg-donut.mp4" type="video/mp4" />
+    </video>
+    <div class="video-overlay"></div>
+
+    <header class="wrap">
+      <nav class="nav glass">
+        <a href="/" class="brand" style="display: flex; align-items: center; gap: 12px; text-decoration: none;">
+          <img src="../asset/logo.png" alt="PolyFlux" />
+          <span>polyflux<b>.xyz</b></span>
+        </a>
+        <div class="nav-links">
+          <a href="/sanpham/" data-nav="sanpham">S&#7843;n Ph&#7849;m <span class="badge">HOT</span></a>
+          <a href="/dichvu/" data-nav="dichvu">D&#7883;ch V&#7909;</a>
+          <a href="/nhiemvu/" data-nav="nhiemvu">Nhi&#7879;m V&#7909;</a>
+          <a href="/profile/topups/" data-nav="topups">N&#7841;p ti&#7873;n</a>
+        </div>
+        <div class="nav-actions">
+                    <button class="btn balance-btn" data-balance type="button">0 VND</button>
+          <a class="btn login-btn" href="/login/">Login</a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="wrap">
+      <section class="section">
+        <div class="section-title">
+          <h2 data-i18n-key="task.board.title">B&#7843;ng &#273;&#259;ng b&#224;i nhi&#7879;m v&#7909;</h2>
+          <p data-i18n-key="task.board.subtitle">Ng&#432;&#7901;i d&#249;ng &#273;&#259;ng y&#234;u c&#7847;u, ng&#432;&#7901;i kh&#225;c c&#243; th&#7875; nh&#7853;n nhi&#7879;m v&#7909; v&#224; li&#234;n h&#7879; tr&#7921;c ti&#7871;p.</p>
+        </div>
+
+        <div class="task-board" id="task-list"></div>
+        <div class="task-pagination" id="task-pagination"></div>
+
+      </section>
+
+      <footer>
+        <div class="footer-grid">
+          <div>
+            <h4>About polyflux.xyz</h4>
+            <p>
+              The #1 trusted marketplace for digital assets on polyflux.xyz. Buy accounts, emails, tools and more with
+              instant delivery.
+            </p>
+          </div>
+          <div>
+            <h4>&#272;i&#7873;u h&#432;&#7899;ng</h4>
+            <p><a href="/sanpham/">S&#7843;n ph&#7849;m</a></p>
+            <p><a href="/dichvu/">D&#7883;ch v&#7909;</a></p>
+            <p><a href="/nhiemvu/">Nhi&#7879;m v&#7909;</a></p>
+            <p><a href="/profile/">T&#224;i kho&#7843;n c&#7911;a t&#244;i</a></p>
+          </div>
+          <div>
+            <h4>Thanh to&#225;n &amp; b&#7843;o m&#7853;t</h4>
+            <p>20+ ph&#432;&#417;ng th&#7913;c thanh to&#225;n, x&#7917; l&#253; t&#7921; &#273;&#7897;ng.</p>
+            <p>L&#7883;ch s&#7917; &#273;&#417;n h&#224;ng minh b&#7841;ch.</p>
+            <p>2FA &amp; c&#7843;nh b&#225;o &#273;&#259;ng nh&#7853;p kh&#7843; nghi.</p>
+          </div>
+          <div>
+            <h4 data-task-cta-title>Xin quy&#7873;n &#273;&#259;ng b&#224;i</h4>
+            <p data-task-cta-desc>B&#7841;n mu&#7889;n xin quy&#7873;n &#273;&#259;ng b&#224;i nhi&#7879;m v&#7909;?</p>
+            <a
+              href="/nhiemvu/tao/"
+              class="btn primary"
+              data-task-cta
+              style="margin-top: 8px; display: inline-flex; align-items: center; gap: 6px;"
+            >
+              Xin quy&#7873;n &#273;&#259;ng b&#224;i
+            </a>
+          </div>
+        </div>
+      </footer>
+    </main>
+
+    <nav class="mobile-nav">
+      <div class="mobile-nav-top">
+        <a href="/" class="mobile-brand" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+          <img src="../asset/logo.png" alt="PolyFlux" />
+          <span>polyflux<b>.xyz</b></span>
+        </a>
+        <div class="mobile-actions">
+                    <button class="btn balance-btn" data-balance type="button">0 VND</button>
+          <a class="btn login-btn" href="/login/">Login</a>
+        
+          <button class="menu-btn" id="mobile-menu" type="button" aria-label="Menu">
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="mobile-links">
+        <a href="/sanpham/" data-nav="sanpham">S&#7843;n Ph&#7849;m</a>
+        <a href="/dichvu/" data-nav="dichvu">D&#7883;ch V&#7909;</a>
+        <a href="/nhiemvu/" data-nav="nhiemvu">Nhi&#7879;m V&#7909;</a>
+        <a href="/profile/topups/" data-nav="topups">N&#7841;p ti&#7873;n</a>
+      </div>
+    </nav>
+
+    <div class="modal-backdrop" id="task-confirm" aria-hidden="true">
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="task-confirm-title">
+        <h3 id="task-confirm-title">X&#225;c nh&#7853;n nh&#7853;n nhi&#7879;m v&#7909;</h3>
+        <p id="task-confirm-text" data-i18n-key="task.modal.text">B&#7841;n c&#243; ch&#7855;c ch&#7855;n nh&#7853;n nhi&#7879;m v&#7909; n&#224;y kh&#244;ng?</p>
+        <div class="modal-actions">
+          <button class="btn ghost" type="button" id="task-confirm-cancel" data-i18n-key="task.modal.cancel">H&#7911;y</button>
+          <button class="btn primary" type="button" id="task-confirm-ok" data-i18n-key="task.modal.confirm">X&#225;c nh&#7853;n</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="../asset/render.js"></script>
+    <script>
+      (async function init() {
+        const tasks = await loadJSON("../data/mock-tasks.json");
+        const list = document.getElementById("task-list");
+        const confirmModal = document.getElementById("task-confirm");
+        const confirmTitle = document.getElementById("task-confirm-title");
+        const confirmText = document.getElementById("task-confirm-text");
+        const confirmOk = document.getElementById("task-confirm-ok");
+        const confirmCancel = document.getElementById("task-confirm-cancel");
+        if (!list) return;
+        const getLanguage = () => (typeof getCurrentLanguage === "function" ? getCurrentLanguage() : "vi");
+        const translate = (key, fallback, vars) =>
+          typeof formatI18n === "function" ? formatI18n(getLanguage(), key, fallback, vars) : fallback || key;
+        const auth = window.BKAuth ? window.BKAuth.read() : { loggedIn: false };
+        const currentUserId = window.BKTasks ? window.BKTasks.getUserId(auth) : "";
+        const currentUserName = window.BKTasks ? window.BKTasks.getUserName(auth, "BKUser") : "BKUser";
+        const reviewWindowMs = window.BKTasks ? window.BKTasks.reviewWindowMs : 30 * 60 * 1000;
+
+        const readLocalTasks = () => {
+          try {
+            const raw = localStorage.getItem("bk_task_manage_list");
+            if (!raw) return [];
+            const parsed = JSON.parse(raw);
+            if (!Array.isArray(parsed)) return [];
+            return parsed.map((task) => ({
+              ...task,
+              id: task.id || `task-${Date.now()}`,
+              title: task.title || "Nhiem vu",
+              short: task.short || "",
+              reward: Number(task.reward || 0),
+              quantity: Number(task.quantity || 1),
+              createdAt: task.createdAt || "",
+              deadline: task.deadline || "",
+              ownerId: task.ownerId || "",
+              ownerName: task.ownerName || "",
+            }));
+          } catch (e) {
+            return [];
+          }
+        };
+
+        const baseTasks = ([]).concat(Array.isArray(tasks) ? tasks : [], readLocalTasks());
+
+        if (!baseTasks.length) {
+          list.innerHTML = `
+            <div class="card empty-state">
+              <strong>${translate("task.empty.title")}</strong>
+              <div style="margin-top:4px;">${translate("task.empty.desc")}</div>
+            </div>
+          `;
+          return;
+        }
+
+        const names = ["proxier", "minhduc", "trongdat", "kimanh", "hoanglong", "anamax1991"];
+        const ranks = ["Newbie", "Member", "Hero"];
+        const TASKS_PER_PAGE = 15;
+
+        const getSeed = (value) => {
+          const raw = String(value || "task");
+          return raw.split("").reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+        };
+
+        const parseDate = (value) => {
+          if (!value) return null;
+          const parsed = new Date(value);
+          return Number.isNaN(parsed.getTime()) ? null : parsed;
+        };
+
+        const addDays = (date, days) => {
+          const next = new Date(date);
+          next.setDate(next.getDate() + days);
+          return next;
+        };
+
+        const formatDate = (date) => {
+          const dd = String(date.getDate()).padStart(2, "0");
+          const mm = String(date.getMonth() + 1).padStart(2, "0");
+          return `${dd}/${mm}/${date.getFullYear()}`;
+        };
+
+        const notify = (message) => {
+          if (window.BKAuth && window.BKAuth.showToast) {
+            window.BKAuth.showToast(message);
+            return;
+          }
+          window.alert(message);
+        };
+        const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
+
+        const decodeEntities = (() => {
+          const textarea = document.createElement("textarea");
+          return (value) => {
+            if (value == null) return "";
+            textarea.innerHTML = String(value);
+            return textarea.value;
+          };
+        })();
+
+        let assignments = window.BKTasks ? window.BKTasks.syncAssignments(window.BKTasks.readAssignments()) : [];
+        const proofOpen = new Map();
+        let taskState = [];
+
+        const saveAssignments = () => {
+          if (window.BKTasks) window.BKTasks.writeAssignments(assignments);
+        };
+
+        const getAssignmentForUser = (taskKey) =>
+          assignments.find((item) => item && item.taskKey === taskKey && item.assigneeId === currentUserId && item.status !== "expired");
+
+        const getClaimCount = (taskKey) =>
+          assignments.filter((item) => item && item.taskKey === taskKey && item.status !== "expired").length;
+
+        const buildTaskState = () => {
+          assignments = window.BKTasks ? window.BKTasks.syncAssignments(window.BKTasks.readAssignments()) : assignments;
+          return baseTasks.map((task, index) => {
+            const seed = getSeed(task.id || task.title || index);
+            const createdAt = parseDate(task.createdAt) || new Date(2026, 0, 1 + (seed % 28));
+            const expiresAt = parseDate(task.deadline) || parseDate(task.expiresAt) || addDays(createdAt, 7);
+            const rawSlots = Number(task.quantity ?? task.slots ?? 1);
+            const quantity = Number.isFinite(rawSlots) && rawSlots > 0 ? Math.floor(rawSlots) : 1;
+            const key = String(task.id || `${seed}-${index}`);
+            const statusText = String(task.status || "\u0110ang m\u1edf");
+            const lowerStatus = statusText.toLowerCase();
+            const isClosed = lowerStatus.includes("\u0111\u00f3ng");
+            const isPaused = lowerStatus.includes("t\u1ea1m") || lowerStatus.includes("d\u1eebng");
+            const isOpen = !isClosed && !isPaused;
+            const assignment = currentUserId ? getAssignmentForUser(key) : null;
+            const claims = getClaimCount(key);
+            const slots = Math.max(0, quantity - claims);
+            return {
+              ...task,
+              _key: key,
+              _seed: seed,
+              slots,
+              createdAt,
+              expiresAt,
+              assignment,
+              isOpen,
+              proofOpen: proofOpen.get(key) === true,
+            };
+          });
+        };
+
+        const pagination = document.getElementById("task-pagination");
+        let currentPage = 1;
+        let pendingTaskKey = null;
+
+        const closeConfirm = () => {
+          if (!confirmModal) return;
+          confirmModal.classList.remove("open");
+          document.body.classList.remove("modal-open");
+          pendingTaskKey = null;
+        };
+
+        const openConfirm = (task) => {
+          if (!confirmModal) return false;
+          if (confirmTitle) {
+            const rawTitle = task && task.title ? task.title : translate("task.title.default");
+            confirmTitle.textContent = decodeEntities(rawTitle);
+          }
+          if (confirmText) {
+            confirmText.textContent = translate("task.modal.text");
+          }
+          pendingTaskKey = task._key;
+          confirmModal.classList.add("open");
+          document.body.classList.add("modal-open");
+          return true;
+        };
+
+        if (confirmModal) {
+          confirmModal.addEventListener("click", (event) => {
+            if (event.target === confirmModal) closeConfirm();
+          });
+        }
+
+        if (confirmCancel) {
+          confirmCancel.addEventListener("click", () => closeConfirm());
+        }
+
+        if (confirmOk) {
+          confirmOk.addEventListener("click", () => {
+            if (!pendingTaskKey) {
+              closeConfirm();
+              return;
+            }
+            const task = taskState.find((item) => item._key === pendingTaskKey);
+            closeConfirm();
+            if (task) handleAccept(task);
+          });
+        }
+
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape") closeConfirm();
+        });
+
+        const renderPagination = (totalPages) => {
+          if (!pagination) return;
+          if (totalPages <= 1) {
+            pagination.innerHTML = `<span class="page-info">${translate("task.pagination.page", undefined, {
+              current: 1,
+              total: 1,
+            })}</span>`;
+            return;
+          }
+          const prevDisabled = currentPage <= 1 ? "disabled" : "";
+          const nextDisabled = currentPage >= totalPages ? "disabled" : "";
+          pagination.innerHTML = `
+            <button class="btn ghost" type="button" data-page="${currentPage - 1}" ${prevDisabled}>${translate("task.pagination.prev")}</button>
+            <span class="page-info">${translate("task.pagination.page", undefined, {
+              current: currentPage,
+              total: totalPages,
+            })}</span>
+            <button class="btn ghost" type="button" data-page="${currentPage + 1}" ${nextDisabled}>${translate("task.pagination.next")}</button>
+          `;
+        };
+
+        const renderPage = () => {
+          taskState = buildTaskState();
+          const visibleTasks = taskState.filter((task) => task.isOpen || task.assignment);
+          if (!visibleTasks.length) {
+            list.innerHTML = `
+              <div class="card empty-state">
+                <strong>${translate("task.empty.title")}</strong>
+                <div style="margin-top:4px;">${translate("task.empty.desc")}</div>
+              </div>
+            `;
+            if (pagination) pagination.innerHTML = "";
+            return;
+          }
+
+          const totalPages = Math.max(1, Math.ceil(visibleTasks.length / TASKS_PER_PAGE));
+          if (currentPage > totalPages) currentPage = totalPages;
+          const start = (currentPage - 1) * TASKS_PER_PAGE;
+          const pageTasks = visibleTasks.slice(start, start + TASKS_PER_PAGE);
+
+          list.innerHTML = pageTasks
+            .map((task, index) => {
+              const seed = task._seed ?? getSeed(task.id || task.title || index);
+              const userName = task.ownerName || task.owner || names[seed % names.length];
+              const userRank = ranks[seed % ranks.length];
+              const joined = new Date(2025, 11, 1 + (seed % 28));
+              const paid = seed % 2 === 0;
+              const budget = typeof task.reward === "number" ? task.reward : 0;
+              const statusTag = paid
+                ? `<span class="task-tag paid">${translate("task.status.paid")}</span>`
+                : `<span class="task-tag unpaid">${translate("task.status.unpaid")}</span>`;
+              const contact = task.contact || "https://t.me/DTPlatinum";
+              const slotCount = Math.max(0, task.slots || 0);
+              const expiresLabel = formatDate(task.expiresAt || new Date());
+              const assignment = task.assignment;
+              const assignmentStatus = assignment ? String(assignment.status || "") : "";
+              const acceptDisabled = !task.isOpen || assignment ? "disabled" : slotCount <= 0 ? "disabled" : "";
+              const acceptLabel = assignment ? translate("task.action.accepted") : translate("task.action.accept");
+              const canSubmit = assignment && (assignmentStatus === "accepted" || assignmentStatus === "redo");
+              const proofHidden = canSubmit && task.proofOpen ? "" : "hidden";
+              const completeLabel =
+                assignmentStatus === "redo"
+                  ? translate("task.action.resubmit", "N\u1ed9p l\u1ea1i b\u1eb1ng ch\u1ee9ng")
+                  : translate("task.action.complete");
+              let statusChip = "";
+              if (assignmentStatus === "submitted") {
+                statusChip = `<span class="badge-soft warn">${translate("task.status.review", "\u0110ang ch\u1edd duy\u1ec7t")}</span>`;
+              } else if (assignmentStatus === "approved" || assignmentStatus === "auto_approved") {
+                statusChip = `<span class="badge-soft good">${translate("task.status.done", "\u0110\u00e3 duy\u1ec7t")}</span>`;
+              } else if (assignmentStatus === "expired") {
+                statusChip = `<span class="badge-soft bad">${translate("task.status.expired", "H\u1ebft h\u1ea1n")}</span>`;
+              }
+
+              return `
+                <div class="task-card${assignment ? " is-accepted" : ""}" data-task-key="${task._key}">
+                  <div class="task-profile">
+                    <div class="task-avatar">
+                      <img src="../asset/avt-macdinh.jpg" alt="Avatar" loading="lazy" />
+                    </div>
+                    <div class="task-user">
+                      <strong>${userName}</strong>
+                      <span>${userRank}</span>
+                    </div>
+                    <div class="task-meta-list">
+                      <span>${translate("task.label.joined")}: <strong>${formatDate(joined)}</strong></span>
+                      <span>${translate("task.label.deposited")}: <strong data-base-amount="${budget}" data-base-currency="VND">${formatPrice(
+                budget
+              )}</strong></span>
+                      <span>${translate("task.label.quantity")}: <strong data-task-slots>${slotCount}</strong></span>
+                      <span>${translate("task.label.status")}: ${statusTag}</span>
+                      <span>${translate("task.label.expires")}: <strong>${expiresLabel}</strong></span>
+                    </div>
+                  </div>
+                  <div class="task-body">
+                    <div class="task-budget">${translate("task.label.budget")}: <span class="price" data-base-amount="${budget}" data-base-currency="VND">${formatPrice(
+                budget
+              )}</span></div>
+                    <h3>${task.title || translate("task.title.default")}</h3>
+                    <p class="task-desc">${task.short || translate("task.desc.empty")}</p>
+                    <div class="task-actions">
+                      <button class="btn primary" type="button" data-task-action="accept" data-requires-login ${acceptDisabled}>${acceptLabel}</button>
+                      ${
+                        canSubmit
+                          ? `<button class="btn ghost" type="button" data-task-action="complete" data-requires-login>${completeLabel}</button>`
+                          : statusChip
+                      }
+                      <a class="btn ghost" href="${contact}" target="_blank" rel="noreferrer">${translate("task.action.chat")}</a>
+                    </div>
+                    ${
+                      canSubmit
+                        ? `
+                          <div class="task-proof" data-task-proof ${proofHidden}>
+                            <div class="form-field">
+                              <label>${translate("task.label.proofImage")}</label>
+                              <input type="file" accept="image/*" data-task-file />
+                            </div>
+                            <div class="form-field">
+                              <label>${translate("task.label.proofLink")}</label>
+                              <input type="url" placeholder="${translate("task.placeholder.proofLink")}" data-task-link />
+                            </div>
+                            <div class="form-field">
+                              <label>${translate("task.label.note")}</label>
+                              <textarea rows="2" placeholder="${translate(
+                                "task.placeholder.note"
+                              )}" data-task-note></textarea>
+                            </div>
+                            <button class="btn primary" type="button" data-task-action="submit" data-requires-login>${translate(
+                              "task.action.submitProof"
+                            )}</button>
+                            <div class="empty-state">${translate("task.note.mock")}</div>
+                          </div>
+                        `
+                        : ""
+                    }
+                  </div>
+                </div>
+              `;
+            })
+            .join("");
+
+          if (window.BKCurrency && typeof window.BKCurrency.applyToDom === "function") {
+            window.BKCurrency.applyToDom(list);
+          }
+          if (typeof readAuthState === "function" && typeof applyLoginLocks === "function") {
+            applyLoginLocks(readAuthState());
+          }
+          renderPagination(totalPages);
+        };
+
+        const handleAccept = (task) => {
+          if (!currentUserId) return;
+          const existing = getAssignmentForUser(task._key);
+          if (existing) return;
+          if (!task.isOpen || task.slots <= 0) {
+            notify(translate("task.toast.fullSlots"));
+            renderPage();
+            return;
+          }
+          const now = Date.now();
+          const deadlineAt = task.expiresAt instanceof Date ? task.expiresAt.getTime() : parseDate(task.expiresAt)?.getTime() || now + 7 * 24 * 60 * 60 * 1000;
+          const assignment = {
+            id: `assign-${task._key}-${currentUserId}-${now}`,
+            taskKey: task._key,
+            taskId: task.id || "",
+            taskTitle: task.title || "",
+            taskReward: Number(task.reward || 0),
+            ownerId: String(task.ownerId || ""),
+            ownerName: String(task.ownerName || task.owner || ""),
+            assigneeId: currentUserId,
+            assigneeName: currentUserName,
+            acceptedAt: now,
+            deadlineAt,
+            status: "accepted",
+            updatedAt: now,
+          };
+          assignments.unshift(assignment);
+          saveAssignments();
+          notify(translate("task.toast.accepted"));
+          renderPage();
+        };
+
+        list.addEventListener("click", (event) => {
+          const button = event.target.closest("[data-task-action]");
+          if (!button || button.disabled) return;
+          const card = button.closest("[data-task-key]");
+          if (!card) return;
+          const key = card.getAttribute("data-task-key");
+          const task = taskState.find((item) => item._key === key);
+          if (!task) return;
+          const assignment = task.assignment;
+          const status = assignment ? String(assignment.status || "") : "";
+
+          if (button.dataset.taskAction === "accept") {
+            if (assignment) return;
+            if (openConfirm(task)) return;
+            const confirmMessage = translate("task.modal.text");
+            if (!window.confirm(confirmMessage)) return;
+            handleAccept(task);
+            return;
+          }
+
+          if (button.dataset.taskAction === "complete") {
+            if (!assignment || (status !== "accepted" && status !== "redo")) return;
+            proofOpen.set(task._key, !(proofOpen.get(task._key) === true));
+            renderPage();
+            return;
+          }
+
+          if (button.dataset.taskAction === "submit") {
+            if (!assignment) return;
+            const proofWrap = card.querySelector("[data-task-proof]");
+            const fileInput = proofWrap ? proofWrap.querySelector("[data-task-file]") : null;
+            const linkInput = proofWrap ? proofWrap.querySelector("[data-task-link]") : null;
+            const noteInput = proofWrap ? proofWrap.querySelector("[data-task-note]") : null;
+            const hasFile = fileInput && fileInput.files && fileInput.files.length > 0;
+            const hasLink = linkInput && linkInput.value && linkInput.value.trim().length > 0;
+            const hasNote = noteInput && noteInput.value && noteInput.value.trim().length > 0;
+            if (!hasFile && !hasLink && !hasNote) {
+              notify(translate("task.toast.proofRequired"));
+              return;
+            }
+            const now = Date.now();
+            assignment.status = "submitted";
+            assignment.submittedAt = now;
+            assignment.reviewDueAt = now + reviewWindowMs;
+            assignment.proofLink = hasLink ? linkInput.value.trim() : "";
+            assignment.proofNote = hasNote ? noteInput.value.trim() : "";
+            assignment.proofFileName = hasFile ? fileInput.files[0].name : assignment.proofFileName || "";
+            assignment.updatedAt = now;
+            saveAssignments();
+            notify(translate("task.toast.proofSubmitted"));
+            proofOpen.set(task._key, false);
+            renderPage();
+          }
+        });
+
+        list.addEventListener("change", (event) => {
+          const input = event.target.closest("[data-task-file]");
+          if (!input) return;
+          const file = input.files && input.files[0];
+          if (!file) return;
+          if (!file.type || !file.type.startsWith("image/")) {
+            notify(translate("media.imageOnly", "Only images are supported."));
+            input.value = "";
+            return;
+          }
+          if (file.size > MAX_IMAGE_SIZE) {
+            notify(translate("media.imageTooLarge", "Image exceeds 2MB."));
+            input.value = "";
+          }
+        });
+
+        if (pagination) {
+          pagination.addEventListener("click", (event) => {
+            const button = event.target.closest("button[data-page]");
+            if (!button || button.disabled) return;
+            const nextPage = Number(button.dataset.page);
+            if (!Number.isFinite(nextPage) || nextPage < 1) return;
+            currentPage = nextPage;
+            renderPage();
+            list.scrollIntoView({ behavior: "smooth", block: "start" });
+          });
+        }
+
+        document.addEventListener("bk:i18n", () => {
+          renderPage();
+        });
+
+        window.addEventListener("storage", (event) => {
+          if (event.key === (window.BKTasks ? window.BKTasks.assignKey : "")) {
+            renderPage();
+          }
+        });
+
+        renderPage();
+      })();
+    </script>
+  </body>
+</html>
+
+
+
+
+
