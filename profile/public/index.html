@@ -25,7 +25,8 @@
 <link rel="stylesheet" href="../../asset/base.css" />
   </head>
   <body class="page-profile page-public-profile">
-    <video class="video-bg" autoplay muted loop playsinline>
+    <img class="bg-preview" src="../../asset/bg-preview.webp" alt="" aria-hidden="true" decoding="async" loading="eager" />
+    <video class="video-bg" autoplay muted loop playsinline preload="metadata" poster="../../asset/bg-preview.webp">
       <source src="../../asset/bg-donut.mp4" type="video/mp4" />
     </video>
     <div class="video-overlay"></div>
@@ -567,19 +568,22 @@
           if (isFile) return `${base}?u=${encodeURIComponent(username)}`;
           return `${base}${encodeURIComponent(username)}`;
         };
-        const buildMessagesUrl = (username, userId) => {
-          const base = root + (isFile ? "profile/messages/index.html" : "profile/messages/");
-          const nextUsername = String(username || "").trim();
-          const nextUserId = String(userId || "").trim();
-          const params = new URLSearchParams();
-          if (nextUsername) {
-            params.set("u", nextUsername);
-          } else if (nextUserId) {
-            params.set("uid", nextUserId);
-          }
-          const query = params.toString();
-          return query ? `${base}?${query}` : base;
-        };
+          const buildMessagesUrl = (username, userId, conversationId) => {
+            const base = root + (isFile ? "profile/messages/index.html" : "profile/messages/");
+            const nextUsername = String(username || "").trim();
+            const nextUserId = String(userId || "").trim();
+            const nextConversationId = String(conversationId || "").trim();
+            const params = new URLSearchParams();
+            if (nextConversationId) {
+              params.set("conversationId", nextConversationId);
+            } else if (nextUsername) {
+              params.set("u", nextUsername);
+            } else if (nextUserId) {
+              params.set("uid", nextUserId);
+            }
+            const query = params.toString();
+            return query ? `${base}?${query}` : base;
+          };
         const buildMediaUrl = (mediaId) => (mediaId ? `${mediaBase}${encodeURIComponent(mediaId)}` : "");
         const buildStoryMediaUrl = (token) =>
           token ? `${root}media/${encodeURIComponent(String(token))}` : "";
@@ -1126,16 +1130,61 @@
             removeAvatar();
           });
         }
-        if (profileMessageBtn) {
-          profileMessageBtn.addEventListener("click", () => {
-            const targetUsername =
-              profileUser && profileUser.username ? String(profileUser.username) : profileUsername || "";
-            const targetId = profileUser && profileUser.id ? String(profileUser.id) : legacyId || "";
-            const nextUrl = buildMessagesUrl(targetUsername, targetId);
-            if (!nextUrl) return;
-            window.location.href = nextUrl;
-          });
-        }
+          const buildAuthHeaders = (user) => {
+            if (!user) return {};
+            const headers = {};
+            if (user.id != null && String(user.id).trim()) headers["x-user-id"] = String(user.id).trim();
+            if (user.username) headers["x-user-username"] = String(user.username);
+            if (user.email) headers["x-user-email"] = String(user.email);
+            if (user.name) headers["x-user-name"] = String(user.name);
+            if (user.avatar_url || user.avatar) headers["x-user-avatar"] = String(user.avatar_url || user.avatar);
+            if (user.role) headers["x-user-role"] = String(user.role);
+            return headers;
+          };
+          if (profileMessageBtn) {
+            profileMessageBtn.addEventListener("click", async () => {
+              const targetUsername =
+                profileUser && profileUser.username ? String(profileUser.username) : profileUsername || "";
+              const targetId = profileUser && profileUser.id ? String(profileUser.id) : legacyId || "";
+              const authState = window.BKAuth && typeof window.BKAuth.read === "function" ? window.BKAuth.read() : null;
+              const authUser = authState && authState.user ? authState.user : null;
+              if (!authState || !authState.loggedIn || !authUser) {
+                const loginUrl = typeof getLoginUrl === "function" ? getLoginUrl() : `${root}login/`;
+                window.location.href = loginUrl;
+                return;
+              }
+              if (!targetUsername && !targetId) {
+                notify("Không tìm thấy người dùng.");
+                return;
+              }
+              if (!isFile) {
+                try {
+                  const response = await fetch("/api/conversations/get-or-create", {
+                    method: "POST",
+                    headers: {
+                      "content-type": "application/json",
+                      ...buildAuthHeaders(authUser),
+                    },
+                    body: JSON.stringify({
+                      targetUserId: targetId || undefined,
+                      targetUsername: targetUsername || undefined,
+                    }),
+                  });
+                  const data = await response.json().catch(() => null);
+                  if (response.ok && data && data.ok && data.conversationId) {
+                    const nextUrl = buildMessagesUrl("", "", data.conversationId);
+                    if (nextUrl) {
+                      window.location.href = nextUrl;
+                      return;
+                    }
+                  }
+                } catch (error) {}
+              }
+              const fallbackUrl = buildMessagesUrl(targetUsername, targetId);
+              if (!fallbackUrl) return;
+              window.location.href = fallbackUrl;
+            });
+          }
 
         const followersEl = document.getElementById("profile-followers");
         const followingEl = document.getElementById("profile-following");

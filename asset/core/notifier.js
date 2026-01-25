@@ -9,8 +9,16 @@
   const CACHE_KEY = "bk_notify_summary_cache_v1";
   const BROADCAST_KEY = "bk_notify_broadcast_v1";
   const POLL_LOCK_KEY = "bk_notify_poll_lock_v1";
+  const LEADER_KEY = "bk_notify_leader_v1";
+  const SEEN_KEY = "bk_notify_seen_v1";
+  const PERMISSION_PROMPT_KEY = "bk_notify_permission_prompted_v1";
+  const LEADER_TTL_MS = 12000;
+  const LEADER_PING_MS = 4000;
+  const PRESENCE_TTL_MS = 15000;
 
   let pollTimer = null;
+  let leaderTimer = null;
+  let presenceTimer = null;
   let etag = "";
   let lastSummary = null;
   let lastSoundAt = 0;
@@ -24,9 +32,32 @@
   let cacheKey = CACHE_KEY;
   let broadcastKey = BROADCAST_KEY;
   let pollLockKey = POLL_LOCK_KEY;
+  let leaderKey = LEADER_KEY;
+  let seenKey = SEEN_KEY;
+  let permissionKey = PERMISSION_PROMPT_KEY;
   let storageBound = false;
+  let tabId = "";
+  let isLeader = false;
+  let swRegistration = null;
+  const presenceMap = new Map();
 
   const now = () => Date.now();
+  const getTabId = () => {
+    if (tabId) return tabId;
+    try {
+      const stored = sessionStorage.getItem("bk_notify_tab_id");
+      if (stored) {
+        tabId = stored;
+        return tabId;
+      }
+    } catch (error) {}
+    const seed = `${Math.random().toString(36).slice(2)}${now().toString(36)}`;
+    tabId = seed;
+    try {
+      sessionStorage.setItem("bk_notify_tab_id", tabId);
+    } catch (error) {}
+    return tabId;
+  };
 
   const readAuth = () => {
     if (window.BKAuth && typeof window.BKAuth.read === "function") {
@@ -63,6 +94,103 @@
 
   const buildScopedKey = (base, userKey) => (userKey ? `${base}:${userKey}` : base);
 
+  const readLeaderState = () => {
+    try {
+      const raw = localStorage.getItem(leaderKey);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      if (!data || !data.id || !data.ts) return null;
+      return data;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const writeLeaderState = () => {
+    const payload = { id: getTabId(), ts: now() };
+    try {
+      localStorage.setItem(leaderKey, JSON.stringify(payload));
+    } catch (error) {}
+    return payload;
+  };
+
+  const refreshLeaderState = () => {
+    if (!activeUserKey) {
+      isLeader = false;
+      return;
+    }
+    const current = readLeaderState();
+    const isFresh = current && now() - Number(current.ts || 0) < LEADER_TTL_MS;
+    if (!current || !isFresh || current.id === getTabId()) {
+      const next = writeLeaderState();
+      isLeader = next.id === getTabId();
+      return;
+    }
+    isLeader = current.id === getTabId();
+  };
+
+  const startLeaderHeartbeat = () => {
+    if (leaderTimer) return;
+    refreshLeaderState();
+    leaderTimer = setInterval(() => {
+      refreshLeaderState();
+    }, LEADER_PING_MS);
+  };
+
+  const stopLeaderHeartbeat = () => {
+    if (!leaderTimer) return;
+    clearInterval(leaderTimer);
+    leaderTimer = null;
+    isLeader = false;
+  };
+
+  const prunePresence = () => {
+    const cutoff = now() - PRESENCE_TTL_MS;
+    presenceMap.forEach((value, key) => {
+      if (!value || value.ts < cutoff) presenceMap.delete(key);
+    });
+  };
+
+  const trackPresence = (payload) => {
+    if (!payload || !payload.id) return;
+    presenceMap.set(payload.id, payload);
+  };
+
+  const sendPresence = () => {
+    if (!activeUserKey) return;
+    const payload = {
+      type: "presence",
+      presence: {
+        id: getTabId(),
+        visible: document.visibilityState === "visible",
+        isChat: isChatRoute(),
+        ts: now(),
+      },
+    };
+    trackPresence(payload.presence);
+    if (channel) {
+      try {
+        channel.postMessage(payload);
+      } catch (error) {}
+    }
+  };
+
+  const startPresenceHeartbeat = () => {
+    if (presenceTimer) return;
+    sendPresence();
+    presenceTimer = setInterval(() => {
+      sendPresence();
+      prunePresence();
+    }, Math.min(LEADER_PING_MS, 6000));
+  };
+
+  const stopPresenceHeartbeat = () => {
+    if (!presenceTimer) return;
+    clearInterval(presenceTimer);
+    presenceTimer = null;
+    presenceMap.clear();
+  };
+
   const syncUserContext = (userKey) => {
     if (userKey === activeUserKey) return;
     activeUserKey = userKey;
@@ -72,6 +200,9 @@
     cacheKey = buildScopedKey(CACHE_KEY, userKey);
     broadcastKey = buildScopedKey(BROADCAST_KEY, userKey);
     pollLockKey = buildScopedKey(POLL_LOCK_KEY, userKey);
+    leaderKey = buildScopedKey(LEADER_KEY, userKey);
+    seenKey = buildScopedKey(SEEN_KEY, userKey);
+    permissionKey = buildScopedKey(PERMISSION_PROMPT_KEY, userKey);
     if (inflight) {
       try {
         inflight.abort();
@@ -85,7 +216,13 @@
       channel = null;
       channelName = "";
     }
+    stopLeaderHeartbeat();
+    stopPresenceHeartbeat();
     initChannels(userKey);
+    if (userKey) {
+      startLeaderHeartbeat();
+      startPresenceHeartbeat();
+    }
   };
 
   const isChatRoute = () => {
@@ -93,7 +230,19 @@
     return path.toLowerCase().startsWith("/profile/messages");
   };
 
-  const canPlaySound = () => document.visibilityState === "visible" && !isChatRoute();
+  const isChatVisible = () => document.visibilityState === "visible" && isChatRoute();
+
+  const hasVisibleChatTab = () => {
+    prunePresence();
+    let active = false;
+    presenceMap.forEach((value) => {
+      if (!value) return;
+      if (value.visible && value.isChat) active = true;
+    });
+    return active;
+  };
+
+  const canPlaySound = () => audioEnabled && isLeader && !isChatVisible() && !hasVisibleChatTab();
 
   const formatBadge = (count) => {
     const value = Number(count) || 0;
@@ -136,32 +285,111 @@
     applyAvatarDot(hasNewNotifications || unreadMessages > 0);
     applyMessageBadge(unreadMessages);
     if (!options.skipSound) {
-      maybePlaySound(summary);
+      handleAlerts(summary);
     }
     lastSummary = summary;
     cacheSummary(summary, activeUserKey);
     broadcastSummary(summary, options);
   };
 
-  const maybePlaySound = (summary) => {
-    if (!audioEnabled || !canPlaySound()) return;
-    if (!summary) return;
-    const prev = lastSummary || {};
-    const nextMessageAt = Number(summary.lastMessageAt || 0) || 0;
-    const nextNotificationAt = Number(summary.lastNotificationAt || 0) || 0;
-    const prevMessageAt = Number(prev.lastMessageAt || 0) || 0;
-    const prevNotificationAt = Number(prev.lastNotificationAt || 0) || 0;
-    const unreadMessages = Number(summary.unreadMessages || summary.unread_messages || 0) || 0;
-    const prevUnreadMessages = Number(prev.unreadMessages || prev.unread_messages || 0) || 0;
+  const readSeenState = () => {
+    try {
+      const raw = localStorage.getItem(seenKey);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      if (!data || data.userKey !== activeUserKey) return null;
+      return data;
+    } catch (error) {
+      return null;
+    }
+  };
 
-    const messageChanged = unreadMessages > prevUnreadMessages || nextMessageAt > prevMessageAt;
-    const notificationChanged = summary.hasNewNotifications === true && nextNotificationAt > prevNotificationAt;
-    if (!messageChanged && !notificationChanged) return;
+  const writeSeenState = (state) => {
+    if (!activeUserKey || !state) return;
+    try {
+      localStorage.setItem(
+        seenKey,
+        JSON.stringify({
+          userKey: activeUserKey,
+          lastMessageAt: Number(state.lastMessageAt || 0) || 0,
+          lastNotificationAt: Number(state.lastNotificationAt || 0) || 0,
+          unreadMessages: Number(state.unreadMessages || 0) || 0,
+          savedAt: now(),
+        })
+      );
+    } catch (error) {}
+  };
 
-    const marker = Math.max(nextMessageAt, nextNotificationAt);
+  const getSummaryMetrics = (summary) => ({
+    lastMessageAt: Number(summary.lastMessageAt || 0) || 0,
+    lastNotificationAt: Number(summary.lastNotificationAt || 0) || 0,
+    unreadMessages: Number(summary.unreadMessages || summary.unread_messages || 0) || 0,
+  });
+
+  const shouldShowSystemNotification = () =>
+    typeof Notification !== "undefined" &&
+    Notification.permission === "granted" &&
+    document.visibilityState === "hidden";
+
+  const showSystemNotification = async (title, options) => {
+    if (!shouldShowSystemNotification()) return;
+    try {
+      if (swRegistration && swRegistration.showNotification) {
+        await swRegistration.showNotification(title, options);
+        return;
+      }
+      new Notification(title, options);
+    } catch (error) {}
+  };
+
+  const handleAlerts = (summary) => {
+    if (!summary || !activeUserKey || !isLeader) return;
+    const metrics = getSummaryMetrics(summary);
+    const seen = readSeenState();
+    let baseline = seen && typeof seen === "object" ? seen : null;
+    if (!baseline) {
+      if (lastSummary) {
+        baseline = getSummaryMetrics(lastSummary);
+      } else {
+        writeSeenState(metrics);
+        return;
+      }
+    }
+    const prevMessageAt = Number(baseline.lastMessageAt || 0) || 0;
+    const prevNotificationAt = Number(baseline.lastNotificationAt || 0) || 0;
+    const prevUnreadMessages = Number(baseline.unreadMessages || 0) || 0;
+
+    const messageChanged = metrics.unreadMessages > prevUnreadMessages || metrics.lastMessageAt > prevMessageAt;
+    const notificationChanged =
+      summary.hasNewNotifications === true && metrics.lastNotificationAt > prevNotificationAt;
+    if (!messageChanged && !notificationChanged) {
+      if (!seen) writeSeenState(metrics);
+      return;
+    }
+
+    const marker = Math.max(metrics.lastMessageAt, metrics.lastNotificationAt);
     if (marker && marker <= lastSoundAt) return;
     lastSoundAt = marker || now();
-    playSound();
+
+    if (canPlaySound()) {
+      playSound();
+    }
+
+    if (shouldShowSystemNotification()) {
+      const title = messageChanged ? "Tin nhắn mới" : "Thông báo mới";
+      const body = messageChanged
+        ? `Bạn có ${metrics.unreadMessages} tin nhắn chưa đọc.`
+        : "Bạn có thông báo mới.";
+      showSystemNotification(title, {
+        body,
+        tag: "bk-notify",
+        renotify: false,
+        data: { url: "/profile/messages/" },
+        icon: "/favicon-32x32.png",
+      });
+    }
+
+    writeSeenState(metrics);
   };
 
   const playSound = () => {
@@ -172,6 +400,28 @@
       if (result && typeof result.catch === "function") {
         result.catch(() => {});
       }
+    } catch (error) {}
+  };
+
+  const registerServiceWorker = async () => {
+    if (!("serviceWorker" in navigator)) return;
+    if (swRegistration) return;
+    const swUrl =
+      window.BKAssets && typeof window.BKAssets.getAssetUrl === "function" ? window.BKAssets.getAssetUrl("/sw.js") : "/sw.js";
+    try {
+      swRegistration = await navigator.serviceWorker.register(swUrl);
+    } catch (error) {}
+  };
+
+  const requestNotificationPermission = () => {
+    if (typeof Notification === "undefined") return;
+    if (Notification.permission !== "default") return;
+    try {
+      if (localStorage.getItem(permissionKey) === "1") return;
+      localStorage.setItem(permissionKey, "1");
+    } catch (error) {}
+    try {
+      Notification.requestPermission().catch(() => {});
     } catch (error) {}
   };
 
@@ -194,7 +444,9 @@
       }
     } catch (error) {}
     const handler = () => {
+      if (!activeUserKey) return;
       unlockAudio();
+      requestNotificationPermission();
       window.removeEventListener("pointerdown", handler);
       window.removeEventListener("click", handler);
     };
@@ -225,7 +477,7 @@
 
   const broadcastSummary = (summary, options = {}) => {
     if (options.fromBroadcast) return;
-    const payload = { summary, sentAt: now(), userKey: activeUserKey };
+    const payload = { type: "summary", summary, sentAt: now(), userKey: activeUserKey };
     if (channel) {
       try {
         channel.postMessage(payload);
@@ -237,9 +489,15 @@
   };
 
   const onBroadcast = (payload) => {
-    if (!payload || !payload.summary) return;
+    if (!payload) return;
     if (activeUserKey && payload.userKey && payload.userKey !== activeUserKey) return;
-    applySummary(payload.summary, { fromBroadcast: true });
+    if (payload.type === "presence" && payload.presence) {
+      trackPresence(payload.presence);
+      return;
+    }
+    const summary = payload.summary;
+    if (!summary) return;
+    applySummary(summary, { fromBroadcast: true });
   };
 
   const canPoll = () => {
@@ -277,7 +535,7 @@
     const userKey = normalizeKey(userRef);
     syncUserContext(userKey);
     if (!userRef) return;
-    if (document.visibilityState === "hidden" && !options.force) return;
+    if (document.visibilityState === "hidden" && !options.force && !isLeader) return;
     if (!options.force && !canPoll()) return;
     if (inflight) {
       try {
@@ -347,6 +605,7 @@
     if (started) return;
     started = true;
     initAudio();
+    registerServiceWorker();
     const auth = readAuth();
     const userKey = getUserKey(auth);
     syncUserContext(userKey);
@@ -359,12 +618,10 @@
     refresh({ force: true });
     startPolling();
     document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "hidden") {
-        stopPolling();
-        return;
+      sendPresence();
+      if (document.visibilityState === "visible") {
+        refresh({ force: true });
       }
-      refresh({ force: true });
-      startPolling();
     });
   };
 

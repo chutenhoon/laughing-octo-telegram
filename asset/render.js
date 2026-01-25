@@ -4450,11 +4450,11 @@ function setupUserMenu(auth) {
     img.src = avatarSrc;
     img.alt = "Avatar";
     img.loading = "lazy";
-    const dot = document.createElement("span");
-    dot.className = "notif-dot";
-    dot.setAttribute("aria-hidden", "true");
+    const indicator = document.createElement("span");
+    indicator.className = "notif-indicator";
+    indicator.setAttribute("aria-hidden", "true");
     avatar.appendChild(img);
-    avatar.appendChild(dot);
+    avatar.appendChild(indicator);
 
     const nameSpan = document.createElement("span");
     nameSpan.className = "user-name";

@@ -587,8 +587,8 @@ header {
   display: block;
 }
 
-.user-avatar .notif-dot {
-  --dot-size: 9px;
+.user-avatar .notif-indicator {
+  --dot-size: 8px;
   position: absolute;
   top: 0;
   right: 0;
@@ -596,9 +596,9 @@ header {
   height: var(--dot-size);
   padding: 0;
   border-radius: 999px;
-  background: radial-gradient(circle at 30% 30%, #ff9ab0, #ff4d6d 60%, #e5385b 100%);
-  border: 2px solid var(--bg);
-  box-shadow: 0 0 0 1px rgba(255, 77, 109, 0.15), 0 6px 12px rgba(0, 0, 0, 0.35);
+  background: radial-gradient(circle at 30% 30%, #ffb1c2, #ff4d6d 65%, #e23a5a 100%);
+  border: 2px solid rgba(8, 8, 12, 0.95);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 6px 14px rgba(255, 77, 109, 0.28);
   color: #fff;
   font-size: 9px;
   line-height: 1;
@@ -606,21 +606,21 @@ header {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transform: translate(35%, -35%) scale(0.85);
+  transform: translate(40%, -40%) scale(0.85);
   opacity: 0;
   pointer-events: none;
   transition: transform 160ms ease, opacity 160ms ease;
   z-index: 2;
 }
 
-.user-avatar .notif-dot:not(:empty) {
+.user-avatar .notif-indicator:not(:empty) {
   height: 16px;
   min-width: 16px;
   padding: 0 4px;
   font-size: 10px;
 }
 
-.user-avatar.has-unread .notif-dot {
+.user-avatar.has-unread .notif-indicator {
   opacity: 1;
   transform: translate(35%, -35%) scale(1);
   animation: notif-pulse 2.2s ease-in-out infinite;
@@ -639,7 +639,7 @@ header {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .user-avatar.has-unread .notif-dot {
+  .user-avatar.has-unread .notif-indicator {
     animation: none;
   }
 }

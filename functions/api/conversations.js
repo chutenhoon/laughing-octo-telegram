@@ -144,6 +144,21 @@ function buildUserRowFromJoin(row, prefix, fallbackId) {
   return userRow;
 }
 
+async function findUserRow(db, userId) {
+  if (!db || !userId) return null;
+  const cols = await getUserColumns(db);
+  if (!cols.size) return null;
+  const idField = cols.has("id") ? "id" : "rowid";
+  try {
+    return await db
+      .prepare(`SELECT rowid AS row_id, * FROM users WHERE ${idField} = ? LIMIT 1`)
+      .bind(userId)
+      .first();
+  } catch (error) {
+    return null;
+  }
+}
+
 function resolveLastType(preview) {
   const text = String(preview || "");
   if (!text) return "";
@@ -179,7 +194,7 @@ async function getOrCreateSupportConversation(db, userId, adminId) {
   return conversationId;
 }
 
-async function listUserConversations(db, userId, adminId, adminProfile) {
+async function listUserConversations(db, userId, adminId, adminProfile, selfProfile) {
   const userColumns = await getUserColumns(db);
   const userSelect = buildUserSelect(userColumns, "other_");
   const selectUserSql = userSelect.length ? `, ${userSelect.join(", ")}` : "";
@@ -208,7 +223,7 @@ async function listUserConversations(db, userId, adminId, adminProfile) {
   return rows.map((row) => {
     const conversationId = row.conversation_id ? String(row.conversation_id) : "";
     const type = row.type || SUPPORT_TYPE;
-    const otherId = normalizeId(row.other_id) || (type === SUPPORT_TYPE ? adminId || "" : "");
+    let otherId = normalizeId(row.other_id) || (type === SUPPORT_TYPE ? adminId || "" : "");
     const updatedAt = row.updated_at != null ? toIso(row.updated_at) : "";
     const lastAt = row.last_message_at != null ? toIso(row.last_message_at) : "";
     const lastMessage = row.last_message_preview ? String(row.last_message_preview) : "";
@@ -220,6 +235,10 @@ async function listUserConversations(db, userId, adminId, adminProfile) {
     } else if (otherId) {
       const otherRow = buildUserRowFromJoin(row, "other_", otherId);
       otherProfile = buildUserProfile(otherRow, otherId);
+    }
+    if (!otherProfile && !otherId && selfProfile) {
+      otherId = userId;
+      otherProfile = selfProfile;
     }
     if (!otherProfile && otherId) {
       otherProfile = { id: otherId, display_name: "User", avatar_url: "", role: "user", is_admin: false };
@@ -370,7 +389,9 @@ export async function onRequestGet(context) {
     }
 
     await getOrCreateSupportConversation(dbTimed, ensuredId, admin.id);
-    const conversations = await listUserConversations(dbTimed, ensuredId, admin.id, admin.profile);
+    const selfRow = await findUserRow(dbTimed, ensuredId);
+    const selfProfile = buildUserProfile(selfRow, ensuredId);
+    const conversations = await listUserConversations(dbTimed, ensuredId, admin.id, admin.profile, selfProfile);
     const totalUnread = conversations.reduce((sum, item) => sum + (Number(item.unreadCount) || 0), 0);
     setUnreadCount(ensuredId, totalUnread);
     const computedVersion = computeConversationVersion(conversations);

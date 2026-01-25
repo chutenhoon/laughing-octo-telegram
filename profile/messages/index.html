@@ -25,7 +25,8 @@
 <link rel="stylesheet" href="../../asset/base.css" />
   </head>
   <body class="page-profile chat-page">
-    <video class="video-bg" autoplay muted loop playsinline>
+    <img class="bg-preview" src="../../asset/bg-preview.webp" alt="" aria-hidden="true" decoding="async" loading="eager" />
+    <video class="video-bg" autoplay muted loop playsinline preload="metadata" poster="../../asset/bg-preview.webp">
       <source src="../../asset/bg-donut.mp4" type="video/mp4" />
     </video>
     <div class="video-overlay"></div>
@@ -343,6 +344,16 @@
             alert(message);
           }
         };
+        const buildAuthHeaders = () => {
+          const headers = {};
+          if (user && user.id != null && String(user.id).trim()) headers["x-user-id"] = String(user.id).trim();
+          if (user && user.username) headers["x-user-username"] = String(user.username);
+          if (user && user.email) headers["x-user-email"] = String(user.email);
+          if (user && user.name) headers["x-user-name"] = String(user.name);
+          if (user && (user.avatar_url || user.avatar)) headers["x-user-avatar"] = String(user.avatar_url || user.avatar);
+          if (user && user.role) headers["x-user-role"] = String(user.role);
+          return headers;
+        };
         const getLanguage = () => (typeof getCurrentLanguage === "function" ? getCurrentLanguage() : "vi");
         const t = (key, fallback) =>
           typeof formatI18n === "function" ? formatI18n(getLanguage(), key, fallback) : fallback || key;
@@ -356,6 +367,9 @@
             return raw;
           }
         };
+        const queryConversationId = decodeParam(
+          queryParams.get("conversationId") || queryParams.get("conversation_id") || ""
+        ).trim();
         const buildProfileUrl = (profile) => {
           const username = profile && profile.username ? String(profile.username).trim() : "";
           const userId = profile && (profile.id || profile.userId) ? String(profile.id || profile.userId).trim() : "";
@@ -377,6 +391,17 @@
         );
         const prefillTarget = { userId: queryUserId, username: queryUsername };
         const directTarget = { userId: queryUserId, username: queryUsername };
+        if (!directTarget.userId && queryConversationId && isDirectConversationId(queryConversationId)) {
+          const parsed = parseDirectConversationId(queryConversationId);
+          if (parsed) {
+            const selfId = normalizeUserId(rawUserId);
+            if (selfId && String(parsed.userA) === String(selfId)) {
+              directTarget.userId = parsed.userB;
+            } else if (selfId && String(parsed.userB) === String(selfId)) {
+              directTarget.userId = parsed.userA;
+            }
+          }
+        }
         let directProfile = null;
         let directFailed = false;
         let directConversation = null;
@@ -384,6 +409,7 @@
         let prefillFailed = false;
         let prefillApplied = false;
         let directApplied = false;
+        let requestedApplied = false;
 
         const fetchPrefillProfile = async () => {
           if (!isAdminUser) return null;
@@ -420,6 +446,17 @@
         const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
         const DIRECT_CONVERSATION_PREFIX = "dm:";
         const isDirectConversationId = (value) => String(value || "").startsWith(DIRECT_CONVERSATION_PREFIX);
+        const parseDirectConversationId = (value) => {
+          const raw = String(value || "");
+          if (!raw.startsWith(DIRECT_CONVERSATION_PREFIX)) return null;
+          const body = raw.slice(DIRECT_CONVERSATION_PREFIX.length);
+          const parts = body.split(":");
+          if (parts.length !== 2) return null;
+          const userA = normalizeUserId(parts[0]);
+          const userB = normalizeUserId(parts[1]);
+          if (!userA || !userB) return null;
+          return { userA, userB };
+        };
         const hasDirectTarget = () => Boolean(directTarget.userId || directTarget.username);
         const compareIds = (left, right) => {
           const a = String(left || "");
@@ -1727,6 +1764,34 @@
 
         const normalizeSearchTerm = (value) => String(value || "").trim().toLowerCase();
 
+        let markReadTick = 0;
+        let lastMarkedId = "";
+        const markMessagesRead = (conversationId) => {
+          if (isFile || !rawUserId) return;
+          const nextId = conversationId ? String(conversationId) : "";
+          const markKey = nextId || "__all__";
+          if (markKey === lastMarkedId) return;
+          if (markReadTick) cancelAnimationFrame(markReadTick);
+          markReadTick = requestAnimationFrame(async () => {
+            markReadTick = 0;
+            lastMarkedId = markKey;
+            try {
+              const response = await fetch("/api/conversations/mark-read", {
+                method: "POST",
+                headers: {
+                  "content-type": "application/json",
+                  ...buildAuthHeaders(),
+                },
+                body: JSON.stringify(nextId ? { conversationId: nextId } : {}),
+              });
+              if (!response.ok) return;
+              if (window.BKNotifier && typeof window.BKNotifier.refresh === "function") {
+                window.BKNotifier.refresh({ force: true });
+              }
+            } catch (error) {}
+          });
+        };
+
         const getConversationSearchText = (item) => {
           if (!item) return "";
           const user = item.user || {};
@@ -1763,12 +1828,15 @@
           if (previousConversationId) writeMessageCache(previousConversationId);
           abortMessageFetch();
           activeUserId = conversation.userId ? normalizeUserId(conversation.userId) : "";
-          activeConversationId = conversation.conversationId ? String(conversation.conversationId) : "";
-          if (activeConversationId) {
-            writeActiveConversation(activeConversationId);
-          }
-          if (conversation.user) {
-            applySupportProfile({
+            activeConversationId = conversation.conversationId ? String(conversation.conversationId) : "";
+            if (activeConversationId) {
+              writeActiveConversation(activeConversationId);
+            }
+            if (activeConversationId) {
+              markMessagesRead(activeConversationId);
+            }
+            if (conversation.user) {
+              applySupportProfile({
               id: conversation.user.id || activeUserId,
               username: conversation.user.username || "",
               display_name: conversation.user.display_name || conversation.user.username || "",
@@ -1825,6 +1893,16 @@
                 setActiveConversation(cachedConversation);
               }
             }
+            if (queryConversationId && !requestedApplied && !activeConversationId) {
+              const cachedRequested = conversationList.find(
+                (item) => String(item.conversationId || "") === String(queryConversationId)
+              );
+              if (cachedRequested) {
+                setActiveConversation(cachedRequested);
+                setDetailView(true);
+                requestedApplied = true;
+              }
+            }
             isChatOverlayLoading = false;
             updateChatLoading();
           }
@@ -1872,6 +1950,17 @@
             }
             await ensurePrefillConversation();
             conversationList = sortConversationList(conversationList);
+            if (queryConversationId && !requestedApplied) {
+              const requested = conversationList.find(
+                (item) => String(item.conversationId || "") === String(queryConversationId)
+              );
+              if (requested) {
+                setActiveConversation(requested);
+                setDetailView(true);
+                requestedApplied = true;
+                return;
+              }
+            }
             if (directCandidate && !directApplied) {
               setActiveConversation(directCandidate);
               setDetailView(true);
@@ -1905,6 +1994,9 @@
                   is_admin: current.user.is_admin,
                 });
               }
+            }
+            if (!activeConversationId) {
+              markMessagesRead("");
             }
             writeConversationCache();
           } catch (error) {
