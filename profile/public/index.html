@@ -412,6 +412,7 @@
         const profileRetryBtn = document.getElementById("profile-retry-btn");
         let isProfileLoading = false;
         let isProfileError = false;
+        let profileFetchController = null;
         const setProfileLoading = (value) => {
           isProfileLoading = Boolean(value);
           if (!profileShell) return;
@@ -424,6 +425,13 @@
           if (!profileShell) return;
           profileShell.classList.toggle("is-error", isProfileError);
           if (profileErrorText) profileErrorText.textContent = message || "";
+        };
+        const abortProfileFetch = () => {
+          if (!profileFetchController) return;
+          try {
+            profileFetchController.abort();
+          } catch (error) {}
+          profileFetchController = null;
         };
 
         let currentLanguage = typeof getCurrentLanguage === "function" ? getCurrentLanguage() : "vi";
@@ -1144,12 +1152,36 @@
         let isFollowing = false;
         let isFollowBusy = false;
         let followCooldownUntil = 0;
+        let followCooldownTimer = null;
+        let followSnapshot = null;
         const FOLLOW_DEBOUNCE_MS = 600;
         const setFollowLabel = (isFollowing) => {
           if (!followBtn) return;
           followBtn.textContent = isFollowing
             ? t("profile.public.following", "Following")
             : t("profile.public.follow", "Follow");
+        };
+        const scheduleFollowCooldown = () => {
+          if (!followBtn) return;
+          if (followCooldownTimer) {
+            clearTimeout(followCooldownTimer);
+            followCooldownTimer = null;
+          }
+          const delay = followCooldownUntil - Date.now();
+          if (delay <= 0) return;
+          followCooldownTimer = setTimeout(() => {
+            refreshFollowState();
+          }, delay + 20);
+        };
+        const applyFollowSnapshot = (snapshot) => {
+          if (!snapshot) return;
+          if (typeof snapshot.isFollowing === "boolean") {
+            isFollowing = snapshot.isFollowing;
+          }
+          if (Number.isFinite(snapshot.followers)) followers = snapshot.followers;
+          if (Number.isFinite(snapshot.following)) following = snapshot.following;
+          updateCounts();
+          refreshFollowState();
         };
         const refreshFollowState = () => {
           if (!followBtn) return;
@@ -1165,35 +1197,39 @@
           setFollowLabel(isFollowing);
           followBtn.classList.toggle("is-active", isFollowing);
           followBtn.disabled = isFollowBusy || Date.now() < followCooldownUntil;
+          scheduleFollowCooldown();
         };
-        const fetchFollowState = async (targetRef) => {
-          if (!useRemote || !followApiUrl) return;
+        const fetchFollowState = async (targetRef, options = {}) => {
+          if (!useRemote || !followApiUrl) return null;
           const targetValue =
             targetRef || (profileUser && profileUser.id != null ? String(profileUser.id) : "");
-          if (!targetValue) return;
+          if (!targetValue) return null;
           const viewerId = auth && auth.user && auth.user.id != null ? String(auth.user.id) : "";
           const query =
             viewerId && viewerId !== targetValue
               ? `userId=${encodeURIComponent(viewerId)}&targetId=${encodeURIComponent(targetValue)}`
               : `userId=${encodeURIComponent(targetValue)}`;
           try {
-            const response = await fetch(`${followApiUrl}?${query}`);
+            const response = await fetch(`${followApiUrl}?${query}`, {
+              cache: "no-store",
+              signal: options.signal,
+            });
             const data = await response.json().catch(() => null);
             if (!response.ok || !data || !data.ok) return;
-            if (data.counts) {
-              const nextFollowers = Number(data.counts.followers);
-              const nextFollowing = Number(data.counts.following);
-              if (Number.isFinite(nextFollowers)) followers = nextFollowers;
-              if (Number.isFinite(nextFollowing)) following = nextFollowing;
-            }
-            if (typeof data.isFollowing === "boolean") {
-              isFollowing = data.isFollowing;
-            }
-            updateCounts();
-            refreshFollowState();
-          } catch (error) {}
+            const snapshot = {
+              isFollowing: typeof data.isFollowing === "boolean" ? data.isFollowing : isFollowing,
+              followers: data.counts ? Number(data.counts.followers) : Number.NaN,
+              following: data.counts ? Number(data.counts.following) : Number.NaN,
+            };
+            followSnapshot = snapshot;
+            applyFollowSnapshot(snapshot);
+            return snapshot;
+          } catch (error) {
+            return null;
+          }
         };
-        if (followBtn) {
+        if (followBtn && followBtn.dataset.bound !== "true") {
+          followBtn.dataset.bound = "true";
           refreshFollowState();
           followBtn.addEventListener("click", async () => {
             if (isFollowBusy || Date.now() < followCooldownUntil) return;
@@ -1213,7 +1249,10 @@
             isFollowBusy = true;
             followCooldownUntil = Date.now() + FOLLOW_DEBOUNCE_MS;
             refreshFollowState();
-            const action = isFollowing ? "unfollow" : "follow";
+            const previousState = isFollowing;
+            isFollowing = !previousState;
+            refreshFollowState();
+            const action = previousState ? "unfollow" : "follow";
             try {
               const response = await fetch(followApiUrl, {
                 method: "POST",
@@ -1223,16 +1262,16 @@
               const data = await response.json().catch(() => null);
               if (!response.ok || !data || !data.ok) {
                 notify(t("profile.public.toast.followFail", "Unable to update follow status."));
+                isFollowing = previousState;
                 return;
               }
-              isFollowing = Boolean(data.isFollowing);
-              if (data.counts) {
-                const nextFollowers = Number(data.counts.followers);
-                const nextFollowing = Number(data.counts.following);
-                if (Number.isFinite(nextFollowers)) followers = nextFollowers;
-                if (Number.isFinite(nextFollowing)) following = nextFollowing;
-              }
-              updateCounts();
+              const snapshot = {
+                isFollowing: Boolean(data.isFollowing),
+                followers: data.counts ? Number(data.counts.followers) : Number.NaN,
+                following: data.counts ? Number(data.counts.following) : Number.NaN,
+              };
+              followSnapshot = snapshot;
+              applyFollowSnapshot(snapshot);
             } finally {
               isFollowBusy = false;
               refreshFollowState();
@@ -1272,6 +1311,7 @@
           setAdminOnlyVisibility();
           updateCounts();
           refreshFollowState();
+          applyFollowSnapshot(followSnapshot);
           renderManageGrid();
         };
 
@@ -1285,6 +1325,9 @@
           setProfileError("");
           let usedCache = false;
           try {
+            abortProfileFetch();
+            profileFetchController = new AbortController();
+            const { signal } = profileFetchController;
             const hasNumericRef = profileRef && /^\d+$/.test(profileRef);
             const queryKey = profileUsername ? "u" : legacyId ? "id" : hasNumericRef ? "id" : "u";
             const queryValue = profileUsername || legacyId || profileRef || "";
@@ -1303,13 +1346,12 @@
               setOwnerOnlyVisibility();
               setAdminOnlyVisibility();
             }
-            if (!isOwner && auth && auth.user && auth.user.id != null) {
-              fetchFollowState(queryValue);
-            }
+            const followPromise = fetchFollowState(queryValue, { signal });
             const params = new URLSearchParams();
             params.set(queryKey, queryValue);
             params.set("view", "public");
-            const response = await fetch(`${apiUrl}?${params.toString()}`);
+            const response = await fetch(`${apiUrl}?${params.toString()}`, { cache: "no-store", signal });
+            await followPromise;
             const data = await response.json().catch(() => null);
             if (!response.ok || !data || !data.ok) {
               throw new Error((data && data.error) || "LOAD_FAILED");

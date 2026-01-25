@@ -547,6 +547,8 @@
         let isChatLoadingConversations = false;
         let isChatLoadingMessages = false;
         let isChatOverlayLoading = true;
+        let pollEnabled = false;
+        let pollStartScheduled = false;
         let loadMoreWrap = null;
         let loadMoreBtn = null;
         let messageListWrap = null;
@@ -600,6 +602,8 @@
         let lastActiveAt = Date.now();
         const conversationCache = { key: "", list: null, savedAt: 0 };
         const messageCache = new Map();
+        const LIST_STORAGE_PREFIX = "bk_chat_list_cache_v1";
+        const ACTIVE_STORAGE_PREFIX = "bk_chat_active_v1";
         if (messageBody) {
           emptyState = messageBody.querySelector(".empty-state");
         }
@@ -610,10 +614,32 @@
         };
 
         const buildConversationCacheKey = () => `${isAdminUser ? "admin" : "user"}:${selfUserId || rawUserId || ""}`;
+        const buildConversationStorageKey = () => `${LIST_STORAGE_PREFIX}:${buildConversationCacheKey()}`;
+        const buildActiveStorageKey = () => `${ACTIVE_STORAGE_PREFIX}:${buildConversationCacheKey()}`;
+        const readConversationStorage = () => {
+          try {
+            const raw = sessionStorage.getItem(buildConversationStorageKey());
+            if (!raw) return null;
+            const parsed = JSON.parse(raw);
+            if (!parsed || !Array.isArray(parsed.list) || !parsed.savedAt) return null;
+            if (Date.now() - parsed.savedAt > LIST_CACHE_TTL_MS) return null;
+            return parsed;
+          } catch (error) {
+            return null;
+          }
+        };
         const readConversationCache = () => {
           const key = buildConversationCacheKey();
-          if (!conversationCache.list || conversationCache.key !== key) return null;
-          if (Date.now() - conversationCache.savedAt > LIST_CACHE_TTL_MS) return null;
+          if (conversationCache.list && conversationCache.key === key && Date.now() - conversationCache.savedAt <= LIST_CACHE_TTL_MS) {
+            return conversationCache.list;
+          }
+          const stored = readConversationStorage();
+          if (!stored) return null;
+          conversationCache.key = key;
+          conversationCache.list = stored.list;
+          conversationCache.savedAt = stored.savedAt;
+          if (stored.etag) conversationListEtag = stored.etag;
+          if (stored.version) conversationVersion = stored.version;
           return conversationCache.list;
         };
         const writeConversationCache = () => {
@@ -621,6 +647,38 @@
           conversationCache.key = buildConversationCacheKey();
           conversationCache.list = conversationList.slice();
           conversationCache.savedAt = Date.now();
+          try {
+            sessionStorage.setItem(
+              buildConversationStorageKey(),
+              JSON.stringify({
+                list: conversationCache.list,
+                savedAt: conversationCache.savedAt,
+                etag: conversationListEtag || "",
+                version: conversationVersion || "",
+              })
+            );
+          } catch (error) {}
+        };
+        const readActiveConversation = () => {
+          try {
+            const raw = sessionStorage.getItem(buildActiveStorageKey());
+            if (!raw) return "";
+            const parsed = JSON.parse(raw);
+            if (!parsed || !parsed.id || !parsed.savedAt) return "";
+            if (Date.now() - parsed.savedAt > LIST_CACHE_TTL_MS) return "";
+            return String(parsed.id);
+          } catch (error) {
+            return "";
+          }
+        };
+        const writeActiveConversation = (conversationId) => {
+          if (!conversationId) return;
+          try {
+            sessionStorage.setItem(
+              buildActiveStorageKey(),
+              JSON.stringify({ id: String(conversationId), savedAt: Date.now() })
+            );
+          } catch (error) {}
         };
 
         const readMessageCache = (conversationId) => {
@@ -1706,6 +1764,9 @@
           abortMessageFetch();
           activeUserId = conversation.userId ? normalizeUserId(conversation.userId) : "";
           activeConversationId = conversation.conversationId ? String(conversation.conversationId) : "";
+          if (activeConversationId) {
+            writeActiveConversation(activeConversationId);
+          }
           if (conversation.user) {
             applySupportProfile({
               id: conversation.user.id || activeUserId,
@@ -1732,8 +1793,10 @@
               loadMessages(activeConversationId, { reset: true, delta: false });
             }
           }
-          loadChatHeartbeat({ force: true });
-          startMessagePolling();
+          if (pollEnabled) {
+            loadChatHeartbeat({ force: true });
+            startMessagePolling();
+          }
         };
 
         const loadConversationList = async (options = {}) => {
@@ -1741,15 +1804,29 @@
           const isSilent = options.silent === true;
           const requestToken = (listRequestToken += 1);
           isLoadingList = true;
-          setConversationsLoading(true, { silent: isSilent });
-          let directCandidate = null;
+          let cachedList = null;
           if (!isSilent && !hasLoadedConversationList) {
-            const cachedList = readConversationCache();
-            if (cachedList && cachedList.length) {
-              conversationList = cachedList.slice();
-              renderThreadList(conversationList);
-              updateSidebarCount(conversationList.length);
+            cachedList = readConversationCache();
+          }
+          const hasCache = cachedList && cachedList.length;
+          setConversationsLoading(true, { silent: isSilent || hasCache });
+          let directCandidate = null;
+          if (hasCache) {
+            conversationList = cachedList.slice();
+            hasLoadedConversationList = true;
+            renderThreadList(conversationList);
+            updateSidebarCount(conversationList.length);
+            const cachedActiveId = readActiveConversation();
+            if (cachedActiveId && !activeConversationId) {
+              const cachedConversation = conversationList.find(
+                (item) => String(item.conversationId || "") === String(cachedActiveId)
+              );
+              if (cachedConversation) {
+                setActiveConversation(cachedConversation);
+              }
             }
+            isChatOverlayLoading = false;
+            updateChatLoading();
           }
           try {
             const params = new URLSearchParams();
@@ -1967,8 +2044,24 @@
           return `${heartbeatUrl}?${query}`;
         };
 
+        const schedulePollingStart = () => {
+          if (isFile || pollStartScheduled) return;
+          pollStartScheduled = true;
+          const start = () => {
+            pollEnabled = true;
+            startMessagePolling();
+            startChatPolling();
+            startPingPolling();
+          };
+          if (typeof requestIdleCallback === "function") {
+            requestIdleCallback(start, { timeout: 800 });
+          } else {
+            setTimeout(start, 0);
+          }
+        };
+
         const startPingPolling = () => {
-          if (isFile || pingTimer) return;
+          if (isFile || !pollEnabled || pingTimer) return;
           pingTimer = setInterval(() => {
             sendPing();
           }, PING_ACTIVE_MS);
@@ -2045,7 +2138,7 @@
         };
 
         const startChatPolling = () => {
-          if (isFile) return;
+          if (isFile || !pollEnabled) return;
           if (window.__chatPoller) return;
           const interval = getChatPollInterval();
           window.__chatPoller = setInterval(() => {
@@ -2067,13 +2160,16 @@
 
         if (!isFile) {
           document.addEventListener("visibilitychange", () => {
-            stopMessagePolling();
+            if (document.hidden) {
+              stopMessagePolling();
+              stopChatPolling();
+              stopPingPolling();
+              return;
+            }
             startMessagePolling();
             restartChatPolling();
             restartPingPolling();
-            if (!document.hidden) {
-              sendPing({ force: true });
-            }
+            sendPing({ force: true });
           });
           window.addEventListener("beforeunload", () => {
             sendPing({ force: true, keepalive: true });
@@ -2218,7 +2314,7 @@
         };
 
         const startMessagePolling = () => {
-          if (isFile) return;
+          if (isFile || !pollEnabled) return;
           if (!activeConversationId) return;
           scheduleMessagePoll();
         };
@@ -3000,11 +3096,11 @@
         initChatLayoutSizing();
 
         if (inputWrap) inputWrap.style.display = "";
-        loadConversationList();
+        const listPromise = loadConversationList();
         if (!isFile) {
-          startMessagePolling();
-          startChatPolling();
-          startPingPolling();
+          Promise.resolve(listPromise).finally(() => {
+            schedulePollingStart();
+          });
         }
         scrollToBottom({ behavior: "auto", force: false });
       });

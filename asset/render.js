@@ -4300,6 +4300,32 @@ function updateTaskCta(auth, langOverride) {
   });
 }
 
+let notifierLoadPromise = null;
+function loadNotifierScript() {
+  if (window.BKNotifier && typeof window.BKNotifier.init === "function") {
+    return Promise.resolve(window.BKNotifier);
+  }
+  if (notifierLoadPromise) return notifierLoadPromise;
+  notifierLoadPromise = new Promise((resolve) => {
+    const script = document.createElement("script");
+    const src = typeof resolveAssetUrl === "function" ? resolveAssetUrl("/asset/core/notifier.js") : "/asset/core/notifier.js";
+    script.src = src;
+    script.async = true;
+    script.onload = () => resolve(window.BKNotifier || null);
+    script.onerror = () => resolve(null);
+    document.head.appendChild(script);
+  });
+  return notifierLoadPromise;
+}
+
+function initGlobalNotifier() {
+  loadNotifierScript().then((notifier) => {
+    if (notifier && typeof notifier.init === "function") {
+      notifier.init();
+    }
+  });
+}
+
 function setupUserMenu(auth) {
   if (!auth || !auth.loggedIn) return;
   const root = getRootPath();
@@ -4369,6 +4395,7 @@ function setupUserMenu(auth) {
 
     const avatar = document.createElement("span");
     avatar.className = "user-avatar";
+    avatar.setAttribute("data-notify-avatar", "true");
     const img = document.createElement("img");
     img.src = avatarSrc;
     img.alt = "Avatar";
@@ -4419,6 +4446,14 @@ function setupUserMenu(auth) {
       if (item.key) link.dataset.i18nKey = item.key;
       link.href = item.href || "#";
       if (item.comingSoon) link.setAttribute("data-coming-soon", "true");
+      if (item.key === "menu.messages") {
+        link.setAttribute("data-notify-messages", "true");
+        const badge = document.createElement("span");
+        badge.className = "menu-badge is-hidden";
+        badge.setAttribute("data-notify-badge", "messages");
+        badge.setAttribute("aria-hidden", "true");
+        link.appendChild(badge);
+      }
       dropdown.appendChild(link);
     });
 
@@ -5474,6 +5509,7 @@ document.addEventListener("DOMContentLoaded", () => {
   updateSellerCta(auth);
   updateTaskCta(auth);
   setupUserMenu(auth);
+  initGlobalNotifier();
   if (auth && auth.loggedIn) startHeartbeat(auth);
   applyI18n();
   fetchMaintenanceConfig(true).then((config) => applyMaintenanceOverlay(config));

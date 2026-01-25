@@ -557,6 +557,7 @@ header {
   overflow: hidden;
   border: 1px solid var(--stroke);
   background: rgba(10, 10, 16, 0.8);
+  position: relative;
 }
 
 .user-avatar img {
@@ -564,6 +565,19 @@ header {
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+.user-avatar.has-unread::after {
+  content: "";
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ff4d6d;
+  border: 2px solid #0b0b12;
+  box-shadow: 0 0 0 2px rgba(255, 77, 109, 0.25);
 }
 
 .user-name {
@@ -683,6 +697,28 @@ header {
   font-weight: 600;
   text-align: left;
   cursor: pointer;
+}
+
+.user-dropdown a[data-notify-messages] {
+  justify-content: space-between;
+}
+
+.menu-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(255, 77, 109, 0.2);
+  color: #ffd2dd;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.menu-badge.is-hidden {
+  display: none;
 }
 
 .user-dropdown a:hover,
