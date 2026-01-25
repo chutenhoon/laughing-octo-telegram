@@ -1217,31 +1217,40 @@ async function createMessage(db, conversationId, senderId, kind, text, mediaKey,
 
   const preview = buildMessagePreview(kind, text);
   try {
-    await db
-      .prepare(
-        "UPDATE conversations SET last_message_id = ?, last_message_at = ?, last_message_preview = ?, updated_at = ? WHERE id = ?"
-      )
-      .bind(messageId, createdAt, preview, createdAt, conversationId)
-      .run();
-    await db
-      .prepare("UPDATE conversation_participants SET unread_count = unread_count + 1 WHERE conversation_id = ? AND user_id != ?")
-      .bind(conversationId, senderId)
-      .run();
-    await db
-      .prepare(
-        "UPDATE conversation_participants SET last_read_message_id = ?, unread_count = 0 WHERE conversation_id = ? AND user_id = ?"
-      )
-      .bind(messageId, conversationId, senderId)
-      .run();
+    const updates = [
+      db
+        .prepare(
+          "UPDATE conversations SET last_message_id = ?, last_message_at = ?, last_message_preview = ?, updated_at = ? WHERE id = ?"
+        )
+        .bind(messageId, createdAt, preview, createdAt, conversationId),
+      db
+        .prepare("UPDATE conversation_participants SET unread_count = unread_count + 1 WHERE conversation_id = ? AND user_id != ?")
+        .bind(conversationId, senderId),
+      db
+        .prepare(
+          "UPDATE conversation_participants SET last_read_message_id = ?, unread_count = 0 WHERE conversation_id = ? AND user_id = ?"
+        )
+        .bind(messageId, conversationId, senderId),
+    ];
+    if (typeof db.batch === "function") {
+      await db.batch(updates);
+    } else {
+      for (const update of updates) {
+        await update.run();
+      }
+    }
   } catch (error) {}
 
-  const row = await db
-    .prepare(
-      "SELECT id, conversation_id, sender_id, type, text, media_key, client_message_id, created_at FROM messages WHERE id = ?"
-    )
-    .bind(messageId)
-    .first();
-  if (!row) return { error: "DB_WRITE_FAILED", status: 500 };
+  const row = {
+    id: messageId,
+    conversation_id: conversationId,
+    sender_id: senderId,
+    type: kind,
+    text: text || null,
+    media_key: mediaKey || null,
+    client_message_id: clientMessageId || null,
+    created_at: createdAt,
+  };
   return { ok: true, message: row };
 }
 
@@ -1650,9 +1659,12 @@ async function handleMultipartMessage(context, form) {
   const insert = await createMessage(db, conversationId, senderId, "image", "", upload.mediaKey, clientMessageId);
   if (!insert.ok) return errorResponse(insert.error, insert.status || 500, insert.detail || "");
   touchConversationVersions(participants.map((participant) => participant.userId));
-  try {
-    await Promise.all(participants.map((participant) => refreshUnreadCount(db, participant.userId)));
-  } catch (error) {}
+  const refreshTask = Promise.all(participants.map((participant) => refreshUnreadCount(db, participant.userId))).catch(
+    () => {}
+  );
+  if (context && typeof context.waitUntil === "function") {
+    context.waitUntil(refreshTask);
+  }
 
   const secret = getMediaSigningSecret(context.env);
   const payload = await buildMessagePayload(insert.message, participants, context.request.url, secret);
@@ -1982,14 +1994,29 @@ export async function onRequestPost(context) {
     if (!insert.ok) return await timing.finalize(errorResponse(insert.error, insert.status || 500, insert.detail || ""), db);
 
     touchConversationVersions(participants.map((participant) => participant.userId));
-    try {
-      await Promise.all(participants.map((participant) => refreshUnreadCount(dbTimed, participant.userId)));
-    } catch (error) {}
+    const refreshTask = Promise.all(participants.map((participant) => refreshUnreadCount(dbTimed, participant.userId))).catch(
+      () => {}
+    );
+    if (context && typeof context.waitUntil === "function") {
+      context.waitUntil(refreshTask);
+    }
 
-    const secret = getMediaSigningSecret(context.env);
-    const payload = await buildMessagePayload(insert.message, participants, context.request.url, secret);
-
-    const response = jsonResponse({ ok: true, message: payload }, 200);
+    const inserted = insert.message || {};
+    const messageId = inserted.id != null ? String(inserted.id) : "";
+    const createdAt = inserted.created_at != null ? toIso(inserted.created_at) : new Date().toISOString();
+    const response = jsonResponse(
+      {
+        ok: true,
+        messageId,
+        message_id: messageId,
+        clientMessageId: clientMessageId || inserted.client_message_id || "",
+        client_message_id: clientMessageId || inserted.client_message_id || "",
+        createdAt,
+        created_at: createdAt,
+        serverTime: new Date().toISOString(),
+      },
+      200
+    );
     withNoStore(response);
     return await timing.finalize(response, db);
   } catch (error) {

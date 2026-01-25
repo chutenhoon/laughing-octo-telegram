@@ -1965,19 +1965,6 @@ header {
   position: relative;
 }
 
-.message-shell.is-loading {
-  pointer-events: none;
-}
-
-.message-shell.is-loading::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgba(8, 8, 12, 0.45);
-  backdrop-filter: blur(3px);
-  z-index: 5;
-}
-
 .message-shell.is-drop-active:not(.is-loading)::before {
   content: "Tha anh de gui";
   position: absolute;
@@ -2413,18 +2400,12 @@ header {
   display: grid;
 }
 
-.message-body.is-loading .message-row {
+.message-body.is-loading .message-row:not(.pending) {
   visibility: hidden;
 }
 
 .message-body.is-loading .message-load {
   display: none;
-}
-
-.message-shell.is-loading .message-sidebar-foot,
-.message-shell.is-loading .message-thread-empty,
-.message-shell.is-loading .message-body .empty-state {
-  display: none !important;
 }
 
 .message-loading {
@@ -2435,8 +2416,6 @@ header {
   gap: 16px;
   align-content: start;
   pointer-events: none;
-  background: rgba(8, 8, 12, 0.35);
-  backdrop-filter: blur(2px);
 }
 
 .message-skeleton-row {

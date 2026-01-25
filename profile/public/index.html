@@ -1153,6 +1153,17 @@
                 window.location.href = loginUrl;
                 return;
               }
+              const authId = authUser.id != null ? String(authUser.id).trim() : "";
+              const authUsername = authUser.username ? String(authUser.username).trim() : "";
+              const isSelf =
+                isOwner ||
+                (authId && targetId && authId === String(targetId).trim()) ||
+                (authUsername && targetUsername && normalizeId(authUsername) === normalizeId(targetUsername));
+              if (isSelf) {
+                const selfUrl = buildMessagesUrl("", "", "");
+                window.location.href = selfUrl || "/profile/messages";
+                return;
+              }
               if (!targetUsername && !targetId) {
                 notify("Không tìm thấy người dùng.");
                 return;

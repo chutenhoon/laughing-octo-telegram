@@ -52,7 +52,7 @@
 
     <main class="wrap">
       <section class="section message-section">
-        <div class="card message-shell is-loading" id="message-shell">
+        <div class="card message-shell" id="message-shell">
           <aside class="message-sidebar">
             <div class="message-sidebar-head">
               <h3 data-i18n-key="profile.messages.inboxTitle">Inbox</h3>
@@ -564,6 +564,8 @@
         const MESSAGE_CACHE_TTL_MS = 60000;
         const LIST_CACHE_TTL_MS = 30000;
         const IDLE_POLL_THRESHOLD_MS = 60000;
+        const SEND_TIMEOUT_MS = 8000;
+        const SEND_DEBOUNCE_MS = 350;
         const allowEmptyLabels = false;
         const messageMap = new Map();
         const messageNodes = new Map();
@@ -617,6 +619,66 @@
           inflightRequests.set(key, request);
           return request;
         };
+        const sendControllers = new Map();
+        const abortSendRequest = (clientId, reason) => {
+          const key = String(clientId || "");
+          if (!key) return;
+          const inflight = sendControllers.get(key);
+          if (!inflight) return;
+          inflight.reason = reason || "duplicate";
+          if (inflight.timeoutId) clearTimeout(inflight.timeoutId);
+          try {
+            inflight.controller.abort();
+          } catch (error) {}
+        };
+        const resolveSendMeta = (data) => {
+          const message = data && data.message ? data.message : null;
+          const rawMessageId = data && (data.messageId != null ? data.messageId : data.message_id);
+          const rawCreatedAt = data && (data.createdAt != null ? data.createdAt : data.created_at);
+          const rawServerTime = data && (data.serverTime != null ? data.serverTime : data.server_time);
+          const messageId = message && message.id != null ? String(message.id) : String(rawMessageId || "");
+          const createdAt = message && message.createdAt ? message.createdAt : String(rawCreatedAt || "");
+          const serverTime = rawServerTime != null ? String(rawServerTime) : "";
+          return { message, messageId, createdAt, serverTime };
+        };
+        const sendMessageRequest = async (payload, clientId) => {
+          const key = String(clientId || "");
+          if (key) {
+            abortSendRequest(key, "duplicate");
+          }
+          const controller = new AbortController();
+          const inflight = { controller, timeoutId: null, reason: "" };
+          inflight.timeoutId = setTimeout(() => {
+            inflight.reason = "timeout";
+            try {
+              controller.abort();
+            } catch (error) {}
+          }, SEND_TIMEOUT_MS);
+          if (key) {
+            sendControllers.set(key, inflight);
+          }
+          try {
+            const response = await fetch(apiUrl, {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify(payload),
+              cache: "no-store",
+              signal: controller.signal,
+            });
+            const data = await response.json().catch(() => null);
+            return { response, data };
+          } catch (error) {
+            if (error && error.name === "AbortError") {
+              return { aborted: true, reason: inflight.reason || "abort" };
+            }
+            throw error;
+          } finally {
+            if (key && sendControllers.get(key) === inflight) {
+              sendControllers.delete(key);
+            }
+            if (inflight.timeoutId) clearTimeout(inflight.timeoutId);
+          }
+        };
         const abortMessageFetch = () => {
           if (!messageFetchController) return;
           try {
@@ -632,6 +694,9 @@
         let pendingPreviewClientId = "";
         let isPreviewOpen = false;
         let isPreviewSending = false;
+        let isComposerLocked = false;
+        let isSendDebounceActive = false;
+        let sendDebounceTimer = null;
         let lastStatusKey = "";
         let isSendingImage = false;
         let searchValue = "";
@@ -1031,25 +1096,20 @@
         };
 
         const updateChatLoading = () => {
-          const shellLoading = isChatOverlayLoading;
-          const messageLoadingState =
-            shellLoading && (isChatLoadingMessages || (!hasLoadedMessages && isChatLoadingConversations));
-          if (messageShell) {
-            messageShell.classList.toggle("is-loading", shellLoading);
-          }
+          const showLoading =
+            isChatOverlayLoading && (isChatLoadingMessages || (!hasLoadedMessages && isChatLoadingConversations));
           if (messageBody) {
-            messageBody.classList.toggle("is-loading", messageLoadingState);
+            messageBody.classList.toggle("is-loading", showLoading);
           }
           if (messageLoading) {
-            messageLoading.setAttribute("aria-hidden", messageLoadingState ? "false" : "true");
+            messageLoading.setAttribute("aria-hidden", showLoading ? "false" : "true");
           }
           if (emptyState) {
-            const showEmpty = allowEmptyLabels && !shellLoading && hasLoadedMessages && !messageList.length;
+            const showEmpty = allowEmptyLabels && !showLoading && hasLoadedMessages && !messageList.length;
             emptyState.style.display = showEmpty ? "block" : "none";
           }
           if (sidebarFoot) {
-            const showSidebarEmpty =
-              allowEmptyLabels && !shellLoading && hasLoadedConversationList && !conversationList.length;
+            const showSidebarEmpty = allowEmptyLabels && !showLoading && hasLoadedConversationList && !conversationList.length;
             sidebarFoot.style.display = showSidebarEmpty ? "block" : "none";
           }
         };
@@ -2425,7 +2485,15 @@
           row.classList.remove("pending");
           row.classList.remove("failed");
           const status = row.querySelector(".message-status");
-          if (status) status.remove();
+          if (status) {
+            status.textContent = "Da gui";
+            const statusNode = status;
+            setTimeout(() => {
+              if (statusNode && statusNode.parentElement && statusNode.textContent === "Da gui") {
+                statusNode.remove();
+              }
+            }, 1200);
+          }
           const retry = row.querySelector(".message-retry");
           if (retry) retry.remove();
           if (message && message.id) {
@@ -2565,11 +2633,11 @@
             }
             const isDirect = pending.isDirect === true;
             const senderId = pending.senderId || selfUserId || rawUserId;
-            const payload = pending.isAdmin
-              ? {
-                  senderId,
-                  recipientId: targetUserId,
-                  body: mediaUrl,
+          const payload = pending.isAdmin
+            ? {
+                senderId,
+                recipientId: targetUserId,
+                body: mediaUrl,
                   bodyType: "image",
                   mediaUrl,
                   mediaId,
@@ -2596,44 +2664,49 @@
                     mediaUrl,
                     mediaId,
                     mediaKey: pending.mediaKey || undefined,
-                    clientMessageId: pending.clientMessageId,
-                    conversationId: pending.conversationId || undefined,
-                  };
-            const response = await fetch(apiUrl, {
-              method: "POST",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify(payload),
-              cache: "no-store",
-            });
-            const data = await response.json().catch(() => null);
-            if (!response.ok || !data || !data.ok || !data.message || !data.message.body) {
-              const errorCode = data && data.error ? String(data.error) : "SEND_FAILED";
-              const hint = data && data.hint ? ` - ${data.hint}` : "";
-              const message = data && data.message ? ` - ${data.message}` : "";
-              throw new Error(`${errorCode}${hint}${message}`);
-            }
-            const message = data.message;
-            const imageUrl = message.body || mediaUrl;
-            finalizePendingMessage(
-              clientId,
-              {
-                id: message.id,
-                senderId: message.senderId || selfUserId,
-                recipientId: message.recipientId || targetUserId,
-                body: imageUrl,
-                bodyType: message.bodyType || message.type || "image",
-                createdAt: message.createdAt || pending.createdAt || new Date().toISOString(),
-              },
-              { imageUrl, revokePreview: true }
-            );
-            succeeded = true;
-          } catch (error) {
-            failPendingMessage(clientId, "Gui that bai");
-            notify(error && error.message ? error.message : "Khong the gui anh luc nay.");
-          } finally {
-            isSendingImage = false;
-            setAttachLoading(false);
+                clientMessageId: pending.clientMessageId,
+                conversationId: pending.conversationId || undefined,
+              };
+          const result = await sendMessageRequest(payload, pending.clientMessageId || clientId);
+          if (result && result.aborted) {
+            if (result.reason === "duplicate") return true;
+            throw new Error("SEND_TIMEOUT");
           }
+          const response = result && result.response ? result.response : null;
+          const data = result && result.data ? result.data : null;
+          if (!response || !response.ok || !data || !data.ok) {
+            const errorCode = data && data.error ? String(data.error) : "SEND_FAILED";
+            const hint = data && data.hint ? ` - ${data.hint}` : "";
+            const message = data && data.message ? ` - ${data.message}` : "";
+            throw new Error(`${errorCode}${hint}${message}`);
+          }
+          const meta = resolveSendMeta(data);
+          const serverId = meta.messageId;
+          if (!serverId) {
+            throw new Error("SEND_FAILED");
+          }
+          const imageUrl = (meta.message && meta.message.body) || mediaUrl;
+          finalizePendingMessage(
+            clientId,
+            {
+              id: serverId,
+              senderId: (meta.message && meta.message.senderId) || selfUserId,
+              recipientId: (meta.message && meta.message.recipientId) || targetUserId,
+              body: imageUrl,
+              bodyType: (meta.message && (meta.message.bodyType || meta.message.type)) || "image",
+              createdAt: meta.createdAt || pending.createdAt || new Date().toISOString(),
+            },
+            { imageUrl, revokePreview: true }
+          );
+          succeeded = true;
+        } catch (error) {
+          failPendingMessage(clientId, "Gui that bai");
+          const reason = error && error.message === "SEND_TIMEOUT" ? "Het thoi gian gui anh." : "";
+          notify(reason || (error && error.message ? error.message : "Khong the gui anh luc nay."));
+        } finally {
+          isSendingImage = false;
+          setAttachLoading(false);
+        }
           return succeeded;
         };
 
@@ -2694,31 +2767,37 @@
                   conversationId: pending.conversationId || undefined,
                 };
           try {
-            const response = await fetch(apiUrl, {
-              method: "POST",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify(payload),
-              cache: "no-store",
-            });
-            const data = await response.json().catch(() => null);
-            if (!response.ok || !data || !data.ok || !data.message) {
+            const result = await sendMessageRequest(payload, pending.clientMessageId || clientId);
+            if (result && result.aborted) {
+              if (result.reason === "duplicate") return;
+              throw new Error("SEND_TIMEOUT");
+            }
+            const response = result && result.response ? result.response : null;
+            const data = result && result.data ? result.data : null;
+            if (!response || !response.ok || !data || !data.ok) {
               const errorCode = data && data.error ? String(data.error) : "SEND_FAILED";
               const hint = data && data.hint ? ` - ${data.hint}` : "";
               const message = data && data.message ? ` - ${data.message}` : "";
               throw new Error(`${errorCode}${hint}${message}`);
             }
-            const message = data.message;
+            const meta = resolveSendMeta(data);
+            const serverId = meta.messageId;
+            if (!serverId) {
+              throw new Error("SEND_FAILED");
+            }
+            const nextCreatedAt = meta.createdAt || pending.createdAt || new Date().toISOString();
             finalizePendingMessage(clientId, {
-              id: message.id,
-              senderId: message.senderId || senderId,
-              recipientId: message.recipientId || targetUserId,
-              body: message.body || pending.body,
-              bodyType: message.bodyType || message.type || "text",
-              createdAt: message.createdAt || pending.createdAt || new Date().toISOString(),
+              id: serverId,
+              senderId: (meta.message && meta.message.senderId) || senderId,
+              recipientId: (meta.message && meta.message.recipientId) || targetUserId,
+              body: (meta.message && meta.message.body) || pending.body,
+              bodyType: (meta.message && (meta.message.bodyType || meta.message.type)) || "text",
+              createdAt: nextCreatedAt,
             });
           } catch (error) {
             failPendingMessage(clientId, "Gui that bai");
-            notify(error && error.message ? error.message : "Khong the gui tin nhan luc nay.");
+            const reason = error && error.message === "SEND_TIMEOUT" ? "Het thoi gian gui tin." : "";
+            notify(reason || (error && error.message ? error.message : "Khong the gui tin nhan luc nay."));
           }
         };
 
@@ -2746,6 +2825,7 @@
             return;
           }
           const createdAt = new Date().toISOString();
+          if (!applySendDebounce()) return;
           if (isFile) {
             const row = createMessageRow({ body: text, bodyType: "text", createdAt }, { outgoing: true });
             if (messageListWrap) {
@@ -2814,31 +2894,37 @@
                   conversationId: conversationId || undefined,
                 };
           try {
-            const response = await fetch(apiUrl, {
-              method: "POST",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify(payload),
-              cache: "no-store",
-            });
-            const data = await response.json().catch(() => null);
-            if (!response.ok || !data || !data.ok || !data.message) {
+            const result = await sendMessageRequest(payload, clientId);
+            if (result && result.aborted) {
+              if (result.reason === "duplicate") return;
+              throw new Error("SEND_TIMEOUT");
+            }
+            const response = result && result.response ? result.response : null;
+            const data = result && result.data ? result.data : null;
+            if (!response || !response.ok || !data || !data.ok) {
               const errorCode = data && data.error ? String(data.error) : "SEND_FAILED";
               const hint = data && data.hint ? ` - ${data.hint}` : "";
               const message = data && data.message ? ` - ${data.message}` : "";
               throw new Error(`${errorCode}${hint}${message}`);
             }
-            const message = data.message;
+            const meta = resolveSendMeta(data);
+            const serverId = meta.messageId;
+            if (!serverId) {
+              throw new Error("SEND_FAILED");
+            }
+            const nextCreatedAt = meta.createdAt || createdAt;
             finalizePendingMessage(clientId, {
-              id: message.id,
-              senderId: message.senderId || selfUserId,
-              recipientId: message.recipientId || targetUserId,
-              body: message.body || text,
-              bodyType: message.bodyType || message.type || "text",
-              createdAt: message.createdAt || createdAt,
+              id: serverId,
+              senderId: (meta.message && meta.message.senderId) || selfUserId,
+              recipientId: (meta.message && meta.message.recipientId) || targetUserId,
+              body: (meta.message && meta.message.body) || text,
+              bodyType: (meta.message && (meta.message.bodyType || meta.message.type)) || "text",
+              createdAt: nextCreatedAt,
             });
           } catch (error) {
             failPendingMessage(clientId, "Gui that bai");
-            notify(error && error.message ? error.message : "Khong the gui tin nhan luc nay.");
+            const reason = error && error.message === "SEND_TIMEOUT" ? "Het thoi gian gui tin." : "";
+            notify(reason || (error && error.message ? error.message : "Khong the gui tin nhan luc nay."));
           }
         };
 
@@ -2890,12 +2976,28 @@
           });
         };
 
+        const syncSendButtonState = () => {
+          if (!sendBtn) return;
+          sendBtn.disabled = isComposerLocked || isSendDebounceActive;
+        };
         const setChatInputDisabled = (disabled) => {
+          isComposerLocked = disabled;
           if (messageInput) messageInput.disabled = disabled;
-          if (sendBtn) sendBtn.disabled = disabled;
           if (attachBtn) attachBtn.disabled = disabled;
           if (emojiBtn) emojiBtn.disabled = disabled;
           if (fileInput) fileInput.disabled = disabled;
+          syncSendButtonState();
+        };
+        const applySendDebounce = () => {
+          if (isSendDebounceActive) return false;
+          isSendDebounceActive = true;
+          syncSendButtonState();
+          if (sendDebounceTimer) clearTimeout(sendDebounceTimer);
+          sendDebounceTimer = setTimeout(() => {
+            isSendDebounceActive = false;
+            syncSendButtonState();
+          }, SEND_DEBOUNCE_MS);
+          return true;
         };
 
         const setPreviewSending = (sending) => {
