@@ -229,68 +229,6 @@ function cleanupLogoArtifacts() {
   });
 }
 
-function initBackgroundPreview() {
-  const preview = document.querySelector(".bg-preview");
-  const video = document.querySelector(".video-bg");
-  if (!preview || !video) return;
-
-  const hidePreview = () => {
-    preview.classList.add("is-hidden");
-    preview.setAttribute("aria-hidden", "true");
-  };
-
-  const showPreview = () => {
-    preview.classList.remove("is-hidden");
-  };
-
-  const tryPlay = () => {
-    if (!video.paused || typeof video.play !== "function") return;
-    const attempt = video.play();
-    if (attempt && typeof attempt.catch === "function") {
-      attempt.catch(() => {});
-    }
-  };
-
-  if (video.readyState >= 2) {
-    hidePreview();
-    tryPlay();
-  } else {
-    const onReady = () => {
-      hidePreview();
-      tryPlay();
-    };
-    video.addEventListener("loadeddata", onReady, { once: true });
-    video.addEventListener("canplay", onReady, { once: true });
-  }
-
-  video.addEventListener("playing", hidePreview, { once: true });
-
-  video.addEventListener(
-    "error",
-    () => {
-      showPreview();
-    },
-    { once: true }
-  );
-
-  const kickLoad = () => {
-    if (video.preload === "none") {
-      video.preload = "metadata";
-    }
-    if (video.readyState === 0) {
-      try {
-        video.load();
-      } catch (error) {}
-    }
-  };
-
-  if (typeof requestIdleCallback === "function") {
-    requestIdleCallback(kickLoad, { timeout: 1200 });
-  } else {
-    setTimeout(kickLoad, 0);
-  }
-}
-
 function lockViewportScale() {
   const meta = document.querySelector('meta[name="viewport"]');
   if (meta) {
@@ -5563,7 +5501,6 @@ document.addEventListener("DOMContentLoaded", () => {
     normalizeInternalLinks(isFile);
     normalizeIndexLinks(isFile);
     cleanupLogoArtifacts();
-    initBackgroundPreview();
     applyLinkPreviewMetaTags();
     ensureBadgeStyles();
   if (typeof BKCurrency !== "undefined") {

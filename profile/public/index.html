@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
@@ -25,8 +25,7 @@
 <link rel="stylesheet" href="../../asset/base.css" />
   </head>
   <body class="page-profile page-public-profile">
-    <img class="bg-preview" src="../../asset/bg-preview.webp" alt="" aria-hidden="true" decoding="async" loading="eager" />
-    <video class="video-bg" autoplay muted loop playsinline preload="metadata" poster="../../asset/bg-preview.webp">
+    <video class="video-bg" autoplay muted loop playsinline preload="metadata">
       <source src="../../asset/bg-donut.mp4" type="video/mp4" />
     </video>
     <div class="video-overlay"></div>
@@ -74,7 +73,7 @@
                 <div class="profile-public-actions">
                   <button class="btn ghost profile-follow-btn" id="profile-follow-btn" type="button">Follow</button>
                   <button class="btn ghost profile-message-btn" id="profile-message-btn" type="button" data-i18n-key="profile.public.message">
-                    Nhắn tin
+                    Nh?n tin
                   </button>
                 </div>
               </div>
@@ -133,9 +132,9 @@
             </div>
           </div>
           <div class="profile-public-error" id="profile-error" role="status" aria-live="polite">
-            <strong>Không thể tải hồ sơ</strong>
-            <span id="profile-error-text">Vui lòng thử lại sau.</span>
-            <button class="btn ghost" id="profile-retry-btn" type="button">Thử lại</button>
+            <strong>Kh�ng th? t?i h? so</strong>
+            <span id="profile-error-text">Vui l�ng th? l?i sau.</span>
+            <button class="btn ghost" id="profile-retry-btn" type="button">Th? l?i</button>
           </div>
         </div>
 
@@ -264,8 +263,8 @@
                     class="btn ghost story-thumb-btn"
                     type="button"
                     data-slot="0"
-                    title="Đặt ảnh bìa"
-                    aria-label="Đặt ảnh bìa"
+                    title="�?t ?nh b�a"
+                    aria-label="�?t ?nh b�a"
                   >
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path
@@ -273,7 +272,7 @@
                         fill="currentColor"
                       />
                     </svg>
-                    <span>Đặt ảnh bìa</span>
+                    <span>�?t ?nh b�a</span>
                   </button>
                 </div>
                 <input
@@ -297,8 +296,8 @@
                     class="btn ghost story-thumb-btn"
                     type="button"
                     data-slot="1"
-                    title="Đặt ảnh bìa"
-                    aria-label="Đặt ảnh bìa"
+                    title="�?t ?nh b�a"
+                    aria-label="�?t ?nh b�a"
                   >
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path
@@ -306,7 +305,7 @@
                         fill="currentColor"
                       />
                     </svg>
-                    <span>Đặt ảnh bìa</span>
+                    <span>�?t ?nh b�a</span>
                   </button>
                 </div>
                 <input
@@ -330,8 +329,8 @@
                     class="btn ghost story-thumb-btn"
                     type="button"
                     data-slot="2"
-                    title="Đặt ảnh bìa"
-                    aria-label="Đặt ảnh bìa"
+                    title="�?t ?nh b�a"
+                    aria-label="�?t ?nh b�a"
                   >
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path
@@ -339,7 +338,7 @@
                         fill="currentColor"
                       />
                     </svg>
-                    <span>Đặt ảnh bìa</span>
+                    <span>�?t ?nh b�a</span>
                   </button>
                 </div>
                 <input
@@ -363,8 +362,8 @@
                     class="btn ghost story-thumb-btn"
                     type="button"
                     data-slot="3"
-                    title="Đặt ảnh bìa"
-                    aria-label="Đặt ảnh bìa"
+                    title="�?t ?nh b�a"
+                    aria-label="�?t ?nh b�a"
                   >
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path
@@ -372,7 +371,7 @@
                         fill="currentColor"
                       />
                     </svg>
-                    <span>Đặt ảnh bìa</span>
+                    <span>�?t ?nh b�a</span>
                   </button>
                 </div>
                 <input
@@ -391,7 +390,7 @@
               </div>
             </div>
             <div class="story-manage-help" data-i18n-key="profile.public.manage.help">
-              Ảnh 9:16, tối đa 2MB. Video tối đa 60s (cần quyền).
+              ?nh 9:16, t?i da 2MB. Video t?i da 60s (c?n quy?n).
             </div>
           </div>
         </div>
@@ -469,7 +468,7 @@
         const invalidPathUsername = hasUserPath && (!pathUsername || !isValidUsername(pathUsername));
         const invalidQueryUsername = !hasUserPath && queryUsername && !isValidUsername(normalizedQueryUsername);
         if (invalidPathUsername || invalidQueryUsername) {
-          const message = t("profile.public.invalidUsername", "Username không hợp lệ");
+          const message = t("profile.public.invalidUsername", "Username kh�ng h?p l?");
           if (window.BKAuth && typeof window.BKAuth.showToast === "function") {
             window.BKAuth.showToast(message);
           } else {
@@ -703,19 +702,19 @@
         };
         const formatLastSeen = (value) => {
           const seconds = toEpochSeconds(value);
-          if (!seconds) return t("profile.public.online.offline", "Ngoại tuyến");
+          if (!seconds) return t("profile.public.online.offline", "Ngo?i tuy?n");
           const diff = Math.max(0, Math.floor(Date.now() / 1000) - seconds);
           const minutes = Math.floor(diff / 60);
           if (minutes < 60) {
-            return t("profile.public.online.minutes", `${minutes} phút trước`, { count: minutes });
+            return t("profile.public.online.minutes", `${minutes} ph�t tru?c`, { count: minutes });
           }
           const hours = Math.floor(minutes / 60);
           if (hours < 24) {
-            return t("profile.public.online.hours", `${hours} giờ trước`, { count: hours });
+            return t("profile.public.online.hours", `${hours} gi? tru?c`, { count: hours });
           }
           const days = Math.floor(hours / 24);
-          if (days === 1) return t("profile.public.online.yesterday", "Hôm qua");
-          return t("profile.public.online.days", `${days} ngày trước`, { count: days });
+          if (days === 1) return t("profile.public.online.yesterday", "H�m qua");
+          return t("profile.public.online.days", `${days} ng�y tru?c`, { count: days });
         };
 
         const setOwnerOnlyVisibility = () => {
@@ -824,8 +823,8 @@
         const renderStoryError = () => {
           grid.innerHTML = `
             <div class="empty-state story-empty" style="grid-column: 1 / -1;">
-              <strong>${t("profile.public.featured.loadFail", "Không thể tải tin đăng chú ý.")}</strong>
-              ${t("profile.public.featured.retry", "Vui lòng thử lại.")}
+              <strong>${t("profile.public.featured.loadFail", "Kh�ng th? t?i tin dang ch� �.")}</strong>
+              ${t("profile.public.featured.retry", "Vui l�ng th? l?i.")}
             </div>
           `;
         };
@@ -1001,7 +1000,7 @@
                 ? userForDisplay.last_seen_at || userForDisplay.lastSeenAt
                 : null;
             profileOnlineText.textContent = isOnline
-              ? t("profile.public.online.now", "Đang online")
+              ? t("profile.public.online.now", "�ang online")
               : formatLastSeen(lastSeen);
             if (profileOnlineDot) profileOnlineDot.classList.toggle("is-online", isOnline);
           }
@@ -1165,7 +1164,7 @@
                 return;
               }
               if (!targetUsername && !targetId) {
-                notify("Không tìm thấy người dùng.");
+                notify("Kh�ng t�m th?y ngu?i d�ng.");
                 return;
               }
               if (!isFile) {
@@ -1658,7 +1657,7 @@
           if (!file) return;
           const item = draftStories[slot];
           if (!item || item.type !== "video") {
-            notify(t("profile.public.toast.thumbRequiresVideo", "Vui lòng chọn video trước."));
+            notify(t("profile.public.toast.thumbRequiresVideo", "Vui l�ng ch?n video tru?c."));
             return;
           }
           if (!canUploadVideo) {
@@ -1666,11 +1665,11 @@
             return;
           }
           if (!file.type || !file.type.startsWith("image/")) {
-            notify(t("profile.public.toast.thumbInvalid", "Ảnh bìa phải là hình ảnh."));
+            notify(t("profile.public.toast.thumbInvalid", "?nh b�a ph?i l� h�nh ?nh."));
             return;
           }
           if (!isAdmin && file.size > MAX_THUMB_SIZE) {
-            notify(t("profile.public.toast.thumbTooLarge", "Ảnh bìa vượt quá 512KB."));
+            notify(t("profile.public.toast.thumbTooLarge", "?nh b�a vu?t qu� 512KB."));
             return;
           }
           const previewUrl = URL.createObjectURL(file);
@@ -1770,8 +1769,8 @@
 
           if (storyLimitNote) {
             storyLimitNote.textContent = canUploadVideo
-              ? t("profile.public.manage.limit.pro", "Tối đa 4 bài, hỗ trợ video.")
-              : t("profile.public.manage.limit.basic", "Tối đa 4 bài, chỉ ảnh.");
+              ? t("profile.public.manage.limit.pro", "T?i da 4 b�i, h? tr? video.")
+              : t("profile.public.manage.limit.basic", "T?i da 4 b�i, ch? ?nh.");
           }
         };
 
@@ -2075,7 +2074,7 @@
             return;
           }
           if (!canUploadVideo && isVideo) {
-            notify(t("profile.public.toast.notEligible", "Bạn chưa được cấp quyền tải video."));
+            notify(t("profile.public.toast.notEligible", "B?n chua du?c c?p quy?n t?i video."));
             return;
           }
           clearPendingThumb(draftStories[slot]);
@@ -2271,6 +2270,7 @@
 
   </body>
 </html>
+
 
 
 

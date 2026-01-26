@@ -25,8 +25,7 @@
 <link rel="stylesheet" href="../../asset/base.css" />
   </head>
   <body class="page-profile chat-page">
-    <img class="bg-preview" src="../../asset/bg-preview.webp" alt="" aria-hidden="true" decoding="async" loading="eager" />
-    <video class="video-bg" autoplay muted loop playsinline preload="metadata" poster="../../asset/bg-preview.webp">
+    <video class="video-bg" autoplay muted loop playsinline preload="metadata">
       <source src="../../asset/bg-donut.mp4" type="video/mp4" />
     </video>
     <div class="video-overlay"></div>
@@ -52,7 +51,7 @@
 
     <main class="wrap">
       <section class="section message-section">
-        <div class="card message-shell" id="message-shell">
+        <div class="card message-shell is-empty" id="message-shell">
           <aside class="message-sidebar">
             <div class="message-sidebar-head">
               <h3 data-i18n-key="profile.messages.inboxTitle">Inbox</h3>
@@ -63,7 +62,7 @@
               <button class="message-search-clear" id="message-search-clear" type="button" aria-label="Clear">x</button>
             </div>
             <div class="message-thread-list">
-              <button class="message-thread active" type="button" data-thread="admin">
+              <button class="message-thread" type="button" data-thread="admin">
                 <div class="message-avatar">
                   <img src="../../assets/avt-admin.png" alt="BK" data-support-avatar />
                 </div>
@@ -101,6 +100,24 @@
                 </div>
               </div>
               <span class="message-role admin" data-i18n-key="profile.messages.role.admin">Admin</span>
+            </div>
+            <div class="message-empty" id="message-empty" aria-hidden="true">
+              <div class="message-empty-card">
+                <div class="message-empty-icon" aria-hidden="true">
+                  <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      d="M7 18l-3 3v-4a7 7 0 01-1-3.6C3 7.4 7 4 12 4s9 3.4 9 7.4-4 7.6-9 7.6c-1.7 0-3.3-.3-4.7-.9"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      fill="none"
+                    />
+                  </svg>
+                </div>
+                <strong class="message-empty-title">Ch&#7885;n m&#7897;t cu&#7897;c tr&#242; chuy&#7879;n &#273;&#7875; b&#7855;t &#273;&#7847;u</strong>
+                <span class="message-empty-sub">Ch&#7885;n &#7903; danh s&#225;ch b&#234;n tr&#225;i &#273;&#7875; xem tin nh&#7855;n.</span>
+              </div>
             </div>
             <div class="message-body" id="message-body">
               <div class="message-loading" id="message-loading" aria-hidden="true">
@@ -291,6 +308,7 @@
         window.addEventListener("resize", () => setDetailView(messageShell && messageShell.classList.contains("is-detail")));
 
         const messageBody = document.getElementById("message-body");
+        const messageEmpty = document.getElementById("message-empty");
         const messageInput = document.getElementById("message-input");
         const sendBtn = document.getElementById("message-send");
         const emojiBtn = document.getElementById("message-emoji");
@@ -370,6 +388,18 @@
         const queryConversationId = decodeParam(
           queryParams.get("conversationId") || queryParams.get("conversation_id") || ""
         ).trim();
+        const updateConversationParam = (conversationId) => {
+          if (!window.history || typeof window.history.replaceState !== "function") return;
+          const nextId = conversationId ? String(conversationId) : "";
+          const url = new URL(window.location.href);
+          if (nextId) {
+            url.searchParams.set("conversationId", nextId);
+          } else {
+            url.searchParams.delete("conversationId");
+            url.searchParams.delete("conversation_id");
+          }
+          window.history.replaceState({}, "", url.toString());
+        };
         const buildProfileUrl = (profile) => {
           const username = profile && profile.username ? String(profile.username).trim() : "";
           const userId = profile && (profile.id || profile.userId) ? String(profile.id || profile.userId).trim() : "";
@@ -588,6 +618,7 @@
         let isChatOverlayLoading = true;
         let pollEnabled = false;
         let pollStartScheduled = false;
+        let shouldAutoStartPolling = false;
         let loadMoreWrap = null;
         let loadMoreBtn = null;
         let messageListWrap = null;
@@ -709,6 +740,19 @@
         if (messageBody) {
           emptyState = messageBody.querySelector(".empty-state");
         }
+        const setConversationEmptyState = (isEmpty) => {
+          if (messageShell) {
+            messageShell.classList.toggle("is-empty", isEmpty);
+          }
+          if (messageEmpty) {
+            messageEmpty.setAttribute("aria-hidden", isEmpty ? "false" : "true");
+          }
+          if (messageInput) messageInput.disabled = isEmpty;
+          if (sendBtn) sendBtn.disabled = isEmpty;
+          if (emojiBtn) emojiBtn.disabled = isEmpty;
+          if (attachBtn) attachBtn.disabled = isEmpty;
+          if (fileInput) fileInput.disabled = isEmpty;
+        };
         const updateSidebarCount = (count) => {
           if (!sidebarCount) return;
           const label = count === 1 ? "1 cuoc tro chuyen" : `${count} cuoc tro chuyen`;
@@ -1096,8 +1140,11 @@
         };
 
         const updateChatLoading = () => {
+          const hasActiveSelection = Boolean(activeConversationId || activeUserId);
           const showLoading =
-            isChatOverlayLoading && (isChatLoadingMessages || (!hasLoadedMessages && isChatLoadingConversations));
+            hasActiveSelection &&
+            isChatOverlayLoading &&
+            (isChatLoadingMessages || (!hasLoadedMessages && isChatLoadingConversations));
           if (messageBody) {
             messageBody.classList.toggle("is-loading", showLoading);
           }
@@ -1105,7 +1152,8 @@
             messageLoading.setAttribute("aria-hidden", showLoading ? "false" : "true");
           }
           if (emptyState) {
-            const showEmpty = allowEmptyLabels && !showLoading && hasLoadedMessages && !messageList.length;
+            const showEmpty =
+              allowEmptyLabels && hasActiveSelection && !showLoading && hasLoadedMessages && !messageList.length;
             emptyState.style.display = showEmpty ? "block" : "none";
           }
           if (sidebarFoot) {
@@ -1928,16 +1976,18 @@
           const previousConversationId = activeConversationId;
           if (previousConversationId) writeMessageCache(previousConversationId);
           abortMessageFetch();
+          setConversationEmptyState(false);
           activeUserId = conversation.userId ? normalizeUserId(conversation.userId) : "";
-            activeConversationId = conversation.conversationId ? String(conversation.conversationId) : "";
-            if (activeConversationId) {
-              writeActiveConversation(activeConversationId);
-            }
-            if (activeConversationId) {
-              markMessagesRead(activeConversationId);
-            }
-            if (conversation.user) {
-              applySupportProfile({
+          activeConversationId = conversation.conversationId ? String(conversation.conversationId) : "";
+          if (activeConversationId) {
+            writeActiveConversation(activeConversationId);
+          }
+          if (activeConversationId) {
+            markMessagesRead(activeConversationId);
+          }
+          updateConversationParam(activeConversationId);
+          if (conversation.user) {
+            applySupportProfile({
               id: conversation.user.id || activeUserId,
               username: conversation.user.username || "",
               display_name: conversation.user.display_name || conversation.user.username || "",
@@ -1962,7 +2012,9 @@
               loadMessages(activeConversationId, { reset: true, delta: false });
             }
           }
-          if (pollEnabled) {
+          if (!pollEnabled) {
+            ensurePollingEnabled();
+          } else {
             loadChatHeartbeat({ force: true });
             startMessagePolling();
           }
@@ -1986,15 +2038,6 @@
             hasLoadedConversationList = true;
             renderThreadList(conversationList);
             updateSidebarCount(conversationList.length);
-            const cachedActiveId = readActiveConversation();
-            if (cachedActiveId && !activeConversationId) {
-              const cachedConversation = conversationList.find(
-                (item) => String(item.conversationId || "") === String(cachedActiveId)
-              );
-              if (cachedConversation) {
-                setActiveConversation(cachedConversation);
-              }
-            }
             if (queryConversationId && !requestedApplied && !activeConversationId) {
               const cachedRequested = conversationList.find(
                 (item) => String(item.conversationId || "") === String(queryConversationId)
@@ -2007,6 +2050,9 @@
             }
             isChatOverlayLoading = false;
             updateChatLoading();
+            if (!activeConversationId && !activeUserId) {
+              setConversationEmptyState(true);
+            }
           }
           try {
             const params = new URLSearchParams();
@@ -2069,10 +2115,6 @@
               directApplied = true;
               return;
             }
-            if (!activeConversationId && conversationList.length) {
-              setActiveConversation(conversationList[0]);
-              return;
-            }
             const nextKey = conversationList
               .map((item) => `${item.conversationId || ""}:${item.lastAt || ""}:${item.lastMessage || ""}`)
               .join("|");
@@ -2097,10 +2139,10 @@
                 });
               }
             }
-            if (!activeConversationId) {
-              markMessagesRead("");
-            }
             writeConversationCache();
+            if (!activeConversationId && !activeUserId) {
+              setConversationEmptyState(true);
+            }
           } catch (error) {
             if (!isSilent) {
               renderThreadList([]);
@@ -2205,7 +2247,7 @@
         };
 
         const sendPing = async (options = {}) => {
-          if (isFile || isPinging) return;
+          if (isFile || isPinging || !pollEnabled) return;
           const payload = buildPingPayload();
           if (!payload) return;
           const now = Date.now();
@@ -2238,14 +2280,21 @@
           return `${heartbeatUrl}?${query}`;
         };
 
+        const ensurePollingEnabled = () => {
+          if (isFile || pollEnabled) return;
+          pollEnabled = true;
+          startMessagePolling();
+          startChatPolling();
+          startPingPolling();
+        };
+
         const schedulePollingStart = () => {
           if (isFile || pollStartScheduled) return;
           pollStartScheduled = true;
           const start = () => {
-            pollEnabled = true;
-            startMessagePolling();
-            startChatPolling();
-            startPingPolling();
+            if (shouldAutoStartPolling || activeConversationId || activeUserId) {
+              ensurePollingEnabled();
+            }
           };
           if (typeof requestIdleCallback === "function") {
             requestIdleCallback(start, { timeout: 800 });
@@ -2274,7 +2323,7 @@
         };
 
         const loadChatHeartbeat = async (options = {}) => {
-          if (isFile || isLoadingHeartbeat) return;
+          if (isFile || isLoadingHeartbeat || !pollEnabled) return;
           const url = buildHeartbeatUrl();
           if (!url) return;
           const now = Date.now();
@@ -3330,6 +3379,9 @@
 
         updateSearchUI();
         initChatLayoutSizing();
+        const hasDeepLink = Boolean(queryConversationId || queryUserId || queryUsername);
+        shouldAutoStartPolling = hasDeepLink;
+        setConversationEmptyState(!hasDeepLink);
 
         if (inputWrap) inputWrap.style.display = "";
         const listPromise = loadConversationList();
@@ -3437,6 +3489,7 @@
     </script>
   </body>
 </html>
+
 
 
 
