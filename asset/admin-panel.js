@@ -536,7 +536,10 @@
     const maintenancePill = document.getElementById("admin-maintenance-pill");
     const maintenanceGlobalToggle = document.getElementById("admin-maintenance-global");
     const maintenanceMessage = document.getElementById("admin-maintenance-message");
-    const maintenanceDuration = document.getElementById("admin-maintenance-duration");
+    const maintenanceDurationHours = document.getElementById("admin-maintenance-hours");
+    const maintenanceDurationMinutes = document.getElementById("admin-maintenance-minutes");
+    const maintenanceDurationPreview = document.getElementById("admin-maintenance-end-preview");
+    const maintenanceDurationPresets = Array.from(document.querySelectorAll("[data-maintenance-duration]"));
     const maintenanceUntil = document.getElementById("admin-maintenance-until");
     const maintenanceRemaining = document.getElementById("admin-maintenance-remaining");
     const maintenanceEnableBtn = document.getElementById("admin-maintenance-enable");
@@ -567,49 +570,53 @@
 
     const MAINTENANCE_DEFAULT = {
       globalEnabled: false,
-      message: "Bao tri he thong, xin loi vi su bat tien nay.",
+      message: "Bảo trì hệ thống, xin lỗi vì sự bất tiện này.",
       startAt: null,
       endAt: null,
       routeLocks: {},
       version: 0,
     };
-    const MAINTENANCE_DURATION_DEFAULT = 1;
-    const MAINTENANCE_DURATION_MIN = 0.1;
+    const MAINTENANCE_DURATION_DEFAULT_MINUTES = 60;
+    const MAINTENANCE_DURATION_MINUTES = 1;
+    const MAINTENANCE_DURATION_PRESETS = [15, 30, 60, 120];
     const MAINTENANCE_ROUTE_GROUPS = [
       {
         id: "core",
-        label: "Noi dung chinh",
+        label: "Khu vực chính",
         routes: [
-          { key: "home", label: "Trang chu / Index", paths: "/" },
-          { key: "products", label: "San pham", paths: "/sanpham" },
-          { key: "services", label: "Dich vu", paths: "/dichvu" },
-        ],
-      },
-      {
-        id: "market",
-        label: "Marketplace",
-        routes: [
-          { key: "tasks_market", label: "Nhiem vu marketplace", paths: "/nhiemvu" },
-          { key: "task_posting", label: "Dang bai nhiem vu", paths: "/nhiemvu/tao" },
+          { key: "home", label: "Trang chủ", paths: "/" },
+          { key: "products", label: "Sản phẩm", paths: "/sanpham" },
+          { key: "services", label: "Dịch vụ", paths: "/dichvu" },
+          { key: "tasks_market", label: "Nhiệm vụ", paths: "/nhiemvu" },
+          { key: "task_posting", label: "Nhiệm vụ marketplace", paths: "/nhiemvu/tao" },
+          { key: "payments", label: "Thanh toán", paths: "/checkout, /proof" },
         ],
       },
       {
         id: "seller",
         label: "Seller",
         routes: [
-          { key: "seller_panel", label: "Panel seller", paths: "/seller/panel, /seller/tasks, /seller/join" },
-          { key: "seller_public", label: "Gian hang cong khai", paths: "/seller/[id]" },
+          { key: "seller_panel", label: "Seller panel", paths: "/seller/panel, /seller/tasks, /seller/join" },
+          { key: "seller_public", label: "Gian hàng công khai", paths: "/seller/[id]" },
         ],
       },
       {
-        id: "account",
-        label: "Ho so / Tai khoan",
-        routes: [{ key: "profile", label: "Profile & Auth", paths: "/profile, /u, /login, /register, /forgot" }],
-      },
-      {
-        id: "payments",
-        label: "Thanh toan",
-        routes: [{ key: "payments", label: "Thanh toan", paths: "/checkout, /profile/topups, /proof" }],
+        id: "profile",
+        label: "Hồ sơ / Tài khoản",
+        routes: [
+          { key: "profile", label: "Hồ sơ (toàn bộ)", paths: "/login, /register, /forgot", level: 0, tone: "parent" },
+          { key: "profile.overview", label: "Tổng quan hồ sơ", paths: "/profile, /profile/public", level: 1 },
+          { key: "profile.orders", label: "Đơn hàng", paths: "/profile/orders", level: 1 },
+          { key: "profile.favorites", label: "Yêu thích", paths: "/profile/favorites", level: 1 },
+          { key: "profile.following", label: "Đang theo dõi", paths: "/profile/following", level: 1 },
+          { key: "profile.history", label: "Lịch sử tài khoản", paths: "/profile/history, /profile/logins", level: 1 },
+          { key: "profile.withdraw", label: "Rút tiền", paths: "/profile/topups", level: 1 },
+          { key: "profile.tasks", label: "Nhiệm vụ", paths: "/profile/tasks", level: 1 },
+          { key: "profile.notifications", label: "Thông báo", paths: "/profile/notifications", level: 1 },
+          { key: "profile.badges", label: "Danh hiệu", paths: "/profile/badges", level: 1 },
+          { key: "profile.security", label: "Bảo mật 2FA", paths: "/profile/security", level: 1 },
+          { key: "profile.chat", label: "Tin nhắn / Chat", paths: "/profile/messages", level: 1 },
+        ],
       },
     ];
     const MAINTENANCE_ROUTE_KEYS = MAINTENANCE_ROUTE_GROUPS.flatMap((group) => group.routes.map((route) => route.key));
@@ -1427,15 +1434,77 @@
       return `${minutes}m ${seconds}s`;
     };
 
+    const getDurationMinutesFromConfig = (config) => {
+      const startAt = config.startAt ? new Date(config.startAt).getTime() : 0;
+      const endAt = config.endAt ? new Date(config.endAt).getTime() : 0;
+      if (startAt && endAt && endAt > startAt) {
+        return Math.round((endAt - startAt) / 60000);
+      }
+      return MAINTENANCE_DURATION_DEFAULT_MINUTES;
+    };
+
+    const setPresetActive = (value) => {
+      if (!maintenanceDurationPresets.length) return;
+      maintenanceDurationPresets.forEach((btn) => {
+        const key = btn.getAttribute("data-maintenance-duration");
+        btn.classList.toggle("active", key === String(value));
+      });
+    };
+
+    const updateDurationPreview = (minutes) => {
+      if (!maintenanceDurationPreview) return;
+      if (!minutes || minutes <= 0) {
+        maintenanceDurationPreview.textContent = "Mở lại lúc: --";
+        return;
+      }
+      const now = Date.now() + maintenanceClockSkewMs;
+      const endMs = now + minutes * 60000;
+      maintenanceDurationPreview.textContent = `Mở lại lúc: ${formatDateTime(endMs)}`;
+    };
+
+    const setDurationInputs = (minutes) => {
+      const safeMinutes = Math.max(Math.round(Number(minutes) || 0), MAINTENANCE_DURATION_MINUTES);
+      const hours = Math.floor(safeMinutes / 60);
+      const mins = safeMinutes % 60;
+      if (maintenanceDurationHours) maintenanceDurationHours.value = String(hours);
+      if (maintenanceDurationMinutes) maintenanceDurationMinutes.value = String(mins);
+      const preset = MAINTENANCE_DURATION_PRESETS.find((value) => value === safeMinutes);
+      setPresetActive(preset != null ? preset : "custom");
+      updateDurationPreview(safeMinutes);
+    };
+
+    const readDurationMinutes = () => {
+      const rawHours = maintenanceDurationHours ? Number(maintenanceDurationHours.value) : 0;
+      const rawMinutes = maintenanceDurationMinutes ? Number(maintenanceDurationMinutes.value) : 0;
+      if (!Number.isFinite(rawHours) || rawHours < 0) return null;
+      if (!Number.isFinite(rawMinutes) || rawMinutes < 0) return null;
+      const clampedMinutes = Math.min(Math.max(Math.round(rawMinutes), 0), 59);
+      if (maintenanceDurationMinutes && Number.isFinite(rawMinutes)) {
+        maintenanceDurationMinutes.value = String(clampedMinutes);
+      }
+      const total = Math.round(rawHours * 60 + clampedMinutes);
+      if (!Number.isFinite(total) || total < MAINTENANCE_DURATION_MINUTES) return null;
+      return total;
+    };
+
+    const syncPresetFromInputs = () => {
+      const minutes = readDurationMinutes();
+      const preset = MAINTENANCE_DURATION_PRESETS.find((value) => value === minutes);
+      setPresetActive(preset != null ? preset : "custom");
+      if (minutes) updateDurationPreview(minutes);
+    };
+
     const renderMaintenanceRoutes = () => {
       if (!maintenanceRouteList) return;
       const groupsMarkup = MAINTENANCE_ROUTE_GROUPS.map((group) => {
         const routesMarkup = group.routes
           .map((route) => {
             const filterText = normalizeText(`${route.label} ${route.paths} ${route.key}`);
+            const levelClass = route.level ? " is-child" : "";
+            const toneClass = route.tone === "parent" ? " is-parent" : "";
             return `
-              <label class="admin-route-item" data-route-key="${route.key}" data-route-filter="${filterText}">
-                <div>
+              <label class="admin-route-item${levelClass}${toneClass}" data-route-key="${route.key}" data-route-filter="${filterText}">
+                <div class="admin-route-meta">
                   <strong>${escapeHtml(route.label)}</strong>
                   <span>${escapeHtml(route.paths)}</span>
                 </div>
@@ -1477,12 +1546,8 @@
     const syncMaintenanceForm = (config) => {
       if (maintenanceMessage) maintenanceMessage.value = config.message || "";
       if (maintenanceGlobalToggle) maintenanceGlobalToggle.checked = config.globalEnabled === true;
-      if (maintenanceDuration) {
-        const startAt = config.startAt ? new Date(config.startAt).getTime() : 0;
-        const endAt = config.endAt ? new Date(config.endAt).getTime() : 0;
-        const durationHours = startAt && endAt && endAt > startAt ? (endAt - startAt) / 3600000 : MAINTENANCE_DURATION_DEFAULT;
-        maintenanceDuration.value = Number(durationHours.toFixed(2));
-      }
+      const durationMinutes = getDurationMinutesFromConfig(config);
+      setDurationInputs(durationMinutes);
       if (maintenanceRouteInputs.length) {
         maintenanceRouteInputs.forEach((input) => {
           const key = input.getAttribute("data-route-key");
@@ -1572,11 +1637,13 @@
         maintenanceApplyBtn,
         maintenanceUnlockBtn,
         maintenanceMessage,
-        maintenanceDuration,
+        maintenanceDurationHours,
+        maintenanceDurationMinutes,
         maintenanceRouteFilter,
         legacyMaintenanceToggle,
         legacyMaintenanceSave,
       ];
+      if (maintenanceDurationPresets.length) elements.push(...maintenanceDurationPresets);
       if (maintenanceRouteInputs.length) elements.push(...maintenanceRouteInputs);
       if (legacyMaintenanceScopes.length) elements.push(...legacyMaintenanceScopes);
       elements.forEach((el) => {
@@ -1655,10 +1722,9 @@
     };
 
     const readDurationHours = () => {
-      if (!maintenanceDuration) return MAINTENANCE_DURATION_DEFAULT;
-      const value = Number(maintenanceDuration.value);
-      if (!Number.isFinite(value) || value < MAINTENANCE_DURATION_MIN) return null;
-      return value;
+      const minutes = readDurationMinutes();
+      if (minutes == null) return null;
+      return minutes / 60;
     };
 
     const collectLegacyScopes = () => {
@@ -1697,6 +1763,36 @@
 
     renderMaintenanceRoutes();
 
+    if (maintenanceDurationPresets.length) {
+      maintenanceDurationPresets.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const value = btn.getAttribute("data-maintenance-duration") || "";
+          if (value === "custom") {
+            setPresetActive("custom");
+            if (maintenanceDurationHours) maintenanceDurationHours.focus();
+            syncPresetFromInputs();
+            return;
+          }
+          const minutes = Number(value);
+          if (Number.isFinite(minutes) && minutes > 0) {
+            setDurationInputs(minutes);
+          }
+        });
+      });
+    }
+
+    if (maintenanceDurationHours) {
+      maintenanceDurationHours.addEventListener("input", () => {
+        syncPresetFromInputs();
+      });
+    }
+
+    if (maintenanceDurationMinutes) {
+      maintenanceDurationMinutes.addEventListener("input", () => {
+        syncPresetFromInputs();
+      });
+    }
+
     if (maintenanceRouteFilter) {
       maintenanceRouteFilter.addEventListener("input", () => {
         filterMaintenanceRoutes(maintenanceRouteFilter.value);
@@ -1717,14 +1813,14 @@
           onConfirm: () => {
             const durationHours = readDurationHours();
             if (enable && durationHours == null) {
-              showToast("Thoi luong bao tri toi thieu 0.1 gio.");
+              showToast("Thời lượng bảo trì tối thiểu 1 phút.");
               return;
             }
             const payload = {
               globalEnabled: enable,
               message: maintenanceMessage ? maintenanceMessage.value.trim() : maintenanceState.message,
-              durationHours: durationHours || MAINTENANCE_DURATION_DEFAULT,
-              routeLocks: collectRouteLocks(),
+              durationHours: durationHours != null ? durationHours : MAINTENANCE_DURATION_DEFAULT_MINUTES / 60,
+              routeLocks: enable ? collectRouteLocks() : normalizeRouteLocks({}),
             };
             saveMaintenanceConfig(payload, enable ? "Da bat bao tri toan site." : "Da tat bao tri toan site.");
           },
@@ -1740,13 +1836,13 @@
           onConfirm: () => {
             const durationHours = readDurationHours();
             if (durationHours == null) {
-              showToast("Thoi luong bao tri toi thieu 0.1 gio.");
+              showToast("Thời lượng bảo trì tối thiểu 1 phút.");
               return;
             }
             const payload = {
               globalEnabled: true,
               message: maintenanceMessage ? maintenanceMessage.value.trim() : maintenanceState.message,
-              durationHours: durationHours || MAINTENANCE_DURATION_DEFAULT,
+              durationHours: durationHours != null ? durationHours : MAINTENANCE_DURATION_DEFAULT_MINUTES / 60,
               routeLocks: collectRouteLocks(),
             };
             saveMaintenanceConfig(payload, "Da bat bao tri toan site.");
@@ -1764,7 +1860,7 @@
             const payload = {
               globalEnabled: false,
               message: maintenanceMessage ? maintenanceMessage.value.trim() : maintenanceState.message,
-              routeLocks: collectRouteLocks(),
+              routeLocks: normalizeRouteLocks({}),
             };
             saveMaintenanceConfig(payload, "Da tat bao tri toan site.");
           },
@@ -1776,13 +1872,13 @@
       maintenanceApplyBtn.addEventListener("click", () => {
         const durationHours = readDurationHours();
         if (durationHours == null && (maintenanceState.globalEnabled || getLockedRouteCount(collectRouteLocks()) > 0)) {
-          showToast("Thoi luong bao tri toi thieu 0.1 gio.");
+          showToast("Thời lượng bảo trì tối thiểu 1 phút.");
           return;
         }
         const payload = {
           globalEnabled: maintenanceState.globalEnabled,
           message: maintenanceMessage ? maintenanceMessage.value.trim() : maintenanceState.message,
-          durationHours: durationHours || MAINTENANCE_DURATION_DEFAULT,
+          durationHours: durationHours != null ? durationHours : MAINTENANCE_DURATION_DEFAULT_MINUTES / 60,
           routeLocks: collectRouteLocks(),
         };
         saveMaintenanceConfig(payload, "Da ap dung cau hinh bao tri.");

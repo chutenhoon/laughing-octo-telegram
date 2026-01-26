@@ -268,6 +268,8 @@ function lockViewportScale() {
 }
 
 const BK_AUTH_KEY = "bk_user";
+const BK_ADMIN_COOKIE = "bk_admin";
+const BK_CURRENCY_COOKIE = "bk_currency_selected";
 const BK_PING_INTERVAL = 30000;
 const BK_PING_GRACE = 15000;
 const BK_LANGUAGE_DEFAULT = "vi";
@@ -278,6 +280,33 @@ const BK_CURRENCY_LANGUAGE = {
   JPY: "ja",
   CNY: "zh",
 };
+
+function setCookieValue(name, value, maxAgeSeconds) {
+  if (typeof document === "undefined") return;
+  const safeValue = encodeURIComponent(String(value || ""));
+  let cookie = `${name}=${safeValue}; Path=/; SameSite=Lax`;
+  if (typeof maxAgeSeconds === "number") {
+    cookie += `; Max-Age=${Math.max(0, Math.floor(maxAgeSeconds))}`;
+  }
+  if (typeof window !== "undefined" && window.location && window.location.protocol === "https:") {
+    cookie += "; Secure";
+  }
+  document.cookie = cookie;
+}
+
+function syncCurrencyCookie(code) {
+  if (!code) return;
+  setCookieValue(BK_CURRENCY_COOKIE, code, 60 * 60 * 24 * 30);
+}
+
+function syncAdminCookie(auth) {
+  const role = auth && auth.user && typeof auth.user.role === "string" ? auth.user.role.toLowerCase() : "";
+  if (role === "admin") {
+    setCookieValue(BK_ADMIN_COOKIE, "1", 60 * 60 * 6);
+    return;
+  }
+  setCookieValue(BK_ADMIN_COOKIE, "", 0);
+}
 const BK_I18N = {
   vi: {
     "nav.products": "S\u1ea3n ph\u1ea9m",
@@ -3989,10 +4018,12 @@ function setAuthState(user) {
   const normalized = normalizeAuthUser(user);
   if (!normalized) return;
   localStorage.setItem(BK_AUTH_KEY, JSON.stringify(normalized));
+  syncAdminCookie({ user: normalized });
 }
 
 function clearAuthState() {
   localStorage.removeItem(BK_AUTH_KEY);
+  syncAdminCookie(null);
 }
 
 function getLoginUrl() {
@@ -4839,6 +4870,7 @@ const BKCurrency = (() => {
     try {
       localStorage.setItem(BK_CURRENCY_KEY, next);
     } catch (e) {}
+    syncCurrencyCookie(next);
     updateBalanceButtons(next);
     updateCurrencyOptions(next);
     applyToDom();
@@ -5367,6 +5399,7 @@ function renderTaskGrid(items, targetId = "task-list") {
 document.addEventListener("DOMContentLoaded", () => {
   const isFile = window.location.protocol === "file:";
   const auth = readAuthState();
+  syncAdminCookie(auth);
     lockViewportScale();
     stripIndexFromLocation();
     hydrateNavLinks();
@@ -5378,6 +5411,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (typeof BKCurrency !== "undefined") {
     BKCurrency.setupMenus();
     BKCurrency.applyToDom();
+    syncCurrencyCookie(BKCurrency.getSelected());
   }
   window.addEventListener("load", cleanupLogoArtifacts, { once: true });
   applyLoginLocks(auth);

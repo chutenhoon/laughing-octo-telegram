@@ -1,7 +1,7 @@
 const SETTING_ID = "maintenance";
-const DEFAULT_MESSAGE = "Bao tri he thong, xin loi vi su bat tien nay.";
+const DEFAULT_MESSAGE = "Bảo trì hệ thống, xin lỗi vì sự bất tiện này.";
 const DEFAULT_DURATION_HOURS = 1;
-const MIN_DURATION_HOURS = 0.1;
+const MIN_DURATION_HOURS = 1 / 60;
 
 export const MAINTENANCE_CACHE_KEY = "https://internal.polyflux/maintenance-config";
 
@@ -13,8 +13,19 @@ export const MAINTENANCE_ROUTE_KEYS = [
   "task_posting",
   "seller_panel",
   "seller_public",
-  "profile",
   "payments",
+  "profile",
+  "profile.overview",
+  "profile.orders",
+  "profile.favorites",
+  "profile.following",
+  "profile.history",
+  "profile.withdraw",
+  "profile.tasks",
+  "profile.notifications",
+  "profile.badges",
+  "profile.security",
+  "profile.chat",
 ];
 
 const ROUTE_KEY_SET = new Set(MAINTENANCE_ROUTE_KEYS);
@@ -256,18 +267,21 @@ export const getRouteKeyForPath = (pathname) => {
   if (path.startsWith("/nhiemvu")) return "tasks_market";
   if (path.startsWith("/seller/panel") || path.startsWith("/seller/tasks") || path.startsWith("/seller/join")) return "seller_panel";
   if (path.startsWith("/seller/")) return "seller_public";
-  if (path.startsWith("/profile/topups")) return "payments";
   if (path.startsWith("/checkout") || path.startsWith("/proof")) return "payments";
-  if (
-    path.startsWith("/profile") ||
-    path.startsWith("/login") ||
-    path.startsWith("/register") ||
-    path.startsWith("/forgot") ||
-    path === "/u" ||
-    path.startsWith("/u/")
-  ) {
-    return "profile";
-  }
+  if (path.startsWith("/profile/messages")) return "profile.chat";
+  if (path.startsWith("/profile/orders")) return "profile.orders";
+  if (path.startsWith("/profile/favorites")) return "profile.favorites";
+  if (path.startsWith("/profile/following")) return "profile.following";
+  if (path.startsWith("/profile/history") || path.startsWith("/profile/logins")) return "profile.history";
+  if (path.startsWith("/profile/topups")) return "profile.withdraw";
+  if (path.startsWith("/profile/tasks")) return "profile.tasks";
+  if (path.startsWith("/profile/notifications")) return "profile.notifications";
+  if (path.startsWith("/profile/badges")) return "profile.badges";
+  if (path.startsWith("/profile/security")) return "profile.security";
+  if (path.startsWith("/profile/public") || path.startsWith("/profile/shops")) return "profile.overview";
+  if (path.startsWith("/profile")) return "profile.overview";
+  if (path === "/u" || path.startsWith("/u/")) return "profile.overview";
+  if (path.startsWith("/login") || path.startsWith("/register") || path.startsWith("/forgot")) return "profile";
   return null;
 };
 
