@@ -432,6 +432,11 @@
             return raw;
           }
         };
+        const escapeCssValue = (value) => {
+          const raw = String(value || "");
+          if (window.CSS && typeof window.CSS.escape === "function") return window.CSS.escape(raw);
+          return raw.replace(/["\\]/g, "\\$&");
+        };
         const queryConversationId = decodeParam(
           queryParams.get("conversationId") || queryParams.get("conversation_id") || ""
         ).trim();
@@ -651,6 +656,9 @@
         const MESSAGE_BOOST_WINDOW_MS = 8000;
         const CHAT_POLL_ACTIVE_MS = 10000;
         const CHAT_POLL_HIDDEN_MS = 30000;
+        const INBOX_POLL_ACTIVE_MS = 2500;
+        const INBOX_POLL_HIDDEN_MS = 12000;
+        const INBOX_POLL_MAX_MS = 20000;
         const PING_ACTIVE_MS = 25000;
         const PING_HIDDEN_MS = 60000;
         const MESSAGE_CACHE_TTL_MS = 60000;
@@ -698,6 +706,9 @@
         let pingTimer = null;
         let lastPingAt = 0;
         let isPinging = false;
+        let inboxTimer = null;
+        let inboxAbortController = null;
+        let inboxBackoffMs = INBOX_POLL_ACTIVE_MS;
         const inflightRequests = new Map();
         const buildInflightKey = (url, options = {}) => {
           const method = String((options && options.method) || "GET").toUpperCase();
@@ -829,6 +840,15 @@
           const label = count === 1 ? "1 cuoc tro chuyen" : `${count} cuoc tro chuyen`;
           sidebarCount.textContent = label;
         };
+        const normalizeConversationItem = (item) => {
+          if (!item || typeof item !== "object") return item;
+          const unread = Number(item.unreadCount ?? item.unread_count ?? 0);
+          item.unreadCount = Number.isFinite(unread) ? unread : 0;
+          item.unread_count = item.unreadCount;
+          return item;
+        };
+        const normalizeConversationList = (items) =>
+          Array.isArray(items) ? items.map((item) => normalizeConversationItem(item)) : [];
 
         const buildConversationCacheKey = () => `${isAdminUser ? "admin" : "user"}:${selfUserId || rawUserId || ""}`;
         const buildConversationStorageKey = () => `${LIST_STORAGE_PREFIX}:${buildConversationCacheKey()}`;
@@ -1890,7 +1910,24 @@
           if (sidebarFoot) sidebarFoot.textContent = "";
           threadList.innerHTML = items
             .map((item) => {
-              const user = item.user || {};
+              const display = getThreadDisplay(item);
+              const key = display.key;
+              const fingerprint = buildThreadFingerprint(display);
+              return `
+                <button class="message-thread${display.active ? " active" : ""}${display.isUnread ? " is-unread" : ""}" type="button" data-thread-key="${escapeHtml(
+                  key
+                )}" data-thread-fingerprint="${escapeHtml(fingerprint)}" data-user-id="${escapeHtml(
+                  item.userId
+                )}" data-conversation-id="${escapeHtml(item.conversationId || "")}">
+                  ${buildThreadInnerHtml(display)}
+                </button>
+              `;
+            })
+            .join("");
+        };
+
+        const getThreadDisplay = (item) => {
+          const user = item.user || {};
           const rawName = String(user.display_name || user.username || "User");
           const name = escapeHtml(rawName);
           const avatar = escapeHtml(typeof getAvatarUrl === "function" ? getAvatarUrl(user) : "../../asset/avt-macdinh.jpg");
@@ -1905,29 +1942,110 @@
           const nameHtml = renderNameWithBadge ? renderNameWithBadge(rawName, isPeerAdmin) : name;
           const profileUsername = user.username ? String(user.username) : "";
           const profileId = user.id || item.userId || "";
-          return `
-                <button class="message-thread${active ? " active" : ""}" type="button" data-user-id="${escapeHtml(
-                  item.userId
-                )}" data-conversation-id="${escapeHtml(item.conversationId || "")}">
-                  <div class="message-avatar">
-                    <img src="${avatar}" alt="${name}" />
-                  </div>
-                  <div class="message-thread-info">
-                    <div class="message-thread-top">
-                      <span class="message-thread-name message-thread-name-link" data-profile-username="${escapeHtml(
-                        profileUsername
-                      )}" data-profile-id="${escapeHtml(profileId)}">${nameHtml}</span>
-                      <span class="message-thread-time">${time}</span>
-                    </div>
-                    <div class="message-thread-bottom">
-                      <span class="message-thread-note">${previewText || "--"}</span>
-                      <span class="message-role${roleClass}">${escapeHtml(roleLabel)}</span>
-                    </div>
-                  </div>
-                </button>
-              `;
-            })
-            .join("");
+          const unreadCount = Number(item.unreadCount ?? item.unread_count ?? 0);
+          const isUnread = Number.isFinite(unreadCount) && unreadCount > 0;
+          const key = resolveConversationKey(item);
+          return {
+            key,
+            rawName,
+            name,
+            nameHtml,
+            avatar,
+            isPeerAdmin,
+            roleLabel,
+            roleClass,
+            time,
+            previewText,
+            active,
+            profileUsername,
+            profileId,
+            isUnread,
+            unreadCount,
+          };
+        };
+
+        const buildThreadFingerprint = (display) => {
+          if (!display) return "";
+          const parts = [
+            display.rawName,
+            display.avatar,
+            display.roleLabel,
+            display.time,
+            display.previewText,
+            display.isUnread ? "1" : "0",
+          ];
+          return parts.join("|");
+        };
+
+        const buildThreadInnerHtml = (display) => `
+          <div class="message-avatar">
+            <img src="${display.avatar}" alt="${display.name}" />
+          </div>
+          <div class="message-thread-info">
+            <div class="message-thread-top">
+              <span class="message-thread-name message-thread-name-link" data-profile-username="${escapeHtml(
+                display.profileUsername
+              )}" data-profile-id="${escapeHtml(display.profileId)}">${display.nameHtml}</span>
+              <span class="message-thread-time">${display.time}</span>
+            </div>
+            <div class="message-thread-bottom">
+              <span class="message-thread-note">${display.previewText || "--"}</span>
+              <span class="message-role${display.roleClass}">${escapeHtml(display.roleLabel)}</span>
+            </div>
+          </div>
+        `;
+
+        const updateThreadNode = (node, item) => {
+          if (!node || !item) return;
+          const display = getThreadDisplay(item);
+          const fingerprint = buildThreadFingerprint(display);
+          if (node.dataset.threadFingerprint !== fingerprint) {
+            node.innerHTML = buildThreadInnerHtml(display);
+            node.dataset.threadFingerprint = fingerprint;
+          }
+          if (display.key) node.dataset.threadKey = display.key;
+          node.dataset.userId = String(item.userId || "");
+          node.dataset.conversationId = String(item.conversationId || "");
+          node.classList.toggle("active", display.active);
+          node.classList.toggle("is-unread", display.isUnread);
+        };
+
+        const createThreadNode = (item) => {
+          const node = document.createElement("button");
+          node.type = "button";
+          node.className = "message-thread";
+          updateThreadNode(node, item);
+          return node;
+        };
+
+        const syncThreadList = (items, options = {}) => {
+          if (!threadList) return;
+          const list = Array.isArray(items) ? items : [];
+          if (!list.length) {
+            renderThreadList([], options);
+            return;
+          }
+          updateSidebarCount(list.length);
+          if (sidebarFoot) sidebarFoot.textContent = "";
+          const existing = new Map();
+          threadList.querySelectorAll(".message-thread").forEach((node) => {
+            const key = node.dataset.threadKey || node.dataset.conversationId || node.dataset.userId || "";
+            if (key) existing.set(key, node);
+          });
+          const used = new Set();
+          const fragment = document.createDocumentFragment();
+          list.forEach((item) => {
+            const key = resolveConversationKey(item);
+            if (!key) return;
+            used.add(key);
+            const node = existing.get(key) || createThreadNode(item);
+            updateThreadNode(node, item);
+            fragment.appendChild(node);
+          });
+          existing.forEach((node, key) => {
+            if (!used.has(key)) node.remove();
+          });
+          threadList.appendChild(fragment);
         };
 
         const fetchDirectTargetProfile = async () => {
@@ -2083,6 +2201,18 @@
           if (activeConversationId) {
             markMessagesRead(activeConversationId);
           }
+          if (activeConversationId) {
+            const local = conversationList.find((item) => String(item.conversationId || "") === String(activeConversationId));
+            if (local) {
+              local.unreadCount = 0;
+              local.unread_count = 0;
+              const key = resolveConversationKey(local);
+              const node = key
+                ? threadList && threadList.querySelector(`.message-thread[data-thread-key="${escapeCssValue(key)}"]`)
+                : null;
+              if (node) updateThreadNode(node, local);
+            }
+          }
           if (conversation.user) {
             applySupportProfile({
               id: conversation.user.id || activeUserId,
@@ -2164,6 +2294,7 @@
         const loadConversationList = async (options = {}) => {
           if (isFile || isLoadingList) return;
           const isSilent = options.silent === true;
+          const useIncremental = options.incremental === true;
           const requestToken = (listRequestToken += 1);
           isLoadingList = true;
           let cachedList = null;
@@ -2174,10 +2305,14 @@
           setConversationsLoading(true, { silent: isSilent || hasCache });
           let directCandidate = null;
           if (hasCache) {
-            conversationList = cachedList.slice();
+            conversationList = normalizeConversationList(cachedList.slice());
             conversationList = sortConversationList(conversationList, { preferId: initialConversationId });
             hasLoadedConversationList = true;
-            renderThreadList(conversationList);
+            if (!searchValue && useIncremental) {
+              syncThreadList(conversationList);
+            } else {
+              renderThreadList(conversationList);
+            }
             updateSidebarCount(conversationList.length);
             if (initialConversationId && !requestedApplied && !activeConversationId) {
               if (openConversationById(initialConversationId, { historyMode: "replace" })) {
@@ -2206,7 +2341,7 @@
             if (hasLoadedConversationList && conversationListEtag) {
               headers["if-none-match"] = conversationListEtag;
             }
-            const response = await fetchDedup(url, { headers, cache: "no-store" });
+            const response = await fetchDedup(url, { headers, cache: "no-store", signal: options.signal });
             if (response.status === 304) {
               const nextEtag = response.headers.get("etag");
               if (nextEtag) conversationListEtag = nextEtag;
@@ -2225,7 +2360,7 @@
               adminId = normalizeUserId(data.adminId);
               if (isAdminUser) selfUserId = adminId;
             }
-            conversationList = Array.isArray(data.conversations) ? data.conversations : [];
+            conversationList = normalizeConversationList(Array.isArray(data.conversations) ? data.conversations : []);
             if (!isAdminUser && data.admin) applySupportProfile(data.admin);
             if (hasDirectTarget()) {
               directCandidate = await ensureDirectConversation();
@@ -2249,12 +2384,14 @@
               return;
             }
             const nextKey = conversationList
-              .map((item) => `${item.conversationId || ""}:${item.lastAt || ""}:${item.lastMessage || ""}`)
+              .map((item) => `${item.conversationId || ""}:${item.lastAt || ""}:${item.lastMessage || ""}:${item.unreadCount || 0}`)
               .join("|");
             if (nextKey !== conversationListKey) {
               conversationListKey = nextKey;
               if (searchValue) {
                 applySearchFilter();
+              } else if (useIncremental) {
+                syncThreadList(conversationList);
               } else {
                 renderThreadList(conversationList);
               }
@@ -2565,28 +2702,84 @@
           startChatPolling();
         };
 
+        const stopInboxRefresh = () => {
+          if (inboxTimer) {
+            clearTimeout(inboxTimer);
+            inboxTimer = null;
+          }
+          if (inboxAbortController) {
+            try {
+              inboxAbortController.abort();
+            } catch (error) {}
+            inboxAbortController = null;
+          }
+        };
+
+        const scheduleInboxRefresh = (delay) => {
+          if (isFile) return;
+          if (inboxTimer) clearTimeout(inboxTimer);
+          inboxTimer = setTimeout(() => {
+            inboxTimer = null;
+            refreshInboxList();
+          }, delay);
+        };
+
+        const refreshInboxList = async () => {
+          if (isFile) return;
+          if (inboxAbortController) {
+            try {
+              inboxAbortController.abort();
+            } catch (error) {}
+          }
+          const controller = new AbortController();
+          inboxAbortController = controller;
+          try {
+            await loadConversationList({ silent: true, incremental: true, signal: controller.signal });
+            inboxBackoffMs = INBOX_POLL_ACTIVE_MS;
+          } catch (error) {
+            if (error && error.name === "AbortError") return;
+            inboxBackoffMs = Math.min(INBOX_POLL_MAX_MS, Math.max(INBOX_POLL_ACTIVE_MS, inboxBackoffMs * 2));
+          } finally {
+            if (inboxAbortController === controller) {
+              inboxAbortController = null;
+            }
+            const nextDelay = document.hidden ? INBOX_POLL_HIDDEN_MS : inboxBackoffMs;
+            scheduleInboxRefresh(nextDelay);
+          }
+        };
+
+        const startInboxRefresh = () => {
+          if (isFile || inboxTimer) return;
+          inboxBackoffMs = INBOX_POLL_ACTIVE_MS;
+          scheduleInboxRefresh(INBOX_POLL_ACTIVE_MS);
+        };
+
         if (!isFile) {
           document.addEventListener("visibilitychange", () => {
             if (document.hidden) {
               stopMessagePolling();
               stopChatPolling();
               stopPingPolling();
+              scheduleInboxRefresh(INBOX_POLL_HIDDEN_MS);
               return;
             }
             startMessagePolling();
             restartChatPolling();
             restartPingPolling();
             sendPing({ force: true });
+            scheduleInboxRefresh(INBOX_POLL_ACTIVE_MS);
           });
           window.addEventListener("beforeunload", () => {
             sendPing({ force: true, keepalive: true });
             stopChatPolling();
             stopPingPolling();
+            stopInboxRefresh();
           });
           window.addEventListener("pagehide", () => {
             sendPing({ force: true, keepalive: true });
             stopChatPolling();
             stopPingPolling();
+            stopInboxRefresh();
           });
         }
 
@@ -3552,6 +3745,7 @@
         if (!isFile) {
           Promise.resolve(listPromise).finally(() => {
             schedulePollingStart();
+            startInboxRefresh();
           });
         }
         scrollToBottom({ behavior: "auto", force: false });

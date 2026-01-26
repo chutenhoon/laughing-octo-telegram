@@ -2116,6 +2116,15 @@ header {
   border-color: rgba(139, 124, 255, 0.35);
 }
 
+.message-thread.is-unread .message-thread-name {
+  font-weight: 700;
+}
+
+.message-thread.is-unread .message-thread-note {
+  font-weight: 600;
+  color: var(--text);
+}
+
 .message-thread.active {
   border-color: rgba(139, 124, 255, 0.65);
   background: rgba(139, 124, 255, 0.12);
