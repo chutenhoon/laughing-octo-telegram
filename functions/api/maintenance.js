@@ -1,19 +1,10 @@
 import { jsonResponse, readJsonBody } from "./auth/_utils.js";
-
-const SETTING_ID = "maintenance";
-const DEFAULT_MESSAGE = "Bao tri he thong, xin loi vi su bat tien nay.";
-const ALLOWED_SCOPES = new Set([
-  "home",
-  "products",
-  "services",
-  "tasks_market",
-  "task_posting",
-  "seller_panel",
-  "profile",
-  "checkout",
-  "admin_panel",
-  "all",
-]);
+import {
+  MAINTENANCE_CACHE_KEY,
+  applyMaintenanceUpdate,
+  readMaintenanceConfig,
+  writeMaintenanceConfig,
+} from "../_lib/maintenance.js";
 
 function safeEqual(a, b) {
   const left = String(a || "");
@@ -35,39 +26,19 @@ function getAdminPanelKeys(env) {
   return { authKey, panelKey };
 }
 
-function normalizeConfig(input) {
-  const raw = input && typeof input === "object" ? input : {};
-  const enabled = raw.enabled === true || String(raw.enabled || "") === "true";
-  const message = typeof raw.message === "string" && raw.message.trim() ? raw.message.trim() : DEFAULT_MESSAGE;
-  const scopes = Array.isArray(raw.scopes)
-    ? raw.scopes.map((scope) => String(scope || "").trim()).filter((scope) => scope && ALLOWED_SCOPES.has(scope))
-    : [];
-  return { enabled, message, scopes };
-}
-
-async function readConfig(db) {
-  if (!db) return normalizeConfig({});
-  const row = await db.prepare("SELECT value_json FROM system_settings WHERE id = ? LIMIT 1").bind(SETTING_ID).first();
-  if (!row || !row.value_json) return normalizeConfig({});
+const purgeMaintenanceCache = (context) => {
+  if (!context || typeof caches === "undefined" || !caches.default) return;
   try {
-    const parsed = JSON.parse(row.value_json);
-    return normalizeConfig(parsed);
+    const request = new Request(MAINTENANCE_CACHE_KEY);
+    if (typeof context.waitUntil === "function") {
+      context.waitUntil(caches.default.delete(request));
+    } else {
+      caches.default.delete(request);
+    }
   } catch (error) {
-    return normalizeConfig({});
+    // ignore cache purge errors
   }
-}
-
-async function writeConfig(db, config) {
-  if (!db) return;
-  const payload = JSON.stringify(config || {});
-  const now = new Date().toISOString();
-  await db
-    .prepare(
-      "INSERT INTO system_settings (id, value_json, created_at, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET value_json = excluded.value_json, updated_at = excluded.updated_at"
-    )
-    .bind(SETTING_ID, payload, now, now)
-    .run();
-}
+};
 
 function isAuthorized(request, env, body) {
   const keys = getAdminPanelKeys(env);
@@ -85,8 +56,10 @@ export async function onRequestGet(context) {
   try {
     const db = context?.env?.DB;
     if (!db) return jsonResponse({ ok: false, error: "DB_NOT_CONFIGURED" }, 500);
-    const config = await readConfig(db);
-    return jsonResponse({ ok: true, config }, 200);
+    const config = await readMaintenanceConfig(db);
+    const response = jsonResponse({ ok: true, config, serverNow: Date.now() }, 200);
+    response.headers.set("cache-control", "no-store");
+    return response;
   } catch (error) {
     console.error("MAINTENANCE_GET_ERROR", error);
     return jsonResponse({ ok: false, error: "INTERNAL" }, 500);
@@ -103,9 +76,13 @@ export async function onRequestPost(context) {
       return jsonResponse({ ok: false, error: "UNAUTHORIZED" }, 401);
     }
     const rawConfig = body.config && typeof body.config === "object" ? body.config : body;
-    const config = normalizeConfig(rawConfig);
-    await writeConfig(db, config);
-    return jsonResponse({ ok: true, config }, 200);
+    const current = await readMaintenanceConfig(db);
+    const next = applyMaintenanceUpdate(current, rawConfig, Date.now());
+    await writeMaintenanceConfig(db, next);
+    purgeMaintenanceCache(context);
+    const response = jsonResponse({ ok: true, config: next, serverNow: Date.now() }, 200);
+    response.headers.set("cache-control", "no-store");
+    return response;
   } catch (error) {
     console.error("MAINTENANCE_POST_ERROR", error);
     return jsonResponse({ ok: false, error: "INTERNAL" }, 500);

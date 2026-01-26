@@ -4791,15 +4791,6 @@ const BK_RATE_CACHE_KEY = "bk_currency_rates";
 const BK_RATE_NEXT_KEY = "bk_currency_rates_next";
 const BK_RATE_UPDATED_KEY = "bk_currency_rates_updated";
 const BK_CURRENCY_KEY = "bk_currency_selected";
-const BK_MAINTENANCE_CONFIG_KEY = "bk_maintenance_config";
-const BK_MAINTENANCE_LAST_KEY = "bk_maintenance_last";
-const BK_MAINTENANCE_TTL = 60 * 1000;
-const BK_MAINTENANCE_DEFAULT = {
-  enabled: false,
-  message: "Bao tri he thong, xin loi vi su bat tien nay.",
-  scopes: [],
-};
-
 const BK_CURRENCY_DECIMALS = {
   VND: 0,
   USD: 2,
@@ -5215,125 +5206,6 @@ function formatPriceRange(item) {
   return formatPrice(min);
 }
 
-function normalizeMaintenanceConfig(input) {
-  const raw = input && typeof input === "object" ? input : {};
-  const enabled = raw.enabled === true || String(raw.enabled || "") === "true";
-  const message = typeof raw.message === "string" ? raw.message.trim() : "";
-  const scopes = Array.isArray(raw.scopes) ? raw.scopes.map((scope) => String(scope || "").trim()).filter(Boolean) : [];
-  return {
-    enabled,
-    message,
-    scopes,
-  };
-}
-
-function readMaintenanceConfig() {
-  try {
-    const raw = localStorage.getItem(BK_MAINTENANCE_CONFIG_KEY);
-    if (!raw) return { ...BK_MAINTENANCE_DEFAULT };
-    const parsed = JSON.parse(raw);
-    return { ...BK_MAINTENANCE_DEFAULT, ...normalizeMaintenanceConfig(parsed) };
-  } catch (e) {
-    return { ...BK_MAINTENANCE_DEFAULT };
-  }
-}
-
-function writeMaintenanceConfig(config) {
-  try {
-    localStorage.setItem(BK_MAINTENANCE_CONFIG_KEY, JSON.stringify(config));
-    localStorage.setItem(BK_MAINTENANCE_LAST_KEY, String(Date.now()));
-  } catch (e) {}
-}
-
-function getMaintenanceApiUrl() {
-  const root = typeof getRootPath === "function" ? getRootPath() : "/";
-  return root + "api/maintenance";
-}
-
-function getPageMaintenanceScopes() {
-  const rawPath = decodeURIComponent(window.location.pathname || "");
-  const path = rawPath.replace(/\\/g, "/").toLowerCase();
-  const scopes = new Set();
-  if (!path || path === "/" || path.endsWith("/index.html")) scopes.add("home");
-  if (path.includes("/sanpham/")) scopes.add("products");
-  if (path.includes("/dichvu/")) scopes.add("services");
-  if (path.includes("/profile/")) scopes.add("profile");
-  if (path.includes("/checkout/")) scopes.add("checkout");
-  if (path.includes("/seller/panel/")) scopes.add("seller_panel");
-  if (path.includes("/seller/tasks/")) {
-    scopes.add("seller_panel");
-    scopes.add("task_posting");
-  }
-  if (path.includes("/nhiemvu/tao/") || path.includes("/nhiemvu/tao")) scopes.add("task_posting");
-  if (path.includes("/nhiemvu/") && !path.includes("/nhiemvu/tao")) scopes.add("tasks_market");
-  if (path.includes("/polyfluxdev2026/")) scopes.add("admin_panel");
-  return scopes;
-}
-
-function shouldApplyMaintenance(config) {
-  if (!config || !config.enabled) return false;
-  const isAdmin = document.body && document.body.classList.contains("admin-shell");
-  if (isAdmin) return false;
-  const scopes = Array.isArray(config.scopes) ? config.scopes : [];
-  if (!scopes.length || scopes.includes("all")) return true;
-  const pageScopes = getPageMaintenanceScopes();
-  return scopes.some((scope) => pageScopes.has(scope));
-}
-
-async function fetchMaintenanceConfig(force = false) {
-  if (window.location.protocol === "file:") return readMaintenanceConfig();
-  const now = Date.now();
-  const last = Number(localStorage.getItem(BK_MAINTENANCE_LAST_KEY) || 0);
-  if (!force && last && now - last < BK_MAINTENANCE_TTL) return readMaintenanceConfig();
-  try {
-    const response = await fetch(getMaintenanceApiUrl(), { cache: "no-store" });
-    if (!response.ok) throw new Error("maintenance_fetch_failed");
-    const data = await response.json().catch(() => null);
-    const config = normalizeMaintenanceConfig(data && data.config ? data.config : data);
-    const next = { ...BK_MAINTENANCE_DEFAULT, ...config };
-    writeMaintenanceConfig(next);
-    return next;
-  } catch (e) {
-    return readMaintenanceConfig();
-  }
-}
-
-function applyMaintenanceOverlay(overrideConfig) {
-  const config = { ...BK_MAINTENANCE_DEFAULT, ...normalizeMaintenanceConfig(overrideConfig || readMaintenanceConfig()) };
-  const enabled = shouldApplyMaintenance(config);
-  let overlay = document.querySelector(".site-maintenance");
-  if (!enabled) {
-    if (document.body) {
-      document.body.classList.remove("maintenance-active");
-    }
-    if (overlay) overlay.remove();
-    return;
-  }
-  if (document.body) {
-    document.body.classList.add("maintenance-active");
-  }
-  const language = getCurrentLanguage();
-  const title = getI18nText(language, "maintenance.title", "Maintenance");
-  const desc = config.message || getI18nText(language, "maintenance.desc", "");
-  if (!overlay) {
-    overlay = document.createElement("div");
-    overlay.className = "site-maintenance";
-    overlay.innerHTML = `
-      <div class="site-maintenance-card">
-        <strong></strong>
-        <span></span>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-  }
-  const titleEl = overlay.querySelector("strong");
-  const descEl = overlay.querySelector("span");
-  if (titleEl) titleEl.textContent = title;
-  if (descEl) descEl.textContent = desc;
-}
-
-window.applyMaintenanceOverlay = applyMaintenanceOverlay;
-
 // Landing featured
 function renderLandingFeaturedProducts(items, targetId = "product-grid") {
   const grid = document.getElementById(targetId);
@@ -5516,15 +5388,6 @@ document.addEventListener("DOMContentLoaded", () => {
   initGlobalNotifier();
   if (auth && auth.loggedIn) startHeartbeat(auth);
   applyI18n();
-  fetchMaintenanceConfig(true).then((config) => applyMaintenanceOverlay(config));
-  setInterval(() => {
-    fetchMaintenanceConfig(true).then((config) => applyMaintenanceOverlay(config));
-  }, BK_MAINTENANCE_TTL);
-  window.addEventListener("storage", (event) => {
-    if (event.key === BK_MAINTENANCE_CONFIG_KEY) {
-      applyMaintenanceOverlay();
-    }
-  });
 
   const mobileNav = document.querySelector(".mobile-nav");
   const rootStyle = document.documentElement.style;
