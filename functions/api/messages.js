@@ -1813,7 +1813,7 @@ export async function onRequestGet(context) {
     await ensureChatSchemaReady(dbTimed, context.env);
 
     const url = new URL(context.request.url);
-    const conversationId = normalizeId(url.searchParams.get("conversationId") || url.searchParams.get("conversation_id") || "");
+    let conversationId = normalizeId(url.searchParams.get("conversationId") || url.searchParams.get("conversation_id") || "");
     if (!conversationId) return await timing.finalize(errorResponse("INVALID_INPUT", 400, "conversationId"), db);
 
     const queryUserId = normalizeId(url.searchParams.get("userId") || url.searchParams.get("user_id") || "");
