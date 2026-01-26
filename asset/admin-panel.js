@@ -535,18 +535,11 @@
     const complaintsPagination = document.getElementById("admin-complaints-pagination");
 
     const maintenancePill = document.getElementById("admin-maintenance-pill");
-    const maintenanceEnable = document.getElementById("admin-maintenance-enable");
-    const maintenanceDisable = document.getElementById("admin-maintenance-disable");
-    const maintenanceUnlock = document.getElementById("admin-maintenance-unlock");
-    const maintenanceApply = document.getElementById("admin-maintenance-apply");
+    const maintenanceToggle = document.getElementById("admin-maintenance-toggle");
     const maintenanceMessage = document.getElementById("admin-maintenance-message");
-    const maintenanceDuration = document.getElementById("admin-maintenance-duration");
-    const maintenanceEnd = document.getElementById("admin-maintenance-end");
-    const maintenanceRemaining = document.getElementById("admin-maintenance-remaining");
+    const maintenanceSave = document.getElementById("admin-maintenance-save");
     const maintenanceMode = document.getElementById("admin-maintenance-mode");
-    const maintenanceSearch = document.getElementById("admin-maintenance-search");
-    const maintenanceRouteGroups = Array.from(document.querySelectorAll("[data-maintenance-group]"));
-    const maintenanceRouteInputs = Array.from(document.querySelectorAll("[data-maintenance-route]"));
+    const maintenanceScopeInputs = Array.from(document.querySelectorAll("[data-maintenance-scope]"));
 
     const feeDefault = document.getElementById("admin-fee-default");
     const feeThreshold = document.getElementById("admin-fee-threshold");
@@ -563,17 +556,14 @@
     const approvalsError = document.getElementById("admin-approvals-error");
     const approvalsPagination = document.getElementById("admin-approvals-pagination");
 
+    const MAINTENANCE_CONFIG_KEY = "bk_maintenance_config";
+    const MAINTENANCE_LAST_KEY = "bk_maintenance_last";
+    const MAINTENANCE_TTL = 60 * 1000;
     const MAINTENANCE_DEFAULT = {
-      globalEnabled: false,
+      enabled: false,
       message: "Bao tri he thong, xin loi vi su bat tien nay.",
-      startAt: null,
-      endAt: null,
-      routeLocks: {},
-      version: 0,
-      active: false,
-      expired: false,
+      scopes: [],
     };
-    const MAINTENANCE_MIN_DURATION = 0.1;
 
     const revenueState = { data: [], loading: true, error: false, page: 1, perPage: 6, search: "", type: "all", sort: "recent" };
     const balanceSourceState = { data: [], loading: true, error: false, page: 1, perPage: 4, search: "", sort: "recent" };
@@ -1301,44 +1291,71 @@
       }
     };
 
-    const MAINTENANCE_LABELS = {
-      home: "Trang ch\u1ee7",
-      products: "S\u1ea3n ph\u1ea9m",
-      services: "D\u1ecbch v\u1ee5",
-      tasks_market: "Marketplace / Nhi\u1ec7m v\u1ee5",
-      task_posting: "\u0110\u0103ng b\u00e0i nhi\u1ec7m v\u1ee5",
-      seller_panel: "Panel seller",
-      profile: "H\u1ed3 s\u01a1 / T\u00e0i kho\u1ea3n",
-      checkout: "Thanh to\u00e1n",
+    const fetchMaintenanceConfig = async (force) => {
+      const now = Date.now();
+      const last = Number(localStorage.getItem(MAINTENANCE_LAST_KEY) || 0);
+      if (!force && last && now - last < MAINTENANCE_TTL) {
+        const cached = readMaintenanceConfig();
+        renderMaintenanceStatus(cached);
+        syncMaintenanceForm(cached);
+        return cached;
+      }
+      try {
+        const response = await fetch(getMaintenanceApiUrl());
+        const data = await response.json().catch(() => null);
+        if (response.ok && data && data.config) {
+          const config = normalizeMaintenanceConfig(data.config);
+          writeMaintenanceConfig(config);
+          renderMaintenanceStatus(config);
+          syncMaintenanceForm(config);
+          return config;
+        }
+      } catch (error) {}
+      const fallback = readMaintenanceConfig();
+      renderMaintenanceStatus(fallback);
+      syncMaintenanceForm(fallback);
+      return fallback;
     };
 
-    let maintenanceState = { ...MAINTENANCE_DEFAULT };
-    let maintenanceServerOffset = 0;
-    let maintenanceTimer = null;
+    const saveMaintenanceConfig = async (config) => {
+      const normalized = normalizeMaintenanceConfig(config);
+      writeMaintenanceConfig(normalized);
+      renderMaintenanceStatus(normalized);
+      syncMaintenanceForm(normalized);
+      try {
+        const headers = getAdminHeaders() || {};
+        await fetch(getMaintenanceApiUrl(), {
+          method: "POST",
+          headers: { "content-type": "application/json", ...headers },
+          body: JSON.stringify({ config: normalized }),
+        });
+      } catch (error) {}
+      showToast("Da cap nhat bao tri.");
+    };
 
     const normalizeMaintenanceConfig = (value) => {
       const raw = value && typeof value === "object" ? value : {};
-      const message = typeof raw.message === "string" && raw.message.trim() ? raw.message.trim() : MAINTENANCE_DEFAULT.message;
-      const globalEnabled =
-        raw.globalEnabled === true || raw.enabled === true || String(raw.globalEnabled || raw.enabled || "") === "true";
-      const routeLocks = {};
-      const sourceLocks = raw.routeLocks || raw.routes || raw.scopes;
-      if (Array.isArray(sourceLocks)) {
-        sourceLocks.forEach((scope) => {
-          const key = String(scope || "").trim();
-          if (key) routeLocks[key] = true;
-        });
-      } else if (sourceLocks && typeof sourceLocks === "object") {
-        Object.entries(sourceLocks).forEach(([key, val]) => {
-          if (val === true || String(val || "") === "true") routeLocks[key] = true;
-        });
+      const enabled = raw.enabled === true || String(raw.enabled || "") === "true";
+      const message = typeof raw.message === "string" ? raw.message.trim() : "";
+      const scopes = Array.isArray(raw.scopes) ? raw.scopes.map((scope) => String(scope || "").trim()).filter(Boolean) : [];
+      return { ...MAINTENANCE_DEFAULT, enabled, message, scopes };
+    };
+
+    const readMaintenanceConfig = () => {
+      try {
+        const raw = localStorage.getItem(MAINTENANCE_CONFIG_KEY);
+        if (!raw) return { ...MAINTENANCE_DEFAULT };
+        return normalizeMaintenanceConfig(JSON.parse(raw));
+      } catch (e) {
+        return { ...MAINTENANCE_DEFAULT };
       }
-      const startAt = Number.isFinite(Number(raw.startAt)) ? Number(raw.startAt) : null;
-      const endAt = Number.isFinite(Number(raw.endAt)) ? Number(raw.endAt) : null;
-      const version = Number.isFinite(Number(raw.version)) ? Number(raw.version) : 0;
-      const active = raw.active === true;
-      const expired = raw.expired === true;
-      return { ...MAINTENANCE_DEFAULT, message, globalEnabled, routeLocks, startAt, endAt, version, active, expired };
+    };
+
+    const writeMaintenanceConfig = (config) => {
+      try {
+        localStorage.setItem(MAINTENANCE_CONFIG_KEY, JSON.stringify(config));
+        localStorage.setItem(MAINTENANCE_LAST_KEY, String(Date.now()));
+      } catch (e) {}
     };
 
     const getMaintenanceApiUrl = () => {
@@ -1346,75 +1363,29 @@
       return root + "api/maintenance";
     };
 
-    const isMaintenanceActive = (config) => {
-      if (!config) return false;
-      const hasLocks = config.routeLocks && Object.keys(config.routeLocks).length > 0;
-      if (!config.globalEnabled && !hasLocks) return false;
-      if (config.endAt && Date.now() + maintenanceServerOffset >= config.endAt) return false;
-      return true;
-    };
-
-    const getDurationHours = (config) => {
-      if (config && config.startAt && config.endAt && config.endAt > config.startAt) {
-        return Math.max((config.endAt - config.startAt) / 3600000, MAINTENANCE_MIN_DURATION);
+    const syncMaintenanceForm = (config) => {
+      if (maintenanceMessage) maintenanceMessage.value = config.message || "";
+      if (maintenanceScopeInputs.length) {
+        maintenanceScopeInputs.forEach((input) => {
+          const scope = input.getAttribute("data-maintenance-scope");
+          input.checked = scope ? config.scopes.includes(scope) : false;
+        });
       }
-      return 1;
     };
 
-    const formatHours = (value) => {
-      const rounded = Math.round(value * 10) / 10;
-      return String(rounded);
+    const collectMaintenanceForm = () => {
+      const scopes = maintenanceScopeInputs
+        .filter((input) => input.checked)
+        .map((input) => input.getAttribute("data-maintenance-scope"))
+        .filter(Boolean);
+      const message = maintenanceMessage ? maintenanceMessage.value.trim() : "";
+      return { scopes, message };
     };
 
-    const formatCountdown = (ms) => {
-      if (!Number.isFinite(ms) || ms <= 0) return "00:00";
-      const total = Math.floor(ms / 1000);
-      const hours = Math.floor(total / 3600);
-      const minutes = Math.floor((total % 3600) / 60);
-      const seconds = total % 60;
-      const pad = (num) => String(num).padStart(2, "0");
-      return hours ? `${pad(hours)}:${pad(minutes)}:${pad(seconds)}` : `${pad(minutes)}:${pad(seconds)}`;
-    };
-
-    const updateMaintenanceCountdown = () => {
-      if (!maintenanceRemaining || !maintenanceEnd) return;
-      if (!maintenanceState || !maintenanceState.endAt) {
-        maintenanceEnd.value = "--";
-        maintenanceRemaining.textContent = "--";
-        return;
-      }
-      const now = Date.now() + maintenanceServerOffset;
-      const remaining = maintenanceState.endAt - now;
-      maintenanceEnd.value = new Date(maintenanceState.endAt).toLocaleString("vi-VN", {
-        hour12: false,
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-      maintenanceRemaining.textContent = `Con lai: ${formatCountdown(remaining)}`;
-    };
-
-    const renderMaintenanceMode = (config) => {
-      if (!maintenanceMode) return;
-      if (config && config.globalEnabled) {
-        maintenanceMode.textContent = "Pham vi: Toan bo website";
-        return;
-      }
-      const locks = config && config.routeLocks ? Object.keys(config.routeLocks).filter((key) => config.routeLocks[key]) : [];
-      if (!locks.length) {
-        maintenanceMode.textContent = "Pham vi: Khong khoa";
-        return;
-      }
-      const labels = locks.map((key) => MAINTENANCE_LABELS[key] || key);
-      maintenanceMode.textContent = `Pham vi: ${labels.join(", ")}`;
-    };
-
-    const renderMaintenanceStatus = (config) => {
-      const active = isMaintenanceActive(config);
-      const label = active ? "Dang bat" : "Dang tat";
-      const className = active ? "warn" : "good";
+            const renderMaintenanceStatus = (config) => {
+      const enabled = config && config.enabled === true;
+      const label = enabled ? "Dang bat" : "Dang tat";
+      const className = enabled ? "warn" : "good";
       if (maintenanceStatus) {
         maintenanceStatus.textContent = label;
         maintenanceStatus.className = "admin-status-pill " + className;
@@ -1425,192 +1396,32 @@
       }
     };
 
-    const syncMaintenanceForm = (config) => {
-      if (maintenanceMessage) maintenanceMessage.value = config.message || "";
-      if (maintenanceDuration) maintenanceDuration.value = formatHours(getDurationHours(config));
-      if (maintenanceRouteInputs.length) {
-        maintenanceRouteInputs.forEach((input) => {
-          const scope = input.getAttribute("data-maintenance-route");
-          input.checked = scope ? Boolean(config.routeLocks && config.routeLocks[scope]) : false;
-        });
-      }
-      renderMaintenanceMode(config);
-      updateMaintenanceCountdown();
-    };
-
-    const applyRouteFilter = (value) => {
-      const keyword = normalizeText(value || "");
-      maintenanceRouteGroups.forEach((group) => {
-        const groupLabel = normalizeText(group.getAttribute("data-route-label") || group.textContent);
-        let visible = false;
-        const items = Array.from(group.querySelectorAll(".maintenance-route-item"));
-        items.forEach((item) => {
-          const label = normalizeText(item.getAttribute("data-route-label") || item.textContent);
-          const show = !keyword || label.includes(keyword) || groupLabel.includes(keyword);
-          item.classList.toggle("is-hidden", !show);
-          if (show) visible = true;
-        });
-        group.classList.toggle("is-hidden", !visible);
-      });
-    };
-
-    const collectRouteLocks = () => {
-      const locks = {};
-      maintenanceRouteInputs.forEach((input) => {
-        const key = input.getAttribute("data-maintenance-route");
-        if (key && input.checked) locks[key] = true;
-      });
-      return locks;
-    };
-
-    const resolveDurationHours = () => {
-      if (!maintenanceDuration) return 1;
-      const raw = Number(maintenanceDuration.value);
-      if (!Number.isFinite(raw) || raw < MAINTENANCE_MIN_DURATION) return 1;
-      return raw;
-    };
-
-    const buildPayload = (overrides = {}) => {
-      const message = maintenanceMessage ? maintenanceMessage.value.trim() : "";
-      const routeLocks = overrides.routeLocks === undefined ? maintenanceState.routeLocks || {} : overrides.routeLocks;
-      const globalEnabled = overrides.globalEnabled === undefined ? maintenanceState.globalEnabled : overrides.globalEnabled;
-      const hasLocks = Object.keys(routeLocks).length > 0;
-      const durationHours = resolveDurationHours();
-      let startAt = maintenanceState.startAt;
-      let endAt = maintenanceState.endAt;
-      const shouldActivate = globalEnabled || hasLocks;
-      if (overrides.refreshWindow || (shouldActivate && (!endAt || endAt <= Date.now()))) {
-        const now = Date.now();
-        startAt = now;
-        endAt = now + durationHours * 3600000;
-      }
-      if (!shouldActivate) {
-        startAt = null;
-        endAt = null;
-      }
-      return {
-        globalEnabled,
-        message: message || MAINTENANCE_DEFAULT.message,
-        startAt,
-        endAt,
-        routeLocks,
-      };
-    };
-
-    const saveMaintenanceConfig = async (payload) => {
-      try {
-        const headers = getAdminHeaders() || {};
-        const response = await fetch(getMaintenanceApiUrl(), {
-          method: "POST",
-          headers: { "content-type": "application/json", ...headers },
-          body: JSON.stringify({ config: payload }),
-        });
-        const data = await response.json().catch(() => null);
-        if (!response.ok || !data || !data.config) {
-          showToast("Cap nhat bao tri that bai.");
-          return;
-        }
-        maintenanceServerOffset = (Number(data.serverTime) || Date.now()) - Date.now();
-        maintenanceState = normalizeMaintenanceConfig(data.config);
-        renderMaintenanceStatus(maintenanceState);
-        syncMaintenanceForm(maintenanceState);
-        showToast("Da cap nhat bao tri.");
-      } catch (error) {
-        showToast("Cap nhat bao tri that bai.");
-      }
-    };
-
-    const fetchMaintenanceConfig = async () => {
-      try {
-        const response = await fetch(getMaintenanceApiUrl(), { cache: "no-store" });
-        const data = await response.json().catch(() => null);
-        if (response.ok && data && data.config) {
-          maintenanceServerOffset = (Number(data.serverTime) || Date.now()) - Date.now();
-          maintenanceState = normalizeMaintenanceConfig(data.config);
-          renderMaintenanceStatus(maintenanceState);
-          syncMaintenanceForm(maintenanceState);
-          return;
-        }
-      } catch (error) {}
-      renderMaintenanceStatus(maintenanceState);
-      syncMaintenanceForm(maintenanceState);
-    };
-
-    if (!maintenanceTimer) {
-      maintenanceTimer = setInterval(() => {
-        updateMaintenanceCountdown();
-        renderMaintenanceStatus(maintenanceState);
-      }, 1000);
-    }
-
-    if (maintenanceSearch) {
-      maintenanceSearch.addEventListener("input", () => {
-        applyRouteFilter(maintenanceSearch.value);
-      });
-    }
-
-    const updateDraftMode = () => {
-      const draft = { ...maintenanceState, routeLocks: collectRouteLocks() };
-      renderMaintenanceMode(draft);
-    };
-
-    maintenanceRouteInputs.forEach((input) => {
-      input.addEventListener("change", updateDraftMode);
-    });
-
-    if (maintenanceEnable) {
-      maintenanceEnable.addEventListener("click", () => {
-        const duration = resolveDurationHours();
-        if (duration < MAINTENANCE_MIN_DURATION) {
-          showToast("Thoi luong toi thieu 0.1h.");
-          return;
-        }
+    if (maintenanceToggle) {
+      maintenanceToggle.addEventListener("click", () => {
+        const current = readMaintenanceConfig();
+        const formData = collectMaintenanceForm();
+        const nextConfig = { ...current, ...formData, enabled: !current.enabled };
+        const label = nextConfig.enabled ? "Bat bao tri" : "Tat bao tri";
         openModal({
-          title: "Bat bao tri toan bo?",
-          message: "Nguoi dung se duoc chuyen sang trang bao tri ngay lap tuc.",
+          title: `${label}?`,
+          message: nextConfig.enabled
+            ? "Nguoi dung se thay lop bao tri theo pham vi da chon."
+            : "He thong se hoat dong binh thuong tro lai.",
           onConfirm: () => {
-            const payload = buildPayload({ globalEnabled: true, refreshWindow: true, routeLocks: maintenanceState.routeLocks || {} });
-            saveMaintenanceConfig(payload);
+            saveMaintenanceConfig(nextConfig);
           },
         });
       });
     }
 
-    if (maintenanceDisable) {
-      maintenanceDisable.addEventListener("click", () => {
-        openModal({
-          title: "Tat bao tri?",
-          message: "He thong se hoat dong binh thuong tro lai.",
-          onConfirm: () => {
-            const payload = buildPayload({ globalEnabled: false, routeLocks: maintenanceState.routeLocks || {} });
-            saveMaintenanceConfig(payload);
-          },
-        });
+    if (maintenanceSave) {
+      maintenanceSave.addEventListener("click", () => {
+        const current = readMaintenanceConfig();
+        const formData = collectMaintenanceForm();
+        const nextConfig = { ...current, ...formData };
+        saveMaintenanceConfig(nextConfig);
       });
     }
-
-    if (maintenanceApply) {
-      maintenanceApply.addEventListener("click", () => {
-        const locks = collectRouteLocks();
-        const payload = buildPayload({ refreshWindow: Object.keys(locks).length > 0, routeLocks: locks });
-        saveMaintenanceConfig(payload);
-      });
-    }
-
-    if (maintenanceUnlock) {
-      maintenanceUnlock.addEventListener("click", () => {
-        openModal({
-          title: "Mo tat ca route?",
-          message: "Tat ca route se duoc mo. Neu dang bat bao tri toan bo, he thong van bi khoa.",
-          onConfirm: () => {
-            const payload = buildPayload({ routeLocks: {} });
-            saveMaintenanceConfig(payload);
-          },
-        });
-      });
-    }
-
-    fetchMaintenanceConfig();
 
     if (feeSaveBtn) {
       feeSaveBtn.addEventListener("click", () => {

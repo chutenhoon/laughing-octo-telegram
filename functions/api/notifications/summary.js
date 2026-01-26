@@ -1,17 +1,7 @@
-import { jsonResponse, logError } from "../auth/_utils.js";
-import { getSessionUser } from "../auth/session.js";
+import { jsonResponse, logError, normalizeEmail, normalizeUsername } from "../auth/_utils.js";
 import { matchEtagHeader } from "../chat_state.js";
 
 const CACHE_CONTROL = "private, max-age=0, must-revalidate";
-const VARY_HEADER = "Cookie";
-
-function normalizeId(value) {
-  if (value == null) return "";
-  const raw = String(value).trim();
-  if (!raw) return "";
-  if (/^\d+(\.0+)?$/.test(raw)) return String(Number(raw));
-  return raw;
-}
 
 async function getTableColumns(db, table) {
   if (!db || !table) return new Set();
@@ -26,6 +16,62 @@ async function getTableColumns(db, table) {
   } catch (error) {
     return new Set();
   }
+}
+
+function getUserIdField(columns) {
+  return columns && columns.has("id") ? "id" : "rowid";
+}
+
+async function resolveUserId(db, raw) {
+  const ref = String(raw || "").trim();
+  if (!db || !ref) return null;
+  const cols = await getTableColumns(db, "users");
+  if (!cols.size) return null;
+  const idField = getUserIdField(cols);
+  const email = normalizeEmail(ref);
+  const username = normalizeUsername(ref);
+  const conditions = [];
+  const binds = [];
+  const isNumericRef = /^\d+$/.test(ref);
+  if (idField === "id" && cols.has("id")) {
+    conditions.push("id = ?");
+    binds.push(ref);
+    if (isNumericRef) {
+      conditions.push("rowid = ?");
+      binds.push(Number(ref));
+    }
+  } else if (idField === "rowid" && isNumericRef) {
+    conditions.push("rowid = ?");
+    binds.push(Number(ref));
+  }
+  if (cols.has("username")) {
+    conditions.push("lower(username) = ?");
+    binds.push(username);
+  }
+  if (cols.has("email")) {
+    conditions.push("lower(email) = ?");
+    binds.push(email);
+  }
+  if (!conditions.length) return null;
+  const select = cols.has("id") ? "id, rowid AS row_id" : "rowid AS row_id";
+  const row = await db
+    .prepare(`SELECT ${select} FROM users WHERE ${conditions.join(" OR ")} LIMIT 1`)
+    .bind(...binds)
+    .first();
+  if (!row) return null;
+  if (idField === "id") {
+    const rawId = row.id;
+    const idValue = rawId == null || String(rawId).trim() === "" ? null : rawId;
+    const rowValue = row.row_id ?? null;
+    if (idValue == null && rowValue != null) {
+      try {
+        await db.prepare("UPDATE users SET id = ? WHERE rowid = ?").bind(rowValue, rowValue).run();
+      } catch (error) {}
+      return String(rowValue);
+    }
+    return idValue != null ? String(idValue) : null;
+  }
+  return row.row_id != null ? String(row.row_id) : null;
 }
 
 function toMs(value) {
@@ -62,7 +108,6 @@ function buildNotModified(etag) {
     status: 304,
     headers: {
       "cache-control": CACHE_CONTROL,
-      vary: VARY_HEADER,
       etag,
     },
   });
@@ -72,10 +117,48 @@ export async function onRequestGet(context) {
   try {
     const db = context?.env?.DB;
     if (!db) return jsonResponse({ ok: false, error: "DB_NOT_CONFIGURED" }, 500);
-    const sessionUser = await getSessionUser(context.request, context.env);
-    const userId = sessionUser && sessionUser.id ? normalizeId(sessionUser.id) : "";
+    const url = new URL(context.request.url);
+    const headerRef =
+      context.request.headers.get("x-user-id") ||
+      context.request.headers.get("x-user") ||
+      context.request.headers.get("x-user-ref") ||
+      "";
+    const queryRef =
+      url.searchParams.get("userId") ||
+      url.searchParams.get("user_id") ||
+      url.searchParams.get("id") ||
+      url.searchParams.get("u") ||
+      url.searchParams.get("username") ||
+      "";
+    const rawRef = headerRef || queryRef || "";
+    if (!rawRef) {
+      return jsonResponse(
+        {
+          ok: true,
+          hasNewNotifications: false,
+          unreadMessages: 0,
+          unread_messages: 0,
+          lastNotificationAt: 0,
+          lastMessageAt: 0,
+          userId: null,
+        },
+        200
+      );
+    }
+    const userId = await resolveUserId(db, rawRef);
     if (!userId) {
-      return jsonResponse({ ok: false, error: "NOT_LOGGED_IN" }, 401);
+      return jsonResponse(
+        {
+          ok: true,
+          hasNewNotifications: false,
+          unreadMessages: 0,
+          unread_messages: 0,
+          lastNotificationAt: 0,
+          lastMessageAt: 0,
+          userId: null,
+        },
+        200
+      );
     }
 
     let unreadMessages = 0;
@@ -143,7 +226,6 @@ export async function onRequestGet(context) {
     const response = jsonResponse(payload, 200);
     response.headers.set("cache-control", CACHE_CONTROL);
     response.headers.set("etag", etag);
-    response.headers.set("vary", VARY_HEADER);
     return response;
   } catch (error) {
     logError("NOTIFICATION_SUMMARY_FAILED", error);

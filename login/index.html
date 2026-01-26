@@ -158,8 +158,6 @@
               return "Invalid email/username or password.";
             case "ACCOUNT_DISABLED":
               return "Account is currently disabled.";
-            case "SESSION_NOT_CONFIGURED":
-              return "Session is not configured. Please try again later.";
             default:
               return "Login failed. Please try again.";
           }
@@ -202,7 +200,6 @@
               "content-type": "application/json",
             },
             body: JSON.stringify({ identifier, password }),
-            credentials: "include",
           })
             .then(async (response) => {
               const data = await response.json().catch(() => null);

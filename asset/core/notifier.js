@@ -25,7 +25,6 @@
   let audioEnabled = false;
   let audio = null;
   let started = false;
-  let paused = false;
   let inflight = null;
   let channel = null;
   let channelName = "";
@@ -131,7 +130,6 @@
   };
 
   const startLeaderHeartbeat = () => {
-    if (paused) return;
     if (leaderTimer) return;
     refreshLeaderState();
     leaderTimer = setInterval(() => {
@@ -159,7 +157,6 @@
   };
 
   const sendPresence = () => {
-    if (paused) return;
     if (!activeUserKey) return;
     const payload = {
       type: "presence",
@@ -179,7 +176,6 @@
   };
 
   const startPresenceHeartbeat = () => {
-    if (paused) return;
     if (presenceTimer) return;
     sendPresence();
     presenceTimer = setInterval(() => {
@@ -521,7 +517,6 @@
   };
 
   const startPolling = () => {
-    if (paused) return;
     if (pollTimer) return;
     pollTimer = setInterval(() => {
       refresh();
@@ -529,7 +524,6 @@
   };
 
   const refresh = async (options = {}) => {
-    if (paused) return;
     const auth = readAuth();
     if (!auth || !auth.loggedIn) {
       syncUserContext("");
@@ -551,21 +545,18 @@
     }
     const controller = new AbortController();
     inflight = controller;
+    const params = new URLSearchParams();
+    params.set("userId", userRef);
     const headers = {};
     if (etag) headers["if-none-match"] = etag;
+    headers["x-user-id"] = userRef;
     try {
-      const response = await fetch(SUMMARY_URL, {
+      const response = await fetch(`${SUMMARY_URL}?${params.toString()}`, {
         headers,
         cache: "no-store",
         credentials: "include",
         signal: controller.signal,
       });
-      if (response.status === 401 || response.status === 403) {
-        syncUserContext("");
-        applyAvatarDot(false);
-        applyMessageBadge(0);
-        return;
-      }
       if (response.status === 304) return;
       const nextEtag = response.headers.get("etag");
       if (nextEtag) etag = nextEtag;
@@ -634,30 +625,10 @@
     });
   };
 
-  const pause = () => {
-    if (paused) return;
-    paused = true;
-    stopPolling();
-    stopLeaderHeartbeat();
-    stopPresenceHeartbeat();
-  };
-
-  const resume = () => {
-    if (!paused) return;
-    paused = false;
-    const auth = readAuth();
-    const userKey = getUserKey(auth);
-    syncUserContext(userKey);
-    refresh({ force: true });
-    startPolling();
-  };
-
   window.BKNotifier = {
     init,
     refresh,
     stop: stopPolling,
-    pause,
-    resume,
     getLastSummary: () => lastSummary,
   };
 })();

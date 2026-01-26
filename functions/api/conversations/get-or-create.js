@@ -100,7 +100,7 @@ export async function onRequestPost(context) {
   if (!db) return withNoStore(jsonResponse({ ok: false, error: "DB_NOT_CONFIGURED" }, 500));
   try {
     await ensureChatSchemaReady(db, context.env);
-    const sessionUser = await getSessionUser(context.request, context.env);
+    const sessionUser = getSessionUser(context.request, context.env);
     if (!sessionUser) return withNoStore(jsonResponse({ ok: false, error: "NOT_LOGGED_IN" }, 401));
     const viewerId = await ensureUser(sessionUser, db);
     if (!viewerId) return withNoStore(jsonResponse({ ok: false, error: "USER_NOT_FOUND" }, 404));

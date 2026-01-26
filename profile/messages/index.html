@@ -409,7 +409,16 @@
             alert(message);
           }
         };
-        const buildAuthHeaders = () => ({});
+        const buildAuthHeaders = () => {
+          const headers = {};
+          if (user && user.id != null && String(user.id).trim()) headers["x-user-id"] = String(user.id).trim();
+          if (user && user.username) headers["x-user-username"] = String(user.username);
+          if (user && user.email) headers["x-user-email"] = String(user.email);
+          if (user && user.name) headers["x-user-name"] = String(user.name);
+          if (user && (user.avatar_url || user.avatar)) headers["x-user-avatar"] = String(user.avatar_url || user.avatar);
+          if (user && user.role) headers["x-user-role"] = String(user.role);
+          return headers;
+        };
         const getLanguage = () => (typeof getCurrentLanguage === "function" ? getCurrentLanguage() : "vi");
         const t = (key, fallback) =>
           typeof formatI18n === "function" ? formatI18n(getLanguage(), key, fallback) : fallback || key;
@@ -652,10 +661,6 @@
         const INBOX_POLL_MAX_MS = 20000;
         const PING_ACTIVE_MS = 25000;
         const PING_HIDDEN_MS = 60000;
-        const WS_RECONNECT_BASE_MS = 800;
-        const WS_RECONNECT_MAX_MS = 15000;
-        const WS_RECONNECT_JITTER = 0.25;
-        const WS_RATE_LIMIT_MS = 3000;
         const MESSAGE_CACHE_TTL_MS = 60000;
         const LIST_CACHE_TTL_MS = 30000;
         const IDLE_POLL_THRESHOLD_MS = 60000;
@@ -704,14 +709,6 @@
         let inboxTimer = null;
         let inboxAbortController = null;
         let inboxBackoffMs = INBOX_POLL_ACTIVE_MS;
-        let ws = null;
-        let wsRoom = "";
-        let wsConnected = false;
-        let wsConnecting = false;
-        let wsRetry = 0;
-        let wsReconnectTimer = null;
-        let wsDesiredRoom = "";
-        let lastWsClientId = "";
         const inflightRequests = new Map();
         const buildInflightKey = (url, options = {}) => {
           const method = String((options && options.method) || "GET").toUpperCase();
@@ -771,7 +768,6 @@
               body: JSON.stringify(payload),
               cache: "no-store",
               signal: controller.signal,
-              credentials: "include",
             });
             const data = await response.json().catch(() => null);
             return { response, data };
@@ -1054,22 +1050,12 @@
         window.addEventListener("scroll", markActive, { passive: true });
 
         const getMessagePollInterval = () => {
-          let interval = MESSAGE_POLL_ACTIVE_MS;
-          if (document.hidden || isIdle()) interval = MESSAGE_POLL_HIDDEN_MS;
-          else if (Date.now() < boostUntil) interval = MESSAGE_POLL_BOOST_MS;
-          if (wsConnected && activeConversationId) {
-            const active = findConversationById(activeConversationId);
-            if (active && isSupportConversation(active)) {
-              interval = Math.max(interval, MESSAGE_POLL_HIDDEN_MS);
-            }
-          }
-          return interval;
+          if (document.hidden || isIdle()) return MESSAGE_POLL_HIDDEN_MS;
+          if (Date.now() < boostUntil) return MESSAGE_POLL_BOOST_MS;
+          return MESSAGE_POLL_ACTIVE_MS;
         };
 
-        const getChatPollInterval = () => {
-          const base = document.hidden || isIdle() ? CHAT_POLL_HIDDEN_MS : CHAT_POLL_ACTIVE_MS;
-          return wsConnected ? Math.max(base, CHAT_POLL_HIDDEN_MS) : base;
-        };
+        const getChatPollInterval = () => (document.hidden || isIdle() ? CHAT_POLL_HIDDEN_MS : CHAT_POLL_ACTIVE_MS);
 
         const prefersReducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         let shouldStickToBottom = true;
@@ -1822,185 +1808,6 @@
           return isAdminProfile(item.user);
         };
 
-        const resolveSelfId = () => normalizeUserId(selfUserId || rawUserId || (user && user.id) || "");
-
-        const getActiveConversation = () => {
-          if (!activeConversationId) return null;
-          return (
-            conversationList.find((item) => String(item.conversationId || "") === String(activeConversationId)) || null
-          );
-        };
-
-        const buildWsUrl = (key) => {
-          if (!key) return "";
-          const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-          const base = `${protocol}//${window.location.host}/api/ws`;
-          if (key.startsWith("conv:")) {
-            const convoId = key.slice(5);
-            if (!convoId) return "";
-            return `${base}?conversationId=${encodeURIComponent(convoId)}`;
-          }
-          return base;
-        };
-
-        const resolveWsRoom = () => {
-          if (!auth || !auth.loggedIn) return "";
-          if (isAdminUser) {
-            const active = getActiveConversation();
-            if (!active || !isSupportConversation(active)) return "";
-            const convoId = String(active.conversationId || active.conversation_id || "").trim();
-            return convoId ? `conv:${convoId}` : "";
-          }
-          const selfId = resolveSelfId();
-          return selfId ? `self:${selfId}` : "";
-        };
-
-        const clearWsReconnect = () => {
-          if (!wsReconnectTimer) return;
-          clearTimeout(wsReconnectTimer);
-          wsReconnectTimer = null;
-        };
-
-        const updateRealtimeMode = () => {
-          if (window.BKNotifier) {
-            if (wsConnected && typeof window.BKNotifier.pause === "function") {
-              window.BKNotifier.pause();
-            } else if (!wsConnected && typeof window.BKNotifier.resume === "function") {
-              window.BKNotifier.resume();
-            }
-          }
-          if (pollEnabled) {
-            stopChatPolling();
-            startChatPolling();
-            stopInboxRefresh();
-            startInboxRefresh();
-            if (!shouldPollMessages()) {
-              stopMessagePolling();
-            } else {
-              startMessagePolling();
-            }
-          }
-        };
-
-        const closeWebSocket = (code, reason) => {
-          clearWsReconnect();
-          if (ws) {
-            try {
-              ws.close(code || 1000, reason || "closed");
-            } catch (error) {}
-          }
-          ws = null;
-          wsRoom = "";
-          wsConnected = false;
-          wsConnecting = false;
-          updateRealtimeMode();
-        };
-
-        const scheduleWsReconnect = () => {
-          if (wsReconnectTimer) return;
-          if (!wsDesiredRoom) return;
-          wsRetry += 1;
-          const base = Math.min(WS_RECONNECT_MAX_MS, WS_RECONNECT_BASE_MS * Math.pow(2, wsRetry - 1));
-          const jitter = base * WS_RECONNECT_JITTER * Math.random();
-          const delay = Math.floor(base + jitter);
-          wsReconnectTimer = setTimeout(() => {
-            wsReconnectTimer = null;
-            if (wsDesiredRoom && wsDesiredRoom === wsRoom) {
-              connectWebSocket(wsDesiredRoom);
-            }
-          }, delay);
-        };
-
-        const handleWsMessage = (event) => {
-          if (!event || !event.data || typeof event.data !== "string") return;
-          let payload = null;
-          try {
-            payload = JSON.parse(event.data);
-          } catch (error) {
-            return;
-          }
-          if (!payload || typeof payload !== "object") return;
-          if (payload.type === "msg" && payload.message) {
-            applyRealtimeMessage(payload.message);
-            return;
-          }
-          if (payload.type === "err") {
-            const code = String(payload.code || "");
-            if (code === "RATE_LIMIT") {
-              const retryMs = Number(payload.retryMs || 0) || WS_RATE_LIMIT_MS;
-              notify(`Gui qua nhanh. Thu lai sau ${Math.ceil(retryMs / 1000)}s.`);
-              if (lastWsClientId) {
-                failPendingMessage(lastWsClientId, "Gui that bai");
-                lastWsClientId = "";
-              }
-              return;
-            }
-            if (code) {
-              if (lastWsClientId) {
-                failPendingMessage(lastWsClientId, "Gui that bai");
-                lastWsClientId = "";
-              }
-              notify(`Gui tin nhan that bai (${code}).`);
-            }
-          }
-        };
-
-        const connectWebSocket = (room) => {
-          if (isFile || !room) return;
-          if (ws && wsRoom === room && (wsConnected || wsConnecting)) return;
-          closeWebSocket(1000, "switch");
-          wsRoom = room;
-          wsDesiredRoom = room;
-          wsConnecting = true;
-          const url = buildWsUrl(room);
-          if (!url) return;
-          let socket;
-          try {
-            socket = new WebSocket(url);
-          } catch (error) {
-            wsConnecting = false;
-            scheduleWsReconnect();
-            return;
-          }
-          ws = socket;
-          socket.addEventListener("open", () => {
-            wsConnected = true;
-            wsConnecting = false;
-            wsRetry = 0;
-            updateRealtimeMode();
-          });
-          socket.addEventListener("message", handleWsMessage);
-          socket.addEventListener("close", () => {
-            const shouldReconnect = wsDesiredRoom && wsDesiredRoom === room;
-            wsConnected = false;
-            wsConnecting = false;
-            if (ws === socket) ws = null;
-            updateRealtimeMode();
-            if (shouldReconnect) scheduleWsReconnect();
-          });
-          socket.addEventListener("error", () => {
-            if (!wsConnected) scheduleWsReconnect();
-          });
-        };
-
-        const syncWebSocket = () => {
-          if (isFile) return;
-          const desired = resolveWsRoom();
-          wsDesiredRoom = desired;
-          if (!desired) {
-            closeWebSocket(1000, "idle");
-            return;
-          }
-          if (wsRoom !== desired) {
-            wsRetry = 0;
-            connectWebSocket(desired);
-            return;
-          }
-          if (!ws && !wsConnecting) {
-            connectWebSocket(desired);
-          }
-        };
-
         const getConversationSortTime = (item) => {
           if (!item) return 0;
           const raw = item.lastAt || item.updatedAt || item.updated_at || "";
@@ -2241,91 +2048,6 @@
           threadList.appendChild(fragment);
         };
 
-        const applyRealtimeMessage = (message) => {
-          if (!message || !message.conversationId) return;
-          const conversationId = String(message.conversationId || "");
-          if (!conversationId) return;
-          const bodyType = String(message.bodyType || message.type || "text");
-          const normalized = {
-            id: message.id,
-            conversationId,
-            senderId: message.senderId,
-            recipientId: message.recipientId,
-            body: message.body,
-            bodyType,
-            type: bodyType,
-            createdAt: message.createdAt,
-            clientMessageId: message.clientMessageId || message.client_message_id || "",
-            client_message_id: message.client_message_id || message.clientMessageId || "",
-          };
-          const selfId = resolveSelfId();
-          const senderId = normalizeUserId(normalized.senderId || "");
-          const recipientId = normalizeUserId(normalized.recipientId || "");
-          const isOutgoing = selfId && senderId && String(senderId) === String(selfId);
-          const peerId = normalizeUserId(isOutgoing ? recipientId : senderId);
-          const isActiveConversation = activeConversationId && String(activeConversationId) === conversationId;
-
-          if (isActiveConversation) {
-            updateMessages([normalized], selfUserId || resolvedUserId || rawUserId);
-            if (document.visibilityState === "visible") {
-              markMessagesRead(conversationId);
-            }
-          }
-
-          let target =
-            conversationList.find((item) => String(item.conversationId || "") === conversationId) ||
-            (peerId ? conversationList.find((item) => String(item.userId || "") === String(peerId)) : null);
-
-          if (!target) {
-            const fallbackUser = isAdminUser
-              ? { id: peerId, display_name: "User", avatar_url: "", role: "user", is_admin: false }
-              : {
-                  id: supportUserId || peerId || "",
-                  username: supportUsername || "",
-                  display_name: supportUsername || "Admin",
-                  avatar_url: supportAvatar,
-                  role: "admin",
-                  is_admin: true,
-                };
-            target = {
-              conversationId,
-              type: "support",
-              userId: peerId || "",
-              user: fallbackUser,
-              lastAt: "",
-              lastMessage: "",
-              lastType: "",
-              unreadCount: 0,
-              unread_count: 0,
-            };
-            conversationList = [target, ...conversationList];
-          }
-
-          if (normalized.createdAt) target.lastAt = normalized.createdAt;
-          if (typeof normalized.body === "string") target.lastMessage = normalized.body;
-          target.lastType = bodyType;
-
-          if (!isOutgoing) {
-            const activeVisible = isActiveConversation && document.visibilityState === "visible";
-            if (activeVisible) {
-              target.unreadCount = 0;
-              target.unread_count = 0;
-            } else {
-              const nextUnread = Number(target.unreadCount ?? target.unread_count ?? 0) + 1;
-              target.unreadCount = nextUnread;
-              target.unread_count = nextUnread;
-            }
-          }
-
-          conversationList = sortConversationList(conversationList, { preferId: conversationId });
-          if (searchValue) {
-            applySearchFilter();
-          } else {
-            syncThreadList(conversationList);
-          }
-          writeConversationCache();
-        };
-
         const fetchDirectTargetProfile = async () => {
           if (!hasDirectTarget()) return null;
           if (isFile) return null;
@@ -2421,9 +2143,11 @@
             try {
               const response = await fetch("/api/conversations/mark-read", {
                 method: "POST",
-                headers: { "content-type": "application/json" },
+                headers: {
+                  "content-type": "application/json",
+                  ...buildAuthHeaders(),
+                },
                 body: JSON.stringify(nextId ? { conversationId: nextId } : {}),
-                credentials: "include",
               });
               if (!response.ok) return;
               if (window.BKNotifier && typeof window.BKNotifier.refresh === "function") {
@@ -2521,7 +2245,6 @@
             loadChatHeartbeat({ force: true });
             startMessagePolling();
           }
-          syncWebSocket();
         };
 
         const openConversation = (conversation, options = {}) => {
@@ -2547,7 +2270,6 @@
           stopMessagePolling();
           renderThreadList(conversationList);
           setConversationEmptyState(true);
-          syncWebSocket();
           if (options.history !== false) setHistoryState("", { mode: "replace" });
         };
 
@@ -2608,6 +2330,10 @@
             const params = new URLSearchParams();
             if (isAdminUser) {
               params.set("admin", "1");
+              const adminRef = selfUserId || rawUserId;
+              if (adminRef) params.set("adminId", String(adminRef));
+            } else if (rawUserId) {
+              params.set("userId", String(rawUserId));
             }
             const query = params.toString();
             const url = query ? `${conversationsUrl}?${query}` : conversationsUrl;
@@ -2615,12 +2341,7 @@
             if (hasLoadedConversationList && conversationListEtag) {
               headers["if-none-match"] = conversationListEtag;
             }
-            const response = await fetchDedup(url, {
-              headers,
-              cache: "no-store",
-              signal: options.signal,
-              credentials: "include",
-            });
+            const response = await fetchDedup(url, { headers, cache: "no-store", signal: options.signal });
             if (response.status === 304) {
               const nextEtag = response.headers.get("etag");
               if (nextEtag) conversationListEtag = nextEtag;
@@ -2703,7 +2424,6 @@
             if (!activeConversationId && !activeUserId) {
               setConversationEmptyState(true);
             }
-            syncWebSocket();
           } catch (error) {
             if (!isSilent) {
               renderThreadList([]);
@@ -2815,15 +2535,24 @@
 
         updateSupportStatus({ online: false, lastSeen: 0 });
 
-        const buildPingPayload = () => ({});
+        const buildPingPayload = () => {
+          const userId = normalizeUserId(selfUserId || rawUserId || user.id || "");
+          const username = user && user.username ? String(user.username).trim() : "";
+          const email = user && user.email ? String(user.email).trim() : "";
+          if (!userId && !username && !email) return null;
+          const payload = {};
+          if (userId) payload.userId = userId;
+          if (username) payload.username = username;
+          if (email) payload.email = email;
+          return payload;
+        };
 
         const sendPing = async (options = {}) => {
           if (isFile || isPinging || !pollEnabled) return;
           const payload = buildPingPayload();
           if (!payload) return;
           const now = Date.now();
-          const baseInterval = document.hidden ? PING_HIDDEN_MS : PING_ACTIVE_MS;
-          const interval = wsConnected ? Math.max(baseInterval, PING_HIDDEN_MS) : baseInterval;
+          const interval = document.hidden ? PING_HIDDEN_MS : PING_ACTIVE_MS;
           if (!options.force && now - lastPingAt < interval) return;
           isPinging = true;
           lastPingAt = now;
@@ -2834,7 +2563,6 @@
               body: JSON.stringify(payload),
               cache: "no-store",
               keepalive: options.keepalive === true,
-              credentials: "include",
             });
           } catch (error) {} finally {
             isPinging = false;
@@ -2843,8 +2571,10 @@
 
         const buildHeartbeatUrl = () => {
           const params = new URLSearchParams();
+          const selfId = normalizeUserId(selfUserId || rawUserId || "");
           const refId = normalizeUserId(supportUserId || "");
           const ref = refId || supportUsername;
+          if (selfId) params.set("userId", selfId);
           if (ref) params.set("u", ref);
           const query = params.toString();
           if (!query) return "";
@@ -2904,7 +2634,7 @@
           try {
             const headers = {};
             if (heartbeatEtag) headers["if-none-match"] = heartbeatEtag;
-            const response = await fetchDedup(url, { headers, cache: "no-store", credentials: "include" });
+            const response = await fetchDedup(url, { headers, cache: "no-store" });
             if (response.status === 304) {
               const nextEtag = response.headers.get("etag");
               if (nextEtag) heartbeatEtag = nextEtag;
@@ -3014,16 +2744,14 @@
               inboxAbortController = null;
             }
             const nextDelay = document.hidden ? INBOX_POLL_HIDDEN_MS : inboxBackoffMs;
-            const adjustedDelay = wsConnected ? Math.max(nextDelay, INBOX_POLL_HIDDEN_MS) : nextDelay;
-            scheduleInboxRefresh(adjustedDelay);
+            scheduleInboxRefresh(nextDelay);
           }
         };
 
         const startInboxRefresh = () => {
           if (isFile || inboxTimer) return;
           inboxBackoffMs = INBOX_POLL_ACTIVE_MS;
-          const initialDelay = wsConnected ? Math.max(INBOX_POLL_ACTIVE_MS, INBOX_POLL_HIDDEN_MS) : INBOX_POLL_ACTIVE_MS;
-          scheduleInboxRefresh(initialDelay);
+          scheduleInboxRefresh(INBOX_POLL_ACTIVE_MS);
         };
 
         if (!isFile) {
@@ -3087,7 +2815,7 @@
             if (isLoadingMessages && !inflightRequests.has(inflightKey) && !resetView && !isOlderLoad) return;
             isLoadingMessages = true;
             if (isDelta) setPollingIndicator(true);
-            const fetchOptions = { cache: "no-store", credentials: "include" };
+            const fetchOptions = { cache: "no-store" };
             if (!inflightRequests.has(inflightKey)) {
               controller = new AbortController();
               messageFetchController = controller;
@@ -3163,18 +2891,8 @@
           }
         };
 
-        function shouldPollMessages() {
-          if (!pollEnabled || !activeConversationId) return false;
-          if (wsConnected) {
-            const active = findConversationById(activeConversationId);
-            if (active && isSupportConversation(active)) return false;
-          }
-          return true;
-        }
-
         const scheduleMessagePoll = () => {
           if (isFile) return;
-          if (!shouldPollMessages()) return;
           if (messageTimer) {
             clearTimeout(messageTimer);
             messageTimer = null;
@@ -3196,7 +2914,8 @@
         };
 
         const startMessagePolling = () => {
-          if (isFile || !shouldPollMessages()) return;
+          if (isFile || !pollEnabled) return;
+          if (!activeConversationId) return;
           scheduleMessagePoll();
         };
 
@@ -3210,10 +2929,6 @@
         const finalizePendingMessage = (clientId, message, options = {}) => {
           const pending = pendingMessages.get(clientId);
           if (!pending || !pending.row) return;
-          if (pending.timeoutId) clearTimeout(pending.timeoutId);
-          if (lastWsClientId && String(lastWsClientId) === String(clientId)) {
-            lastWsClientId = "";
-          }
           const row = pending.row;
           row.classList.remove("pending");
           row.classList.remove("failed");
@@ -3259,10 +2974,6 @@
         const failPendingMessage = (clientId, statusText) => {
           const pending = pendingMessages.get(clientId);
           if (!pending || !pending.row) return;
-          if (pending.timeoutId) clearTimeout(pending.timeoutId);
-          if (lastWsClientId && String(lastWsClientId) === String(clientId)) {
-            lastWsClientId = "";
-          }
           const row = pending.row;
           row.classList.remove("pending");
           row.classList.add("failed");
@@ -3350,12 +3061,7 @@
                 form.append("height", String(pending.height));
               }
               form.append("file", pending.file);
-              const uploadResponse = await fetch(uploadUrl, {
-                method: "POST",
-                body: form,
-                cache: "no-store",
-                credentials: "include",
-              });
+              const uploadResponse = await fetch(uploadUrl, { method: "POST", body: form, cache: "no-store" });
               const uploadData = await uploadResponse.json().catch(() => null);
               if (!uploadResponse.ok || !uploadData || !uploadData.ok) {
                 const errorCode = uploadData && uploadData.error ? String(uploadData.error) : "UPLOAD_FAILED";
@@ -3609,33 +3315,6 @@
           messageInput.value = "";
           messageInput.focus();
           markBoost();
-
-          const activeConversation = activeConversationId ? findConversationById(activeConversationId) : null;
-          const wsEligible =
-            ws &&
-            wsConnected &&
-            ws.readyState === 1 &&
-            activeConversation &&
-            isSupportConversation(activeConversation) &&
-            wsRoom &&
-            wsRoom === resolveWsRoom();
-          if (wsEligible) {
-            const pending = pendingMessages.get(clientId);
-            if (pending) {
-              pending.timeoutId = setTimeout(() => {
-                if (pendingMessages.has(clientId)) {
-                  failPendingMessage(clientId, "Gui that bai");
-                }
-              }, SEND_TIMEOUT_MS);
-            }
-            lastWsClientId = clientId;
-            try {
-              ws.send(JSON.stringify({ type: "msg", text, clientMessageId: clientId }));
-              return;
-            } catch (error) {
-              if (pending && pending.timeoutId) clearTimeout(pending.timeoutId);
-            }
-          }
 
           const payload = isAdminUser
             ? {
@@ -4067,7 +3746,6 @@
           Promise.resolve(listPromise).finally(() => {
             schedulePollingStart();
             startInboxRefresh();
-            syncWebSocket();
           });
         }
         scrollToBottom({ behavior: "auto", force: false });
