@@ -86,39 +86,43 @@ const getCachedConfig = async (env, ctx) => {
 };
 
 export async function onRequest(context) {
-  const request = context.request;
-  const url = new URL(request.url);
-  const pathname = url.pathname || "/";
-
-  if (request.method === "OPTIONS") {
-    return context.next();
-  }
-
-  if (isAllowlistedPath(pathname)) {
-    return context.next();
-  }
-
-  let config = null;
   try {
-    config = await getCachedConfig(context.env, context);
+    const request = context.request;
+    const url = new URL(request.url);
+    const pathname = url.pathname || "/";
+
+    if (request.method === "OPTIONS") {
+      return context.next();
+    }
+
+    if (isAllowlistedPath(pathname)) {
+      return context.next();
+    }
+
+    let config = null;
+    try {
+      config = await getCachedConfig(context.env, context);
+    } catch (error) {
+      return context.next();
+    }
+    if (!config || (!config.globalEnabled && !hasRouteLocks(config.routeLocks))) {
+      return context.next();
+    }
+
+    if (!isMaintenanceActive(config, Date.now())) {
+      return context.next();
+    }
+
+    const routeKey = getRouteKeyForPath(pathname);
+    if (!config.globalEnabled && (!routeKey || !config.routeLocks?.[routeKey])) {
+      return context.next();
+    }
+
+    const redirectUrl = buildRedirectUrl(url, routeKey);
+    const response = Response.redirect(redirectUrl.toString(), 302);
+    response.headers.set("cache-control", "no-store");
+    return response;
   } catch (error) {
     return context.next();
   }
-  if (!config || (!config.globalEnabled && !hasRouteLocks(config.routeLocks))) {
-    return context.next();
-  }
-
-  if (!isMaintenanceActive(config, Date.now())) {
-    return context.next();
-  }
-
-  const routeKey = getRouteKeyForPath(pathname);
-  if (!config.globalEnabled && (!routeKey || !config.routeLocks?.[routeKey])) {
-    return context.next();
-  }
-
-  const redirectUrl = buildRedirectUrl(url, routeKey);
-  const response = Response.redirect(redirectUrl.toString(), 302);
-  response.headers.set("cache-control", "no-store");
-  return response;
 }

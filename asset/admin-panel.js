@@ -547,6 +547,9 @@
     const maintenanceMode = document.getElementById("admin-maintenance-mode");
     const maintenanceRouteFilter = document.getElementById("admin-maintenance-route-filter");
     const maintenanceRouteList = document.getElementById("admin-maintenance-routes");
+    const legacyMaintenanceToggle = document.getElementById("admin-maintenance-toggle");
+    const legacyMaintenanceSave = document.getElementById("admin-maintenance-save");
+    const legacyMaintenanceScopes = Array.from(document.querySelectorAll("[data-maintenance-scope]"));
 
     const feeDefault = document.getElementById("admin-fee-default");
     const feeThreshold = document.getElementById("admin-fee-threshold");
@@ -611,6 +614,17 @@
       },
     ];
     const MAINTENANCE_ROUTE_KEYS = MAINTENANCE_ROUTE_GROUPS.flatMap((group) => group.routes.map((route) => route.key));
+    const LEGACY_SCOPE_MAP = { checkout: "payments" };
+    const LEGACY_SCOPE_REVERSE = { payments: "checkout" };
+    const hasNewMaintenanceUi = Boolean(
+      maintenanceGlobalToggle ||
+        maintenanceEnableBtn ||
+        maintenanceDisableBtn ||
+        maintenanceApplyBtn ||
+        maintenanceUnlockBtn ||
+        maintenanceRouteList
+    );
+    const useLegacyMaintenanceUi = !hasNewMaintenanceUi && (legacyMaintenanceToggle || legacyMaintenanceSave || legacyMaintenanceScopes.length);
 
     const revenueState = { data: [], loading: true, error: false, page: 1, perPage: 6, search: "", type: "all", sort: "recent" };
     const balanceSourceState = { data: [], loading: true, error: false, page: 1, perPage: 4, search: "", sort: "recent" };
@@ -1358,6 +1372,16 @@
       return locks;
     };
 
+    const mapLegacyScope = (scope) => {
+      if (!scope) return "";
+      return LEGACY_SCOPE_MAP[scope] || scope;
+    };
+
+    const mapRouteToLegacyScope = (routeKey) => {
+      if (!routeKey) return "";
+      return LEGACY_SCOPE_REVERSE[routeKey] || routeKey;
+    };
+
     const normalizeMaintenanceConfig = (value) => {
       const raw = value && typeof value === "object" ? value : {};
       const globalEnabled = raw.globalEnabled === true || String(raw.globalEnabled || "") === "true";
@@ -1467,6 +1491,26 @@
       }
     };
 
+    const syncLegacyMaintenanceForm = (config) => {
+      if (!useLegacyMaintenanceUi) return;
+      if (maintenanceMessage) maintenanceMessage.value = config.message || "";
+      if (legacyMaintenanceScopes.length) {
+        legacyMaintenanceScopes.forEach((input) => {
+          const scope = input.getAttribute("data-maintenance-scope");
+          const routeKey = mapLegacyScope(scope);
+          if (!scope) return;
+          if (config.globalEnabled) {
+            input.checked = false;
+            return;
+          }
+          input.checked = routeKey ? config.routeLocks[routeKey] === true : false;
+        });
+      }
+      if (legacyMaintenanceToggle) {
+        legacyMaintenanceToggle.textContent = hasActiveLocks(config) ? "Tat bao tri" : "Bat bao tri";
+      }
+    };
+
     const updateMaintenanceMeta = () => {
       if (!maintenanceState) return;
       const endAt = maintenanceState.endAt ? new Date(maintenanceState.endAt).getTime() : 0;
@@ -1514,6 +1558,7 @@
       }
       renderMaintenanceStatus(maintenanceState);
       syncMaintenanceForm(maintenanceState);
+      syncLegacyMaintenanceForm(maintenanceState);
       updateMaintenanceMeta();
       startMaintenanceCountdown();
     };
@@ -1567,6 +1612,40 @@
       const value = Number(maintenanceDuration.value);
       if (!Number.isFinite(value) || value < MAINTENANCE_DURATION_MIN) return null;
       return value;
+    };
+
+    const collectLegacyScopes = () => {
+      if (!legacyMaintenanceScopes.length) return [];
+      return legacyMaintenanceScopes
+        .filter((input) => input.checked)
+        .map((input) => mapLegacyScope(input.getAttribute("data-maintenance-scope")))
+        .filter(Boolean);
+    };
+
+    const buildLegacyPayload = (enable, scopes) => {
+      if (!enable) {
+        return {
+          globalEnabled: false,
+          message: maintenanceMessage ? maintenanceMessage.value.trim() : maintenanceState.message,
+          routeLocks: normalizeRouteLocks({}),
+        };
+      }
+      if (!scopes.length) {
+        return {
+          globalEnabled: true,
+          message: maintenanceMessage ? maintenanceMessage.value.trim() : maintenanceState.message,
+          routeLocks: normalizeRouteLocks({}),
+        };
+      }
+      const routeLocks = normalizeRouteLocks({});
+      scopes.forEach((scope) => {
+        if (scope) routeLocks[scope] = true;
+      });
+      return {
+        globalEnabled: false,
+        message: maintenanceMessage ? maintenanceMessage.value.trim() : maintenanceState.message,
+        routeLocks,
+      };
     };
 
     renderMaintenanceRoutes();
@@ -1677,6 +1756,33 @@
             saveMaintenanceConfig(payload, "Da mo khoa tat ca route.");
           },
         });
+      });
+    }
+
+    if (useLegacyMaintenanceUi && legacyMaintenanceToggle) {
+      legacyMaintenanceToggle.addEventListener("click", () => {
+        const enable = !hasActiveLocks(maintenanceState);
+        const label = enable ? "Bat bao tri" : "Tat bao tri";
+        openModal({
+          title: `${label}?`,
+          message: enable
+            ? "Nguoi dung se thay trang bao tri theo pham vi da chon."
+            : "He thong se hoat dong binh thuong tro lai.",
+          onConfirm: () => {
+            const scopes = collectLegacyScopes();
+            const payload = buildLegacyPayload(enable, scopes);
+            saveMaintenanceConfig(payload, enable ? "Da bat bao tri." : "Da tat bao tri.");
+          },
+        });
+      });
+    }
+
+    if (useLegacyMaintenanceUi && legacyMaintenanceSave) {
+      legacyMaintenanceSave.addEventListener("click", () => {
+        const enable = hasActiveLocks(maintenanceState);
+        const scopes = collectLegacyScopes();
+        const payload = buildLegacyPayload(enable, scopes);
+        saveMaintenanceConfig(payload, "Da cap nhat bao tri.");
       });
     }
 
