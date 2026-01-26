@@ -2046,6 +2046,59 @@ header {
   padding-bottom: 2px;
 }
 
+.message-thread-list.is-loading {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.message-thread-skeleton {
+  display: none;
+  gap: 10px;
+  padding-bottom: 2px;
+}
+
+.message-thread-skeleton-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 12px;
+  padding: 10px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.message-thread-skeleton-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
+
+.message-thread-skeleton-lines {
+  display: grid;
+  gap: 8px;
+  align-content: center;
+}
+
+.message-thread-skeleton-line {
+  height: 10px;
+  border-radius: 999px;
+  width: 100%;
+}
+
+.message-thread-skeleton-line.w-60 {
+  width: 60%;
+}
+
+.message-thread-skeleton-line.w-45 {
+  width: 45%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .message-thread-skeleton .skeleton {
+    animation: none;
+  }
+}
+
 .message-thread {
   display: grid;
   grid-template-columns: 44px minmax(0, 1fr);

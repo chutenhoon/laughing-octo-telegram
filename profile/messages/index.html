@@ -61,7 +61,51 @@
               <input id="message-search-input" type="text" placeholder="Search..." data-i18n-placeholder="profile.messages.searchPlaceholder" />
               <button class="message-search-clear" id="message-search-clear" type="button" aria-label="Clear">x</button>
             </div>
-            <div class="message-thread-list">
+            <div class="message-thread-skeleton" id="inbox-skeleton" aria-hidden="true">
+              <div class="message-thread-skeleton-row">
+                <span class="message-thread-skeleton-avatar skeleton"></span>
+                <div class="message-thread-skeleton-lines">
+                  <span class="message-thread-skeleton-line skeleton w-60"></span>
+                  <span class="message-thread-skeleton-line skeleton w-45"></span>
+                </div>
+              </div>
+              <div class="message-thread-skeleton-row">
+                <span class="message-thread-skeleton-avatar skeleton"></span>
+                <div class="message-thread-skeleton-lines">
+                  <span class="message-thread-skeleton-line skeleton w-60"></span>
+                  <span class="message-thread-skeleton-line skeleton w-45"></span>
+                </div>
+              </div>
+              <div class="message-thread-skeleton-row">
+                <span class="message-thread-skeleton-avatar skeleton"></span>
+                <div class="message-thread-skeleton-lines">
+                  <span class="message-thread-skeleton-line skeleton w-60"></span>
+                  <span class="message-thread-skeleton-line skeleton w-45"></span>
+                </div>
+              </div>
+              <div class="message-thread-skeleton-row">
+                <span class="message-thread-skeleton-avatar skeleton"></span>
+                <div class="message-thread-skeleton-lines">
+                  <span class="message-thread-skeleton-line skeleton w-60"></span>
+                  <span class="message-thread-skeleton-line skeleton w-45"></span>
+                </div>
+              </div>
+              <div class="message-thread-skeleton-row">
+                <span class="message-thread-skeleton-avatar skeleton"></span>
+                <div class="message-thread-skeleton-lines">
+                  <span class="message-thread-skeleton-line skeleton w-60"></span>
+                  <span class="message-thread-skeleton-line skeleton w-45"></span>
+                </div>
+              </div>
+              <div class="message-thread-skeleton-row">
+                <span class="message-thread-skeleton-avatar skeleton"></span>
+                <div class="message-thread-skeleton-lines">
+                  <span class="message-thread-skeleton-line skeleton w-60"></span>
+                  <span class="message-thread-skeleton-line skeleton w-45"></span>
+                </div>
+              </div>
+            </div>
+            <div class="message-thread-list" id="inbox-list">
               <button class="message-thread" type="button" data-thread="admin">
                 <div class="message-avatar">
                   <img src="../../assets/avt-admin.png" alt="BK" data-support-avatar />
@@ -281,7 +325,10 @@
 
     <script src="../../asset/render.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
+      const initMessagesPage = () => {
+        if (window.__profileMessagesInit) return;
+        window.__profileMessagesInit = true;
+        try {
         const messageShell = document.getElementById("message-shell");
         const messageBack = document.getElementById("message-back");
         const isNarrow = () => window.matchMedia("(max-width: 820px)").matches;
@@ -388,17 +435,31 @@
         const queryConversationId = decodeParam(
           queryParams.get("conversationId") || queryParams.get("conversation_id") || ""
         ).trim();
-        const updateConversationParam = (conversationId) => {
-          if (!window.history || typeof window.history.replaceState !== "function") return;
-          const nextId = conversationId ? String(conversationId) : "";
-          const url = new URL(window.location.href);
-          if (nextId) {
-            url.searchParams.set("conversationId", nextId);
-          } else {
-            url.searchParams.delete("conversationId");
-            url.searchParams.delete("conversation_id");
+        const getCanonicalChatUrl = () => {
+          if (isFile) {
+            const url = new URL(window.location.href);
+            url.search = "";
+            url.hash = "";
+            return url.toString();
           }
-          window.history.replaceState({}, "", url.toString());
+          return "/profile/messages";
+        };
+        const readHistoryConversationId = () => {
+          const state = window.history && window.history.state ? window.history.state : null;
+          return state && state.conversationId ? String(state.conversationId) : "";
+        };
+        const historyConversationId = readHistoryConversationId();
+        let initialConversationId = historyConversationId || queryConversationId;
+        const setHistoryState = (conversationId, options = {}) => {
+          if (!window.history) return;
+          const nextId = conversationId ? String(conversationId) : "";
+          const mode = options.mode === "push" ? "pushState" : "replaceState";
+          if (typeof window.history[mode] !== "function") return;
+          const current = readHistoryConversationId();
+          if (mode === "pushState" && nextId && nextId === current) return;
+          const url = getCanonicalChatUrl();
+          const state = nextId ? { conversationId: nextId } : {};
+          window.history[mode](state, "", url);
         };
         const buildProfileUrl = (profile) => {
           const username = profile && profile.username ? String(profile.username).trim() : "";
@@ -502,7 +563,8 @@
           if (!a || !b) return "";
           return compareIds(a, b) <= 0 ? `${DIRECT_CONVERSATION_PREFIX}${a}:${b}` : `${DIRECT_CONVERSATION_PREFIX}${b}:${a}`;
         };
-        const threadList = document.querySelector(".message-thread-list");
+        const threadList = document.getElementById("inbox-list") || document.querySelector(".message-thread-list");
+        const inboxSkeleton = document.getElementById("inbox-skeleton");
         const sidebarCount = document.querySelector(".message-sidebar-count");
         const sidebarFoot = document.querySelector(".message-sidebar-foot");
         const searchWrap = document.querySelector(".message-search");
@@ -753,6 +815,15 @@
           if (attachBtn) attachBtn.disabled = isEmpty;
           if (fileInput) fileInput.disabled = isEmpty;
         };
+        const setInboxLoading = (loading, options = {}) => {
+          if (!inboxSkeleton) return;
+          const shouldShow = loading === true;
+          inboxSkeleton.style.display = shouldShow ? "grid" : "none";
+          if (threadList) {
+            threadList.style.display = shouldShow && !options.keepList ? "none" : "";
+            threadList.classList.toggle("is-loading", shouldShow && !options.keepList);
+          }
+        };
         const updateSidebarCount = (count) => {
           if (!sidebarCount) return;
           const label = count === 1 ? "1 cuoc tro chuyen" : `${count} cuoc tro chuyen`;
@@ -826,6 +897,28 @@
             );
           } catch (error) {}
         };
+
+        const getNavigationType = () => {
+          try {
+            const entries = performance && typeof performance.getEntriesByType === "function" ? performance.getEntriesByType("navigation") : [];
+            if (entries && entries.length) return entries[0].type || "";
+          } catch (error) {}
+          return "";
+        };
+
+        if (!initialConversationId) {
+          const navType = getNavigationType();
+          if (navType === "reload") {
+            const cachedActiveId = readActiveConversation();
+            if (cachedActiveId) initialConversationId = cachedActiveId;
+          }
+        }
+
+        if (queryConversationId) {
+          setHistoryState(queryConversationId, { mode: "replace" });
+        } else if (initialConversationId) {
+          setHistoryState(initialConversationId, { mode: "replace" });
+        }
 
         const readMessageCache = (conversationId) => {
           if (!conversationId) return null;
@@ -1167,6 +1260,11 @@
           isChatLoadingConversations = loading;
           if (!options.silent) {
             isChatOverlayLoading = isChatLoadingConversations || isChatLoadingMessages;
+          }
+          if (!options.silent) {
+            setInboxLoading(loading);
+          } else if (!loading) {
+            setInboxLoading(false);
           }
           updateChatLoading();
         };
@@ -1659,7 +1757,7 @@
           }
           if (!prefillApplied) {
             if (!activeUserId || String(activeUserId) !== String(userId)) {
-              setActiveConversation(targetConversation);
+              openConversation(targetConversation, { historyMode: "replace" });
               setDetailView(true);
             }
             prefillApplied = true;
@@ -1985,7 +2083,6 @@
           if (activeConversationId) {
             markMessagesRead(activeConversationId);
           }
-          updateConversationParam(activeConversationId);
           if (conversation.user) {
             applySupportProfile({
               id: conversation.user.id || activeUserId,
@@ -2020,6 +2117,50 @@
           }
         };
 
+        const openConversation = (conversation, options = {}) => {
+          if (!conversation) {
+            setConversationEmptyState(true);
+            if (options.history !== false) setHistoryState("", { mode: "replace" });
+            return false;
+          }
+          setActiveConversation(conversation);
+          if (options.history !== false && conversation.conversationId) {
+            const mode = options.historyMode === "push" ? "push" : "replace";
+            setHistoryState(conversation.conversationId, { mode });
+          }
+          return true;
+        };
+
+        const clearActiveConversation = (options = {}) => {
+          if (activeConversationId) writeMessageCache(activeConversationId);
+          abortMessageFetch();
+          activeConversationId = "";
+          activeUserId = "";
+          currentConversationKey = "";
+          stopMessagePolling();
+          renderThreadList(conversationList);
+          setConversationEmptyState(true);
+          if (options.history !== false) setHistoryState("", { mode: "replace" });
+        };
+
+        const findConversationById = (conversationId) =>
+          conversationList.find((item) => String(item.conversationId || "") === String(conversationId));
+
+        let pendingConversationId = "";
+        const openConversationById = (conversationId, options = {}) => {
+          const targetId = conversationId ? String(conversationId) : "";
+          if (!targetId) {
+            clearActiveConversation({ history: options.history });
+            return false;
+          }
+          const conversation = findConversationById(targetId);
+          if (conversation) {
+            return openConversation(conversation, options);
+          }
+          pendingConversationId = targetId;
+          return false;
+        };
+
         const loadConversationList = async (options = {}) => {
           if (isFile || isLoadingList) return;
           const isSilent = options.silent === true;
@@ -2034,16 +2175,12 @@
           let directCandidate = null;
           if (hasCache) {
             conversationList = cachedList.slice();
-            conversationList = sortConversationList(conversationList, { preferId: queryConversationId });
+            conversationList = sortConversationList(conversationList, { preferId: initialConversationId });
             hasLoadedConversationList = true;
             renderThreadList(conversationList);
             updateSidebarCount(conversationList.length);
-            if (queryConversationId && !requestedApplied && !activeConversationId) {
-              const cachedRequested = conversationList.find(
-                (item) => String(item.conversationId || "") === String(queryConversationId)
-              );
-              if (cachedRequested) {
-                setActiveConversation(cachedRequested);
+            if (initialConversationId && !requestedApplied && !activeConversationId) {
+              if (openConversationById(initialConversationId, { historyMode: "replace" })) {
                 setDetailView(true);
                 requestedApplied = true;
               }
@@ -2097,20 +2234,16 @@
               }
             }
             await ensurePrefillConversation();
-            conversationList = sortConversationList(conversationList, { preferId: queryConversationId });
-            if (queryConversationId && !requestedApplied) {
-              const requested = conversationList.find(
-                (item) => String(item.conversationId || "") === String(queryConversationId)
-              );
-              if (requested) {
-                setActiveConversation(requested);
+            conversationList = sortConversationList(conversationList, { preferId: initialConversationId });
+            if (initialConversationId && !requestedApplied) {
+              if (openConversationById(initialConversationId, { historyMode: "replace" })) {
                 setDetailView(true);
                 requestedApplied = true;
                 return;
               }
             }
             if (directCandidate && !directApplied) {
-              setActiveConversation(directCandidate);
+              openConversationById(directCandidate.conversationId, { historyMode: "replace" });
               setDetailView(true);
               directApplied = true;
               return;
@@ -2140,6 +2273,17 @@
               }
             }
             writeConversationCache();
+            if (pendingConversationId) {
+              const pendingId = pendingConversationId;
+              pendingConversationId = "";
+              const pendingConversation = findConversationById(pendingId);
+              if (pendingConversation) {
+                openConversation(pendingConversation, { historyMode: "replace" });
+                setDetailView(true);
+              } else {
+                clearActiveConversation({ history: false });
+              }
+            }
             if (!activeConversationId && !activeUserId) {
               setConversationEmptyState(true);
             }
@@ -2172,9 +2316,29 @@
             const conversation = convoId
               ? conversationList.find((item) => String(item.conversationId) === String(convoId))
               : conversationList.find((item) => String(item.userId) === String(userId));
-            if (conversation) setActiveConversation(conversation);
+            if (conversation) {
+              if (conversation.conversationId) {
+                openConversationById(conversation.conversationId, { historyMode: "push" });
+              } else {
+                openConversation(conversation, { historyMode: "push" });
+              }
+            }
           });
         }
+
+        window.addEventListener("popstate", (event) => {
+          const stateId = event && event.state && event.state.conversationId ? String(event.state.conversationId) : "";
+          if (stateId) {
+            const opened = openConversationById(stateId, { history: false });
+            setDetailView(true);
+            if (!opened) {
+              setConversationEmptyState(true);
+            }
+            return;
+          }
+          clearActiveConversation({ history: false });
+          setDetailView(false);
+        });
 
         if (searchInput) {
           searchInput.addEventListener("input", () => {
@@ -3379,7 +3543,7 @@
 
         updateSearchUI();
         initChatLayoutSizing();
-        const hasDeepLink = Boolean(queryConversationId || queryUserId || queryUsername);
+        const hasDeepLink = Boolean(initialConversationId || queryUserId || queryUsername);
         shouldAutoStartPolling = hasDeepLink;
         setConversationEmptyState(!hasDeepLink);
 
@@ -3391,7 +3555,18 @@
           });
         }
         scrollToBottom({ behavior: "auto", force: false });
-      });
+        } catch (error) {
+          console.error("Chat init failed", error);
+          const shell = document.getElementById("message-shell");
+          if (shell) shell.classList.add("is-empty");
+        }
+      };
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initMessagesPage);
+      } else {
+        initMessagesPage();
+      }
     </script>
     <script type="module">
       import React, { useEffect } from "https://esm.sh/react@18.2.0";

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+Ôªø<!DOCTYPE html>
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
@@ -132,8 +132,8 @@
             </div>
           </div>
           <div class="profile-public-error" id="profile-error" role="status" aria-live="polite">
-            <strong>KhÙng th? t?i h? so</strong>
-            <span id="profile-error-text">Vui lÚng th? l?i sau.</span>
+            <strong>Kh√¥ng th? t?i h? so</strong>
+            <span id="profile-error-text">Vui l√≤ng th? l?i sau.</span>
             <button class="btn ghost" id="profile-retry-btn" type="button">Th? l?i</button>
           </div>
         </div>
@@ -263,8 +263,8 @@
                     class="btn ghost story-thumb-btn"
                     type="button"
                     data-slot="0"
-                    title="–?t ?nh bÏa"
-                    aria-label="–?t ?nh bÏa"
+                    title="√ê?t ?nh b√¨a"
+                    aria-label="√ê?t ?nh b√¨a"
                   >
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path
@@ -272,7 +272,7 @@
                         fill="currentColor"
                       />
                     </svg>
-                    <span>–?t ?nh bÏa</span>
+                    <span>√ê?t ?nh b√¨a</span>
                   </button>
                 </div>
                 <input
@@ -296,8 +296,8 @@
                     class="btn ghost story-thumb-btn"
                     type="button"
                     data-slot="1"
-                    title="–?t ?nh bÏa"
-                    aria-label="–?t ?nh bÏa"
+                    title="√ê?t ?nh b√¨a"
+                    aria-label="√ê?t ?nh b√¨a"
                   >
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path
@@ -305,7 +305,7 @@
                         fill="currentColor"
                       />
                     </svg>
-                    <span>–?t ?nh bÏa</span>
+                    <span>√ê?t ?nh b√¨a</span>
                   </button>
                 </div>
                 <input
@@ -329,8 +329,8 @@
                     class="btn ghost story-thumb-btn"
                     type="button"
                     data-slot="2"
-                    title="–?t ?nh bÏa"
-                    aria-label="–?t ?nh bÏa"
+                    title="√ê?t ?nh b√¨a"
+                    aria-label="√ê?t ?nh b√¨a"
                   >
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path
@@ -338,7 +338,7 @@
                         fill="currentColor"
                       />
                     </svg>
-                    <span>–?t ?nh bÏa</span>
+                    <span>√ê?t ?nh b√¨a</span>
                   </button>
                 </div>
                 <input
@@ -362,8 +362,8 @@
                     class="btn ghost story-thumb-btn"
                     type="button"
                     data-slot="3"
-                    title="–?t ?nh bÏa"
-                    aria-label="–?t ?nh bÏa"
+                    title="√ê?t ?nh b√¨a"
+                    aria-label="√ê?t ?nh b√¨a"
                   >
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path
@@ -371,7 +371,7 @@
                         fill="currentColor"
                       />
                     </svg>
-                    <span>–?t ?nh bÏa</span>
+                    <span>√ê?t ?nh b√¨a</span>
                   </button>
                 </div>
                 <input
@@ -468,7 +468,7 @@
         const invalidPathUsername = hasUserPath && (!pathUsername || !isValidUsername(pathUsername));
         const invalidQueryUsername = !hasUserPath && queryUsername && !isValidUsername(normalizedQueryUsername);
         if (invalidPathUsername || invalidQueryUsername) {
-          const message = t("profile.public.invalidUsername", "Username khÙng h?p l?");
+          const message = t("profile.public.invalidUsername", "Username kh√¥ng h?p l?");
           if (window.BKAuth && typeof window.BKAuth.showToast === "function") {
             window.BKAuth.showToast(message);
           } else {
@@ -702,19 +702,19 @@
         };
         const formatLastSeen = (value) => {
           const seconds = toEpochSeconds(value);
-          if (!seconds) return t("profile.public.online.offline", "Ngo?i tuy?n");
+          if (!seconds) return t("profile.public.online.offline", "Ngo\u1ea1i tuy\u1ebfn");
           const diff = Math.max(0, Math.floor(Date.now() / 1000) - seconds);
           const minutes = Math.floor(diff / 60);
           if (minutes < 60) {
-            return t("profile.public.online.minutes", `${minutes} ph˙t tru?c`, { count: minutes });
+            return t("profile.public.online.minutes", `${minutes} ph\u00fat tr\u01b0\u1edbc`, { count: minutes });
           }
           const hours = Math.floor(minutes / 60);
           if (hours < 24) {
-            return t("profile.public.online.hours", `${hours} gi? tru?c`, { count: hours });
+            return t("profile.public.online.hours", `${hours} gi\u1edd tr\u01b0\u1edbc`, { count: hours });
           }
           const days = Math.floor(hours / 24);
-          if (days === 1) return t("profile.public.online.yesterday", "HÙm qua");
-          return t("profile.public.online.days", `${days} ng‡y tru?c`, { count: days });
+          if (days === 1) return t("profile.public.online.yesterday", "H\u00f4m qua");
+          return t("profile.public.online.days", `${days} ng\u00e0y tr\u01b0\u1edbc`, { count: days });
         };
 
         const setOwnerOnlyVisibility = () => {
@@ -823,8 +823,8 @@
         const renderStoryError = () => {
           grid.innerHTML = `
             <div class="empty-state story-empty" style="grid-column: 1 / -1;">
-              <strong>${t("profile.public.featured.loadFail", "KhÙng th? t?i tin dang ch˙ ˝.")}</strong>
-              ${t("profile.public.featured.retry", "Vui lÚng th? l?i.")}
+              <strong>${t("profile.public.featured.loadFail", "Kh√¥ng th? t?i tin dang ch√∫ √Ω.")}</strong>
+              ${t("profile.public.featured.retry", "Vui l√≤ng th? l?i.")}
             </div>
           `;
         };
@@ -1000,7 +1000,7 @@
                 ? userForDisplay.last_seen_at || userForDisplay.lastSeenAt
                 : null;
             profileOnlineText.textContent = isOnline
-              ? t("profile.public.online.now", "–ang online")
+              ? t("profile.public.online.now", "\u0110ang online")
               : formatLastSeen(lastSeen);
             if (profileOnlineDot) profileOnlineDot.classList.toggle("is-online", isOnline);
           }
@@ -1164,7 +1164,7 @@
                 return;
               }
               if (!targetUsername && !targetId) {
-                notify("KhÙng tÏm th?y ngu?i d˘ng.");
+                notify("Kh√¥ng t√¨m th?y ngu?i d√πng.");
                 return;
               }
               if (!isFile) {
@@ -1657,7 +1657,7 @@
           if (!file) return;
           const item = draftStories[slot];
           if (!item || item.type !== "video") {
-            notify(t("profile.public.toast.thumbRequiresVideo", "Vui lÚng ch?n video tru?c."));
+            notify(t("profile.public.toast.thumbRequiresVideo", "Vui l√≤ng ch?n video tru?c."));
             return;
           }
           if (!canUploadVideo) {
@@ -1665,11 +1665,11 @@
             return;
           }
           if (!file.type || !file.type.startsWith("image/")) {
-            notify(t("profile.public.toast.thumbInvalid", "?nh bÏa ph?i l‡ hÏnh ?nh."));
+            notify(t("profile.public.toast.thumbInvalid", "?nh b√¨a ph?i l√† h√¨nh ?nh."));
             return;
           }
           if (!isAdmin && file.size > MAX_THUMB_SIZE) {
-            notify(t("profile.public.toast.thumbTooLarge", "?nh bÏa vu?t qu· 512KB."));
+            notify(t("profile.public.toast.thumbTooLarge", "?nh b√¨a vu?t qu√° 512KB."));
             return;
           }
           const previewUrl = URL.createObjectURL(file);
@@ -1769,8 +1769,8 @@
 
           if (storyLimitNote) {
             storyLimitNote.textContent = canUploadVideo
-              ? t("profile.public.manage.limit.pro", "T?i da 4 b‡i, h? tr? video.")
-              : t("profile.public.manage.limit.basic", "T?i da 4 b‡i, ch? ?nh.");
+              ? t("profile.public.manage.limit.pro", "T?i da 4 b√†i, h? tr? video.")
+              : t("profile.public.manage.limit.basic", "T?i da 4 b√†i, ch? ?nh.");
           }
         };
 
