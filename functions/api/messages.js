@@ -6,6 +6,7 @@
   normalizeUsername,
   readJsonBody,
 } from "./auth/_utils.js";
+import { getSessionUser as readSessionUser } from "./auth/session.js";
 import { runMigrations, SCHEMA_USER_VERSION } from "./admin/migrate.js";
 import { recordOnlinePing, setUnreadCount, touchConversationVersions } from "./chat_state.js";
 import { createRequestTiming } from "./_timing.js";
@@ -218,17 +219,8 @@ function isAdminRole(role) {
   return String(role || "").trim().toLowerCase() === "admin";
 }
 
-export function getSessionUser(request, env) {
-  if (!request) return null;
-  const headers = request.headers;
-  const id = normalizeId(headers.get("x-user-id") || headers.get("x-user") || "");
-  if (!id) return null;
-  const email = headers.get("x-user-email") || "";
-  const name = headers.get("x-user-name") || "";
-  const avatar = headers.get("x-user-avatar") || "";
-  const username = headers.get("x-user-username") || "";
-  const role = headers.get("x-user-role") || "";
-  return { id, email, name, avatar, username, role };
+export async function getSessionUser(request, env) {
+  return readSessionUser(request, env);
 }
 
 function getAdminCredentials(env) {
@@ -255,7 +247,7 @@ export function isAdminHeaderAuthorized(request, env) {
 
 export async function resolveAdminAccess(db, env, request, candidateId) {
   const adminAuth = isAdminHeaderAuthorized(request, env);
-  const sessionUser = getSessionUser(request, env);
+  const sessionUser = await getSessionUser(request, env);
   if (!db) return { adminAuth, sessionUser, isAdmin: false, admin: null };
 
   if (adminAuth) {
@@ -1298,7 +1290,7 @@ function buildMessagePreview(kind, text) {
   return text || "";
 }
 
-async function createMessage(db, conversationId, senderId, kind, text, mediaKey, clientMessageId) {
+export async function createMessage(db, conversationId, senderId, kind, text, mediaKey, clientMessageId) {
   if (!db || !conversationId || !senderId) return { error: "INVALID_INPUT", status: 400 };
   if (clientMessageId) {
     const existing = await findMessageByClientId(db, conversationId, clientMessageId);
@@ -1487,6 +1479,7 @@ async function uploadMediaFromBuffer(db, env, requestUrl, file, meta) {
   };
 }
 
+
 async function resolveConversationForUpload(db, env, request, data) {
   const wantsAdmin =
     String(data.asAdmin || data.as_admin || "").toLowerCase() === "true" ||
@@ -1499,12 +1492,29 @@ async function resolveConversationForUpload(db, env, request, data) {
 
   if (wantsAdmin && !isAdmin) return { error: "FORBIDDEN", status: 403 };
 
+  const sessionId = sessionUser && sessionUser.id ? normalizeId(sessionUser.id) : "";
+  if (!isAdmin && !sessionId) return { error: "NOT_LOGGED_IN", status: 401 };
+
   const rawConversationId = normalizeId(data.conversationId || data.conversation_id || "");
-  if (rawConversationId) return { conversationId: rawConversationId };
+  if (rawConversationId) {
+    const conversation = await getConversationRow(db, rawConversationId);
+    if (!conversation) return { error: "NOT_FOUND", status: 404 };
+    const participants = await getConversationParticipants(db, rawConversationId);
+    if (!isAdmin) {
+      const allowed = participants.some((p) => String(p.userId) === String(sessionId));
+      if (!allowed) return { error: "FORBIDDEN", status: 403 };
+    }
+    return { conversationId: rawConversationId };
+  }
 
   const rawUserId = normalizeId(data.userId || data.user_id || "");
   const rawSenderId = normalizeId(data.senderId || data.sender_id || "");
   const rawRecipientId = normalizeId(data.recipientId || data.recipient_id || "");
+
+  if (!isAdmin) {
+    if (rawUserId && rawUserId !== sessionId) return { error: "FORBIDDEN", status: 403 };
+    if (rawSenderId && rawSenderId !== sessionId) return { error: "FORBIDDEN", status: 403 };
+  }
 
   let admin = null;
   if (isAdmin) {
@@ -1519,24 +1529,16 @@ async function resolveConversationForUpload(db, env, request, data) {
       const conversationId = await getOrCreateSupportConversation(db, userId, admin.id);
       return conversationId ? { conversationId } : { error: "CONVERSATION_FAILED", status: 500 };
     }
-    const senderId = await ensureUser({ id: rawSenderId || rawUserId || (sessionUser && sessionUser.id) }, db);
+    const senderId = await ensureUser({ id: sessionId }, db);
     const recipientId = await ensureUser({ id: rawRecipientId }, db);
     if (!senderId || !recipientId) return { error: "USER_NOT_FOUND", status: 404 };
     const conversationId = await getOrCreateDmConversation(db, senderId, recipientId);
     return conversationId ? { conversationId } : { error: "CONVERSATION_FAILED", status: 500 };
   }
 
-  if (rawUserId && sessionUser && sessionUser.id && normalizeId(sessionUser.id) !== rawUserId) {
-    const senderId = await ensureUser({ id: sessionUser.id }, db);
-    const recipientId = await ensureUser({ id: rawUserId }, db);
-    if (senderId && recipientId) {
-      const conversationId = await getOrCreateDmConversation(db, senderId, recipientId);
-      if (conversationId) return { conversationId };
-    }
-  }
-
-  if (rawUserId) {
-    const userId = await ensureUser({ id: rawUserId }, db);
+  const effectiveUserId = isAdmin ? rawUserId : sessionId;
+  if (effectiveUserId) {
+    const userId = await ensureUser({ id: effectiveUserId }, db);
     if (!userId) return { error: "USER_NOT_FOUND", status: 404 };
     if (!admin) {
       admin = await ensureAdminUser(db, env);
@@ -1677,6 +1679,12 @@ async function handleMultipartMessage(context, form) {
   const adminAccess = await resolveAdminAccess(db, context.env, context.request, wantsAdmin ? rawSenderId : "");
   const sessionUser = adminAccess.sessionUser;
   const isAdmin = adminAccess.isAdmin;
+  const sessionId = sessionUser && sessionUser.id ? normalizeId(sessionUser.id) : "";
+  if (!isAdmin && !sessionId) return errorResponse("NOT_LOGGED_IN", 401);
+  if (!isAdmin) {
+    if (rawUserId && rawUserId !== sessionId) return errorResponse("FORBIDDEN", 403);
+    if (rawSenderId && rawSenderId !== sessionId) return errorResponse("FORBIDDEN", 403);
+  }
   if (wantsAdmin && !isAdmin) return errorResponse("FORBIDDEN", 403);
 
   let conversationId = rawConversationId;
@@ -1722,7 +1730,7 @@ async function handleMultipartMessage(context, form) {
       conversationId = await getOrCreateSupportConversation(db, userId, admin.id);
       conversationType = SUPPORT_TYPE;
     } else {
-      const senderId = await ensureUser({ id: rawSenderId || rawUserId || (sessionUser && sessionUser.id) }, db);
+      const senderId = await ensureUser({ id: sessionId }, db);
       const recipientId = await ensureUser({ id: rawRecipientId }, db);
       if (!senderId || !recipientId) return errorResponse("USER_NOT_FOUND", 404);
       conversationId = await getOrCreateDmConversation(db, senderId, recipientId);
@@ -1730,7 +1738,7 @@ async function handleMultipartMessage(context, form) {
     }
     participants = await getConversationParticipants(db, conversationId);
   } else if (rawUserId) {
-    const userId = await ensureUser({ id: rawUserId }, db);
+    const userId = await ensureUser({ id: isAdmin ? rawUserId : sessionId }, db);
     if (!userId) return errorResponse("USER_NOT_FOUND", 404);
     admin = await ensureAdminUser(db, context.env);
     if (!admin) return errorResponse("ADMIN_NOT_CONFIGURED", 500);
@@ -1754,8 +1762,9 @@ async function handleMultipartMessage(context, form) {
     }
   }
 
-  const requesterId = normalizeId(rawUserId || rawSenderId || (sessionUser && sessionUser.id));
-  if (!isAdmin && requesterId) {
+  const requesterId = isAdmin ? normalizeId(rawUserId || rawSenderId || (sessionUser && sessionUser.id)) : sessionId;
+  if (!isAdmin) {
+    if (!requesterId) return errorResponse("NOT_LOGGED_IN", 401);
     const allowed = participants.some((p) => String(p.userId) === String(requesterId));
     if (!allowed) return errorResponse("FORBIDDEN", 403);
   }
@@ -1763,7 +1772,7 @@ async function handleMultipartMessage(context, form) {
   let senderId = "";
   if (conversationType === SUPPORT_TYPE) {
     const userParticipant = participants.find((p) => String(p.userId) !== String(adminId));
-    const userId = userParticipant ? userParticipant.userId : rawUserId || rawRecipientId || "";
+    const userId = userParticipant ? userParticipant.userId : isAdmin ? rawUserId || rawRecipientId || "" : sessionId;
     senderId = isAdmin ? adminId : userId;
   } else {
     senderId = requesterId || (participants[0] && participants[0].userId) || "";
@@ -1821,6 +1830,13 @@ export async function onRequestGet(context) {
     const adminAccess = await resolveAdminAccess(dbTimed, context.env, context.request, queryAdminId);
     const sessionUser = adminAccess.sessionUser;
     const isAdmin = adminAccess.isAdmin;
+    const sessionId = sessionUser && sessionUser.id ? normalizeId(sessionUser.id) : "";
+    if (!isAdmin && !sessionId) {
+      return await timing.finalize(errorResponse("NOT_LOGGED_IN", 401), db);
+    }
+    if (!isAdmin && queryUserId && normalizeId(queryUserId) !== sessionId) {
+      return await timing.finalize(errorResponse("FORBIDDEN", 403), db);
+    }
 
     let conversation = await getConversationRow(dbTimed, conversationId);
     if (!conversation) {
@@ -1863,11 +1879,10 @@ export async function onRequestGet(context) {
       }
     }
     if (!isAdmin) {
-      const requesterId = normalizeId(queryUserId || (sessionUser && sessionUser.id));
-      if (requesterId) {
-        const allowed = participants.some((p) => String(p.userId) === String(requesterId));
-        if (!allowed) return await timing.finalize(errorResponse("FORBIDDEN", 403), db);
-      }
+      const requesterId = sessionId;
+      if (!requesterId) return await timing.finalize(errorResponse("NOT_LOGGED_IN", 401), db);
+      const allowed = participants.some((p) => String(p.userId) === String(requesterId));
+      if (!allowed) return await timing.finalize(errorResponse("FORBIDDEN", 403), db);
     }
 
     const messageResult = await collectMessages(dbTimed, conversationId, {
@@ -1880,7 +1895,7 @@ export async function onRequestGet(context) {
     const messages = await Promise.all(rows.map((row) => buildMessagePayload(row, participants, context.request.url, secret)));
 
     const isHistoryPage = Boolean(url.searchParams.get("before"));
-    const viewerId = normalizeId(isAdmin ? queryAdminId || (sessionUser && sessionUser.id) : queryUserId || (sessionUser && sessionUser.id));
+    const viewerId = normalizeId(isAdmin ? queryAdminId || (sessionUser && sessionUser.id) : sessionId);
     if (!isHistoryPage && viewerId) {
       const latestId = conversation && conversation.last_message_id != null ? Number(conversation.last_message_id) : null;
       const fallbackId = rows.length ? Number(rows[rows.length - 1].id) : null;
@@ -1908,13 +1923,13 @@ export async function onRequestGet(context) {
       adminId = admin ? admin.id : "";
       if (admin && admin.profile) adminProfile = admin.profile;
       const userParticipant = participants.find((p) => String(p.userId) !== String(adminId));
-      userId = userParticipant ? userParticipant.userId : queryUserId || (sessionUser && sessionUser.id) || "";
+      userId = userParticipant ? userParticipant.userId : (isAdmin ? queryUserId || "" : sessionId);
       if (userId) {
         const row = await findUserRow(dbTimed, userId);
         userProfile = buildUserProfile(row, userId);
       }
     } else {
-      const requesterId = normalizeId(queryUserId || (sessionUser && sessionUser.id));
+      const requesterId = isAdmin ? normalizeId(queryUserId || (sessionUser && sessionUser.id)) : sessionId;
       userId = requesterId || (participants[0] && participants[0].userId) || "";
       const other = participants.find((p) => String(p.userId) !== String(userId));
       if (other) {
@@ -1985,6 +2000,12 @@ export async function onRequestPost(context) {
     const sessionUser = adminAccess.sessionUser;
     const isAdmin = adminAccess.isAdmin;
     if (wantsAdmin && !isAdmin) return await timing.finalize(errorResponse("FORBIDDEN", 403), db);
+    const sessionId = sessionUser && sessionUser.id ? normalizeId(sessionUser.id) : "";
+    if (!isAdmin && !sessionId) return await timing.finalize(errorResponse("NOT_LOGGED_IN", 401), db);
+    if (!isAdmin) {
+      if (rawUserId && rawUserId !== sessionId) return await timing.finalize(errorResponse("FORBIDDEN", 403), db);
+      if (rawSenderId && rawSenderId !== sessionId) return await timing.finalize(errorResponse("FORBIDDEN", 403), db);
+    }
 
     const kind = String(body.kind || body.bodyType || body.body_type || body.type || "text").toLowerCase();
     const messageKind = kind === "image" || kind === "file" ? kind : "text";
@@ -2044,7 +2065,7 @@ export async function onRequestPost(context) {
         conversationId = await getOrCreateSupportConversation(dbTimed, userId, admin.id);
         conversationType = SUPPORT_TYPE;
       } else {
-        const senderId = await ensureUser({ id: rawSenderId || rawUserId || (sessionUser && sessionUser.id) }, dbTimed);
+        const senderId = await ensureUser({ id: sessionId }, dbTimed);
         const recipientId = await ensureUser({ id: rawRecipientId }, dbTimed);
         if (!senderId || !recipientId) return await timing.finalize(errorResponse("USER_NOT_FOUND", 404), db);
         conversationId = await getOrCreateDmConversation(dbTimed, senderId, recipientId);
@@ -2052,7 +2073,7 @@ export async function onRequestPost(context) {
       }
       participants = await getConversationParticipants(dbTimed, conversationId);
     } else if (rawUserId) {
-      const userId = await ensureUser({ id: rawUserId }, dbTimed);
+      const userId = await ensureUser({ id: isAdmin ? rawUserId : sessionId }, dbTimed);
       if (!userId) return await timing.finalize(errorResponse("USER_NOT_FOUND", 404), db);
       admin = await ensureAdminUser(dbTimed, context.env);
       if (!admin) return await timing.finalize(errorResponse("ADMIN_NOT_CONFIGURED", 500), db);
@@ -2078,8 +2099,9 @@ export async function onRequestPost(context) {
       }
     }
 
-    const requesterId = normalizeId(rawUserId || rawSenderId || (sessionUser && sessionUser.id));
-    if (!isAdmin && requesterId) {
+    const requesterId = isAdmin ? normalizeId(rawUserId || rawSenderId || (sessionUser && sessionUser.id)) : sessionId;
+    if (!isAdmin) {
+      if (!requesterId) return await timing.finalize(errorResponse("NOT_LOGGED_IN", 401), db);
       const allowed = participants.some((p) => String(p.userId) === String(requesterId));
       if (!allowed) return await timing.finalize(errorResponse("FORBIDDEN", 403), db);
     }
@@ -2088,7 +2110,7 @@ export async function onRequestPost(context) {
     let recipientId = "";
     if (conversationType === SUPPORT_TYPE) {
       const userParticipant = participants.find((p) => String(p.userId) !== String(adminId));
-      const userId = userParticipant ? userParticipant.userId : rawUserId || rawRecipientId || "";
+      const userId = userParticipant ? userParticipant.userId : isAdmin ? rawUserId || rawRecipientId || "" : sessionId;
       if (isAdmin) {
         senderId = adminId;
         recipientId = userId;

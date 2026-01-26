@@ -10,7 +10,6 @@ import {
 } from "./messages.js";
 import {
   buildConversationEtag,
-  getConversationVersion,
   matchEtagHeader,
   setConversationVersion,
   setUnreadCount,
@@ -19,7 +18,8 @@ import { createRequestTiming } from "./_timing.js";
 
 const SUPPORT_TYPE = "support";
 const SLOW_QUERY_MS = 300;
-const CACHE_CONTROL = "no-store, no-cache, must-revalidate";
+const CACHE_CONTROL = "private, max-age=0, must-revalidate";
+const VARY_HEADER = "Cookie";
 const CHAT_SCHEMA_VERSION = SCHEMA_USER_VERSION;
 
 function normalizeId(value) {
@@ -40,6 +40,7 @@ function withNoStore(response) {
   if (response && response.headers && typeof response.headers.set === "function") {
     response.headers.set("cache-control", CACHE_CONTROL);
     response.headers.set("pragma", "no-cache");
+    response.headers.set("vary", VARY_HEADER);
   }
   return response;
 }
@@ -50,6 +51,7 @@ function buildNotModified(etag) {
     headers: {
       "cache-control": CACHE_CONTROL,
       pragma: "no-cache",
+      vary: VARY_HEADER,
       etag,
     },
   });
@@ -318,16 +320,15 @@ export async function onRequestGet(context) {
       const admin = adminAccess.admin || (await ensureAdminUser(dbTimed, context.env));
       if (!admin)
         return await timing.finalize(withNoStore(jsonResponse({ ok: false, error: "ADMIN_NOT_CONFIGURED" }, 500)), db);
-      const adminVersion = getConversationVersion(admin.id);
-      const adminEtag = buildConversationEtag(admin.id, ["admin", filterUserId || "all"]);
-      if (adminVersion && matchEtagHeader(ifNoneMatch, adminEtag)) {
-        return await timing.finalize(buildNotModified(adminEtag), db);
-      }
       const conversations = await listAdminConversations(dbTimed, admin.id, filterUserId || "");
       const totalUnread = conversations.reduce((sum, item) => sum + (Number(item.unreadCount) || 0), 0);
       setUnreadCount(admin.id, totalUnread);
       const computedVersion = computeConversationVersion(conversations);
       setConversationVersion(admin.id, computedVersion);
+      const adminEtag = buildConversationEtag(admin.id, ["admin", filterUserId || "all"]);
+      if (matchEtagHeader(ifNoneMatch, adminEtag)) {
+        return await timing.finalize(buildNotModified(adminEtag), db);
+      }
       const response = jsonResponse(
         {
           ok: true,
@@ -341,27 +342,25 @@ export async function onRequestGet(context) {
       );
       response.headers.set("cache-control", CACHE_CONTROL);
       response.headers.set("pragma", "no-cache");
-      response.headers.set("etag", buildConversationEtag(admin.id, ["admin", filterUserId || "all"]));
+      response.headers.set("etag", adminEtag);
+      response.headers.set("vary", VARY_HEADER);
       return await timing.finalize(response, db);
     }
 
-    const userId = filterUserId || (sessionUser && normalizeId(sessionUser.id));
-    if (!userId) {
+    const sessionId = sessionUser && normalizeId(sessionUser.id);
+    if (!sessionId) {
       return await timing.finalize(withNoStore(jsonResponse({ ok: false, error: "NOT_LOGGED_IN" }, 401)), db);
     }
-    const ensuredId = await ensureUser({ id: userId }, dbTimed);
+    if (filterUserId && filterUserId !== sessionId) {
+      return await timing.finalize(withNoStore(jsonResponse({ ok: false, error: "FORBIDDEN" }, 403)), db);
+    }
+    const ensuredId = await ensureUser({ id: sessionId }, dbTimed);
     if (!ensuredId) {
       return await timing.finalize(withNoStore(jsonResponse({ ok: false, error: "USER_NOT_FOUND" }, 404)), db);
     }
     const admin = await ensureAdminUser(dbTimed, context.env);
     if (!admin)
       return await timing.finalize(withNoStore(jsonResponse({ ok: false, error: "ADMIN_NOT_CONFIGURED" }, 500)), db);
-
-    const userVersion = getConversationVersion(ensuredId);
-    const userEtag = buildConversationEtag(ensuredId, ["user"]);
-    if (userVersion && matchEtagHeader(ifNoneMatch, userEtag)) {
-      return await timing.finalize(buildNotModified(userEtag), db);
-    }
 
     await getOrCreateSupportConversation(dbTimed, ensuredId, admin.id);
     const selfRow = await findUserRow(dbTimed, ensuredId);
@@ -371,6 +370,10 @@ export async function onRequestGet(context) {
     setUnreadCount(ensuredId, totalUnread);
     const computedVersion = computeConversationVersion(conversations);
     setConversationVersion(ensuredId, computedVersion);
+    const userEtag = buildConversationEtag(ensuredId, ["user"]);
+    if (matchEtagHeader(ifNoneMatch, userEtag)) {
+      return await timing.finalize(buildNotModified(userEtag), db);
+    }
     const response = jsonResponse(
       {
         ok: true,
@@ -385,7 +388,8 @@ export async function onRequestGet(context) {
     );
     response.headers.set("cache-control", CACHE_CONTROL);
     response.headers.set("pragma", "no-cache");
-    response.headers.set("etag", buildConversationEtag(ensuredId, ["user"]));
+    response.headers.set("etag", userEtag);
+    response.headers.set("vary", VARY_HEADER);
     return await timing.finalize(response, db);
   } catch (error) {
     const schemaResponse = chatSchemaErrorResponse(error);

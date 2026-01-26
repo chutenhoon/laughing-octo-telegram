@@ -7,6 +7,7 @@ import {
   readJsonBody,
   verifyPassword,
 } from "./_utils.js";
+import { createSessionCookie } from "./session.js";
 
 const ADMIN_WEB_ID = "admin-web";
 const ADMIN_DISPLAY_NAME = "B\u1ea1ch Kim";
@@ -340,7 +341,14 @@ export async function onRequestPost(context) {
           adminDbUser.last_seen_at = now;
           adminDbUser.is_online = true;
         }
-        return jsonResponse({ ok: true, user: adminDbUser || buildAdminWebUser() }, 200);
+        const session = await createSessionCookie(adminDbUser || buildAdminWebUser(), context.env);
+        if (!session || !session.cookie) {
+          return jsonResponse({ ok: false, error: "SESSION_NOT_CONFIGURED" }, 500);
+        }
+        const response = jsonResponse({ ok: true, user: adminDbUser || buildAdminWebUser() }, 200);
+        response.headers.set("set-cookie", session.cookie);
+        response.headers.set("cache-control", "no-store");
+        return response;
       }
     }
 
@@ -392,7 +400,15 @@ export async function onRequestPost(context) {
       user.last_seen_at = now;
     }
 
-    return jsonResponse({ ok: true, user: formatUserResponse(user, resolvedId) }, 200);
+    const userPayload = formatUserResponse(user, resolvedId);
+    const session = await createSessionCookie(userPayload, context.env);
+    if (!session || !session.cookie) {
+      return jsonResponse({ ok: false, error: "SESSION_NOT_CONFIGURED" }, 500);
+    }
+    const response = jsonResponse({ ok: true, user: userPayload }, 200);
+    response.headers.set("set-cookie", session.cookie);
+    response.headers.set("cache-control", "no-store");
+    return response;
   } catch (error) {
     console.error("REGISTER_ERROR", error);
     return jsonResponse({ ok: false, error: "INTERNAL" }, 500);

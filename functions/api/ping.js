@@ -1,4 +1,5 @@
 import { normalizeEmail, normalizeUsername, readJsonBody } from "./auth/_utils.js";
+import { getSessionUser } from "./auth/session.js";
 import { recordOnlinePing, shouldPersistLastSeen } from "./chat_state.js";
 
 async function readPingPayload(request) {
@@ -60,13 +61,14 @@ async function handlePing(context) {
   try {
     const db = context?.env?.DB;
     const request = context?.request;
-    const payload = await readPingPayload(request);
-    const userRef =
-      (payload && (payload.userId || payload.user_id || payload.username || payload.id || payload.email)) ||
-      (payload && payload.user) ||
-      "";
+    const sessionUser = await getSessionUser(request, context?.env);
+    const userRef = sessionUser && sessionUser.id ? String(sessionUser.id).trim() : "";
     if (!userRef) return buildNoContent();
+
+    const payload = await readPingPayload(request);
     const aliases = [];
+    if (sessionUser && sessionUser.username) aliases.push(sessionUser.username);
+    if (sessionUser && sessionUser.email) aliases.push(sessionUser.email);
     if (payload && payload.username) aliases.push(payload.username);
     if (payload && payload.email) aliases.push(payload.email);
     recordOnlinePing(userRef, { aliases });
@@ -78,8 +80,8 @@ async function handlePing(context) {
     const now = Math.floor(nowMs / 1000);
     const columns = await getUserColumns(db);
     const idRef = /^\d+$/.test(String(userRef || "").trim()) ? String(Number(userRef)) : "";
-    const username = payload && payload.username ? normalizeUsername(payload.username) : idRef ? "" : normalizeUsername(userRef);
-    let email = payload && payload.email ? normalizeEmail(payload.email) : idRef ? "" : normalizeEmail(userRef);
+    const username = sessionUser && sessionUser.username ? normalizeUsername(sessionUser.username) : idRef ? "" : normalizeUsername(userRef);
+    let email = sessionUser && sessionUser.email ? normalizeEmail(sessionUser.email) : "";
     if (email && !email.includes("@")) email = "";
     const conditions = [];
     const binds = [now];
