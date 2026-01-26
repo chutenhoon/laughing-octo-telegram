@@ -119,9 +119,13 @@ export async function onRequest(context) {
     }
 
     const redirectUrl = buildRedirectUrl(url, routeKey);
-    const response = Response.redirect(redirectUrl.toString(), 302);
-    response.headers.set("cache-control", "no-store");
-    return response;
+    return new Response(null, {
+      status: 302,
+      headers: {
+        location: redirectUrl.toString(),
+        "cache-control": "no-store",
+      },
+    });
   } catch (error) {
     return context.next();
   }

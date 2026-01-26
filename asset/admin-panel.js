@@ -170,11 +170,10 @@
       const payload = JSON.stringify({ authKey: keys.authKey, panelKey: keys.panelKey });
       try {
         sessionStorage.setItem(ADMIN_CRED_KEY, payload);
-      } catch (e) {
-        try {
-          localStorage.setItem(ADMIN_CRED_KEY, payload);
-        } catch (err) {}
-      }
+      } catch (e) {}
+      try {
+        localStorage.setItem(ADMIN_CRED_KEY, payload);
+      } catch (err) {}
     };
     const getAdminCreds = () => {
       try {
@@ -1356,6 +1355,7 @@
     let maintenanceClockSkewMs = 0;
     let maintenanceCountdownTimer = null;
     let maintenanceRouteInputs = [];
+    let maintenanceSaving = false;
 
     const getMaintenanceApiUrl = () => {
       const root = window.location.protocol === "file:" && typeof getProjectRoot === "function" ? getProjectRoot() : "/";
@@ -1563,6 +1563,47 @@
       startMaintenanceCountdown();
     };
 
+    const setMaintenanceBusy = (busy) => {
+      maintenanceSaving = busy;
+      const elements = [
+        maintenanceGlobalToggle,
+        maintenanceEnableBtn,
+        maintenanceDisableBtn,
+        maintenanceApplyBtn,
+        maintenanceUnlockBtn,
+        maintenanceMessage,
+        maintenanceDuration,
+        maintenanceRouteFilter,
+        legacyMaintenanceToggle,
+        legacyMaintenanceSave,
+      ];
+      if (maintenanceRouteInputs.length) elements.push(...maintenanceRouteInputs);
+      if (legacyMaintenanceScopes.length) elements.push(...legacyMaintenanceScopes);
+      elements.forEach((el) => {
+        if (!el) return;
+        el.disabled = Boolean(busy);
+        if (busy) {
+          el.setAttribute("aria-busy", "true");
+        } else {
+          el.removeAttribute("aria-busy");
+        }
+      });
+    };
+
+    const getMaintenanceErrorMessage = (response, data) => {
+      if (data && typeof data.error === "string") {
+        if (data.error === "UNAUTHORIZED") return "Sai khoa admin.";
+        if (data.error === "DB_NOT_CONFIGURED") return "Chua ket noi CSDL.";
+        if (data.error === "INVALID_BODY") return "Du lieu gui len khong hop le.";
+        return `Khong the cap nhat bao tri (${data.error}).`;
+      }
+      if (response && response.status) {
+        if (response.status === 401) return "Sai khoa admin.";
+        return `Khong the cap nhat bao tri (HTTP ${response.status}).`;
+      }
+      return "Khong the cap nhat bao tri.";
+    };
+
     const fetchMaintenanceConfig = async () => {
       try {
         const response = await fetch(getMaintenanceApiUrl(), { cache: "no-store" });
@@ -1577,11 +1618,13 @@
     };
 
     const saveMaintenanceConfig = async (payload, successMessage) => {
+      if (maintenanceSaving) return;
       const headers = getAdminHeaders() || {};
       if (!headers || !headers["x-admin-user"] || !headers["x-admin-pass"]) {
         showToast("Can khoa admin de cap nhat bao tri.");
         return;
       }
+      setMaintenanceBusy(true);
       try {
         const response = await fetch(getMaintenanceApiUrl(), {
           method: "POST",
@@ -1594,8 +1637,12 @@
           showToast(successMessage || "Da cap nhat bao tri.");
           return;
         }
-      } catch (error) {}
-      showToast("Khong the cap nhat bao tri.");
+        showToast(getMaintenanceErrorMessage(response, data));
+      } catch (error) {
+        showToast("Khong the cap nhat bao tri.");
+      } finally {
+        setMaintenanceBusy(false);
+      }
     };
 
     const collectRouteLocks = () => {
