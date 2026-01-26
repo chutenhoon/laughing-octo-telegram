@@ -576,20 +576,29 @@
         const inputWrap = document.querySelector(".message-input");
         const headerRoleBadge = document.querySelector(".message-header .message-role");
         const rootStyle = document.documentElement.style;
+        const layoutSizingState =
+          window.__bkChatLayoutSizing && typeof window.__bkChatLayoutSizing === "object"
+            ? window.__bkChatLayoutSizing
+            : { initialized: false };
+        window.__bkChatLayoutSizing = layoutSizingState;
         let composerResizeObserver = null;
         let viewportResizeTick = 0;
         let composerResizeTick = 0;
+        let lastComposerHeight = 0;
+        let lastViewportHeight = 0;
 
         const setComposerHeight = () => {
           if (!inputWrap) return;
           const height = Math.ceil(inputWrap.getBoundingClientRect().height);
-          if (!height) return;
+          if (!height || height === lastComposerHeight) return;
+          lastComposerHeight = height;
           rootStyle.setProperty("--composer-h", `${height}px`);
         };
 
         const setViewportHeight = () => {
           const height = window.visualViewport ? Math.round(window.visualViewport.height) : window.innerHeight;
-          if (!height) return;
+          if (!height || height === lastViewportHeight) return;
+          lastViewportHeight = height;
           rootStyle.setProperty("--vvh", `${height}px`);
         };
 
@@ -610,6 +619,17 @@
         };
 
         const initChatLayoutSizing = () => {
+          if (layoutSizingState.initialized) {
+            if (typeof layoutSizingState.refresh === "function") {
+              layoutSizingState.refresh();
+            }
+            return;
+          }
+          layoutSizingState.initialized = true;
+          layoutSizingState.refresh = () => {
+            scheduleComposerHeight();
+            scheduleViewportHeight();
+          };
           setComposerHeight();
           setViewportHeight();
           if (inputWrap && typeof ResizeObserver !== "undefined" && !composerResizeObserver) {
@@ -617,16 +637,20 @@
               scheduleComposerHeight();
             });
             composerResizeObserver.observe(inputWrap);
+            layoutSizingState.observer = composerResizeObserver;
           }
           const handleViewportChange = () => {
             scheduleComposerHeight();
             scheduleViewportHeight();
           };
-          window.addEventListener("resize", handleViewportChange, { passive: true });
-          window.addEventListener("orientationchange", handleViewportChange, { passive: true });
-          if (window.visualViewport) {
-            window.visualViewport.addEventListener("resize", handleViewportChange, { passive: true });
-            window.visualViewport.addEventListener("scroll", handleViewportChange, { passive: true });
+          if (!layoutSizingState.bound) {
+            layoutSizingState.bound = true;
+            window.addEventListener("resize", handleViewportChange, { passive: true });
+            window.addEventListener("orientationchange", handleViewportChange, { passive: true });
+            if (window.visualViewport) {
+              window.visualViewport.addEventListener("resize", handleViewportChange, { passive: true });
+              window.visualViewport.addEventListener("scroll", handleViewportChange, { passive: true });
+            }
           }
         };
         const headerName = document.querySelector(".message-user-name");

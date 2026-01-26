@@ -12,6 +12,7 @@
   --muted: rgba(255, 255, 255, 0.62);
   --shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
   --glass-blur: blur(22px) saturate(140%);
+  --composer-gap: 20px;
   --verified-badge-size: 14px;
   --verified-badge-gap: 4px;
 }
@@ -2278,7 +2279,6 @@ header {
   height: 100%;
   background: rgba(8, 8, 12, 0.35);
   position: relative;
-  --composer-clearance: 20px;
 }
 
 .message-empty {
@@ -2481,7 +2481,7 @@ header {
   flex: 1;
   min-height: 0;
   padding: 18px;
-  padding-bottom: calc(var(--composer-clearance, 16px) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(var(--composer-h, 72px) + var(--composer-gap, 20px) + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -2489,7 +2489,7 @@ header {
   overscroll-behavior: contain;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
-  scroll-padding-bottom: calc(var(--composer-clearance, 16px) + env(safe-area-inset-bottom, 0px));
+  scroll-padding-bottom: calc(var(--composer-h, 72px) + var(--composer-gap, 20px) + env(safe-area-inset-bottom, 0px));
   position: relative;
 }
 
@@ -2498,6 +2498,10 @@ header {
   flex-direction: column;
   gap: 14px;
   min-height: 0;
+}
+
+.message-list > :last-child {
+  margin-bottom: 0;
 }
 
 .message-body.is-loading .message-loading {
@@ -2720,7 +2724,7 @@ header {
 .message-new {
   position: absolute;
   right: 18px;
-  bottom: calc(var(--composer-h, 72px) + env(safe-area-inset-bottom, 0px) + 16px);
+  bottom: calc(var(--composer-h, 72px) + var(--composer-gap, 20px) + env(safe-area-inset-bottom, 0px));
   border-radius: 999px;
   border: 1px solid rgba(139, 124, 255, 0.5);
   background: rgba(20, 18, 30, 0.9);
@@ -5422,7 +5426,7 @@ footer {
 
   .message-body {
     padding: 14px;
-    padding-bottom: calc(var(--composer-clearance, 16px) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(var(--composer-h, 72px) + var(--composer-gap, 20px) + env(safe-area-inset-bottom, 0px));
   }
 
   .message-header {
@@ -5948,12 +5952,12 @@ footer {
   }
 
   .message-body {
-    scroll-padding-bottom: calc(var(--composer-clearance, 16px) + env(safe-area-inset-bottom, 0px));
+    scroll-padding-bottom: calc(var(--composer-h, 72px) + var(--composer-gap, 20px) + env(safe-area-inset-bottom, 0px));
   }
 
   .message-new {
     right: 12px;
-    bottom: calc(var(--composer-h, 72px) + env(safe-area-inset-bottom, 0px) + 16px);
+    bottom: calc(var(--composer-h, 72px) + var(--composer-gap, 20px) + env(safe-area-inset-bottom, 0px));
   }
 
   .message-input input {
