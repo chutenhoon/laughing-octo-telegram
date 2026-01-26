@@ -2278,6 +2278,7 @@ header {
   height: 100%;
   background: rgba(8, 8, 12, 0.35);
   position: relative;
+  --composer-clearance: 16px;
 }
 
 .message-empty {
@@ -2480,7 +2481,7 @@ header {
   flex: 1;
   min-height: 0;
   padding: 18px;
-  padding-bottom: calc(var(--composer-h, 72px) + env(safe-area-inset-bottom, 0px) + 16px);
+  padding-bottom: calc(var(--composer-clearance, 16px) + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -2488,7 +2489,7 @@ header {
   overscroll-behavior: contain;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
-  scroll-padding-bottom: calc(var(--composer-h, 72px) + env(safe-area-inset-bottom, 0px) + 16px);
+  scroll-padding-bottom: calc(var(--composer-clearance, 16px) + env(safe-area-inset-bottom, 0px));
   position: relative;
 }
 
@@ -2497,10 +2498,6 @@ header {
   flex-direction: column;
   gap: 14px;
   min-height: 0;
-}
-
-.message-list > :last-child {
-  margin-bottom: 8px;
 }
 
 .message-body.is-loading .message-loading {
@@ -5425,7 +5422,7 @@ footer {
 
   .message-body {
     padding: 14px;
-    padding-bottom: calc(var(--composer-h, 72px) + env(safe-area-inset-bottom, 0px) + 16px);
+    padding-bottom: calc(var(--composer-clearance, 16px) + env(safe-area-inset-bottom, 0px));
   }
 
   .message-header {
@@ -5951,7 +5948,7 @@ footer {
   }
 
   .message-body {
-    scroll-padding-bottom: calc(var(--composer-h, 72px) + env(safe-area-inset-bottom, 0px) + 16px);
+    scroll-padding-bottom: calc(var(--composer-clearance, 16px) + env(safe-area-inset-bottom, 0px));
   }
 
   .message-new {
