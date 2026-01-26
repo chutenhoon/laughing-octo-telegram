@@ -164,6 +164,7 @@ export async function onRequest(context) {
   const targetUrl = new URL(request.url);
   targetUrl.search = "";
   targetUrl.searchParams.set("token", token);
+  targetUrl.searchParams.set("room", room);
 
   const id = env.CHAT_ROOM.idFromName(room);
   const stub = env.CHAT_ROOM.get(id);

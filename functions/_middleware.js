@@ -1,7 +1,3 @@
-import { ChatRoom } from "../DO/src/index.js";
-
-export { ChatRoom };
-
 const CACHE_URL = "https://maintenance-config.internal/v1";
 const CACHE_TTL = 1000;
 const ALLOWED_SCOPES = new Set([
