@@ -1,5 +1,5 @@
-import { jsonResponse, readJsonBody, generateId } from "../../../auth/_utils.js";
-import { requireUser } from "../../../_catalog.js";
+import { jsonResponse, readJsonBody, generateId } from "../../auth/_utils.js";
+import { requireUser } from "../../_catalog.js";
 const MAX_RESERVE_ATTEMPTS = 5;
 
 function isApprovedStatus(status) {

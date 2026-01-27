@@ -1,5 +1,5 @@
-import { jsonResponse, readJsonBody, generateId } from "../../../auth/_utils.js";
-import { requireUser, toPlainText } from "../../../_catalog.js";
+import { jsonResponse, readJsonBody, generateId } from "../../auth/_utils.js";
+import { requireUser, toPlainText } from "../../_catalog.js";
 
 function isApprovedStatus(status) {
   const value = String(status || "").toLowerCase();
