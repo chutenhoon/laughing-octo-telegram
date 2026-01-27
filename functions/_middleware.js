@@ -9,6 +9,7 @@ import {
 const MAINTENANCE_PATH = "/maintenance";
 const CACHE_TTL_SECONDS = 1;
 const MAINTENANCE_COOKIE_KEY = "bk_maint_key";
+const ADMIN_BYPASS_COOKIE = "bk_admin";
 const MAINTENANCE_COOKIE_MAX_AGE = 180;
 
 const ALLOWLIST_PREFIXES = [
@@ -51,6 +52,50 @@ const isAllowlistedPath = (pathname) => {
 };
 
 const buildRedirectUrl = (requestUrl) => new URL(MAINTENANCE_PATH, requestUrl.origin);
+
+const parseCookies = (header) => {
+  const jar = {};
+  if (!header) return jar;
+  header.split(";").forEach((part) => {
+    const [key, ...rest] = part.trim().split("=");
+    if (!key) return;
+    jar[key] = rest.join("=");
+  });
+  return jar;
+};
+
+const safeEqual = (left, right) => {
+  const a = String(left || "");
+  const b = String(right || "");
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i += 1) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+};
+
+const getAdminPanelKeys = (env) => {
+  const user = env && typeof env.ADMIN_PANEL_USER === "string" && env.ADMIN_PANEL_USER ? env.ADMIN_PANEL_USER : env.ADMIN_AUTH_KEY;
+  const pass = env && typeof env.ADMIN_PANEL_PASS === "string" && env.ADMIN_PANEL_PASS ? env.ADMIN_PANEL_PASS : env.ADMIN_PANEL_KEY;
+  const authKey = String(user || "").trim();
+  const panelKey = String(pass || "").trim();
+  if (!authKey || !panelKey) return null;
+  return { authKey, panelKey };
+};
+
+const isAdminRequest = (request, env) => {
+  if (!request) return false;
+  const cookies = parseCookies(request.headers.get("cookie") || "");
+  const cookieBypass = String(cookies[ADMIN_BYPASS_COOKIE] || "").toLowerCase();
+  if (cookieBypass === "1" || cookieBypass === "true") return true;
+  const keys = getAdminPanelKeys(env);
+  if (!keys) return false;
+  const headerUser = request.headers.get("x-admin-user");
+  const headerPass = request.headers.get("x-admin-pass");
+  if (!headerUser || !headerPass) return false;
+  return safeEqual(headerUser, keys.authKey) && safeEqual(headerPass, keys.panelKey);
+};
 
 
 const buildMaintenanceCookie = (value, requestUrl) => {
@@ -99,6 +144,10 @@ export async function onRequest(context) {
     }
 
     if (isAllowlistedPath(pathname)) {
+      return context.next();
+    }
+
+    if (isAdminRequest(request, context?.env)) {
       return context.next();
     }
 

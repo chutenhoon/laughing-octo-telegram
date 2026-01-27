@@ -295,6 +295,13 @@ function setCookieValue(name, value, maxAgeSeconds) {
   document.cookie = cookie;
 }
 
+function getCookieValue(name) {
+  if (typeof document === "undefined") return "";
+  const safe = String(name || "").replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+  const match = document.cookie.match(new RegExp(`(?:^|; )${safe}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : "";
+}
+
 
 function syncCurrencyCookie(code) {
   if (!code) return;
@@ -340,6 +347,11 @@ const isMaintenanceBypassPath = (pathname) => {
   if (pathname.startsWith("/polyfluxdev2026")) return true;
   if (pathname.startsWith(BK_MAINTENANCE_PATH)) return true;
   return false;
+};
+
+const hasAdminBypass = () => {
+  const value = String(getCookieValue(BK_ADMIN_COOKIE) || "").toLowerCase();
+  return value === "1" || value === "true";
 };
 
 
@@ -468,7 +480,7 @@ const redirectToMaintenance = (routeKey) => {
 };
 
 const checkMaintenanceForPath = async (pathname, force) => {
-  if (!pathname || isMaintenanceBypassPath(pathname)) return;
+  if (!pathname || isMaintenanceBypassPath(pathname) || hasAdminBypass()) return;
   const config = await fetchMaintenanceConfig(force);
   if (!config) return;
   const now = Date.now() + maintenanceCache.skewMs;
