@@ -1,5 +1,5 @@
-import { jsonResponse, readJsonBody } from "../../../auth/_utils.js";
-import { requireSeller } from "../../../_catalog.js";
+import { jsonResponse, readJsonBody } from "../../auth/_utils.js";
+import { requireSeller } from "../../_catalog.js";
 
 const ALLOWED_STATUS = new Set(["pending", "in_progress", "completed", "rejected", "cancelled"]);
 
