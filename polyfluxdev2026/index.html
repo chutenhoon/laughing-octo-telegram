@@ -884,50 +884,87 @@
               <div class="chart-head">
                 <div>
                   <h3>Ch&#7871; &#273;&#7897; b&#7843;o tr&#236;</h3>
-                  <p class="hero-sub">B&#7853;t l&#7899;p ph&#7911; b&#7843;o tr&#236; tr&#234;n to&#224;n b&#7897; trang web.</p>
+                  <p class="hero-sub">Qu&#7843;n l&#253; kh&#243;a to&#224;n site ho&#7863;c theo t&#7915;ng khu v&#7921;c.</p>
                 </div>
                 <span class="admin-status-pill warn" id="admin-maintenance-pill">--</span>
               </div>
-              <div class="admin-action-row" style="margin-top: 12px;">
-                <button class="btn primary" id="admin-maintenance-toggle" type="button">--</button>
-              </div>
-              <div class="form-grid two-col" style="margin-top: 12px;">
-                <div class="form-field" style="grid-column: 1 / -1;">
-                  <label>Th&#244;ng b&#225;o b&#7843;o tr&#236;</label>
-                  <textarea id="admin-maintenance-message" rows="3" placeholder="VD: H&#7879; th&#7889;ng &#273;ang n&#226;ng c&#7845;p, vui l&#242;ng quay l&#7841;i sau."></textarea>
+              <div class="admin-maintenance-grid">
+                <div class="admin-maintenance-panel">
+                  <div class="admin-maintenance-toggle">
+                    <label>
+                      <input type="checkbox" id="admin-maintenance-global" />
+                      Kh&#243;a to&#224;n b&#7897; website
+                    </label>
+                    <div class="admin-maintenance-meta">
+                      <span>H&#7871;t h&#7841;n: <strong id="admin-maintenance-until">--</strong></span>
+                      <span>C&#242;n l&#7841;i: <strong id="admin-maintenance-remaining">--</strong></span>
+                    </div>
+                  </div>
+                  <div class="form-grid two-col">
+                    <div class="form-field" style="grid-column: 1 / -1;">
+                      <label>Th&#244;ng b&#225;o b&#7843;o tr&#236;</label>
+                      <textarea id="admin-maintenance-message" rows="3" placeholder="VD: H&#7879; th&#7889;ng &#273;ang n&#226;ng c&#7845;p, vui l&#242;ng quay l&#7841;i sau."></textarea>
+                    </div>
+                    <div class="form-field" style="grid-column: 1 / -1;">
+                      <label>Th&#7901;i l&#432;&#7907;ng b&#7843;o tr&#236;</label>
+                      <div class="admin-duration-presets" role="group" aria-label="Ch&#7885;n th&#7901;i l&#432;&#7907;ng">
+                        <button class="btn ghost" type="button" data-maintenance-duration="15">15m</button>
+                        <button class="btn ghost" type="button" data-maintenance-duration="30">30m</button>
+                        <button class="btn ghost" type="button" data-maintenance-duration="60">1h</button>
+                        <button class="btn ghost" type="button" data-maintenance-duration="120">2h</button>
+                        <button class="btn ghost" type="button" data-maintenance-duration="custom">T&#249;y ch&#7881;nh</button>
+                      </div>
+                      <div class="admin-duration-custom">
+                        <input id="admin-maintenance-hours" type="number" min="0" step="1" placeholder="Gi&#7901;" />
+                        <span>gi&#7901;</span>
+                        <input id="admin-maintenance-minutes" type="number" min="0" max="59" step="1" placeholder="Ph&#250;t" />
+                        <span>ph&#250;t</span>
+                      </div>
+                      <div class="form-hint" id="admin-maintenance-end-preview">M&#7903; l&#7841;i l&#250;c: --</div>
+                    </div>
+                    <div class="form-field" style="grid-column: 1 / -1;">
+                      <label>Ho&#7863;c ch&#7885;n th&#7901;i gian k&#7871;t th&#250;c</label>
+                      <div class="admin-duration-endtime">
+                        <input id="admin-maintenance-endtime" type="datetime-local" />
+                        <span>(theo gi&#7901; m&#225;y t&#237;nh)</span>
+                      </div>
+                    </div>
+                    <div class="form-field">
+                      <label>Tr&#7841;ng th&#225;i ph&#7841;m vi</label>
+                      <div class="form-hint" id="admin-maintenance-mode">Ph&#7841;m vi: --</div>
+                    </div>
+                    <div class="form-field">
+                      <label>T&#243;m t&#7855;t kh&#243;a</label>
+                      <div class="form-hint" id="admin-maintenance-summary">--</div>
+                    </div>
+                  </div>
+                  <div class="admin-maintenance-actions">
+                    <button class="btn primary" id="admin-maintenance-enable" type="button">B&#7853;t b&#7843;o tr&#236; to&#224;n site</button>
+                    <button class="btn ghost" id="admin-maintenance-disable" type="button">T&#7855;t b&#7843;o tr&#236; to&#224;n site</button>
+                    <button class="btn ghost" id="admin-maintenance-apply" type="button">&#193;p d&#7909;ng kh&#243;a theo route</button>
+                    <button class="btn warning" id="admin-maintenance-unlock" type="button">M&#7903; kh&#243;a t&#7845;t c&#7843;</button>
+                  </div>
+                  <div class="admin-inline-meta">
+                    <span>Thay &#273;&#7893;i s&#7869; c&#243; hi&#7879;u l&#7921;c ngay &#7903; request k&#7871; ti&#7871;p.</span>
+                  </div>
                 </div>
-                <div class="form-field" style="grid-column: 1 / -1;">
-                  <label>Ph&#7841;m vi kh&#243;a</label>
-                  <div class="form-field inline">
-                    <label><input type="checkbox" data-maintenance-scope="home" /> Trang ch&#7911;</label>
+                <div class="admin-maintenance-panel">
+                  <div class="chart-head">
+                    <div>
+                      <h3>Kh&#243;a theo route</h3>
+                      <p class="hero-sub">Ch&#7885;n khu v&#7921;c c&#7847;n kh&#243;a theo nh&#243;m.</p>
+                    </div>
                   </div>
-                  <div class="form-field inline">
-                    <label><input type="checkbox" data-maintenance-scope="products" /> S&#7843;n ph&#7849;m</label>
+                  <div class="form-field" style="margin-top: 10px;">
+                    <label>T&#236;m route</label>
+                    <input id="admin-maintenance-route-filter" placeholder="Home, products, profile..." />
                   </div>
-                  <div class="form-field inline">
-                    <label><input type="checkbox" data-maintenance-scope="services" /> D&#7883;ch v&#7909;</label>
+                  <div class="admin-route-actions">
+                    <button class="btn ghost" id="admin-maintenance-lock-all" type="button">Kh&#243;a t&#7845;t c&#7843; route</button>
+                    <button class="btn ghost" id="admin-maintenance-clear-all" type="button">M&#7903; t&#7845;t c&#7843; route</button>
                   </div>
-                  <div class="form-field inline">
-                    <label><input type="checkbox" data-maintenance-scope="tasks_market" /> Nhi&#7879;m v&#7909; marketplace</label>
-                  </div>
-                  <div class="form-field inline">
-                    <label><input type="checkbox" data-maintenance-scope="task_posting" /> &#272;&#259;ng b&#224;i nhi&#7879;m v&#7909;</label>
-                  </div>
-                  <div class="form-field inline">
-                    <label><input type="checkbox" data-maintenance-scope="seller_panel" /> Panel seller</label>
-                  </div>
-                  <div class="form-field inline">
-                    <label><input type="checkbox" data-maintenance-scope="profile" /> H&#7891; s&#417; / T&#224;i kho&#7843;n</label>
-                  </div>
-                  <div class="form-field inline">
-                    <label><input type="checkbox" data-maintenance-scope="checkout" /> Thanh to&#225;n</label>
-                  </div>
+                  <div class="admin-maintenance-route-list" id="admin-maintenance-routes"></div>
                 </div>
-                <button class="btn ghost" id="admin-maintenance-save" type="button" style="grid-column: 1 / -1;">L&#432;u c&#7845;u h&#236;nh</button>
-              </div>
-              <div class="admin-inline-meta" style="margin-top: 10px;">
-                <span id="admin-maintenance-mode">Ph&#7841;m vi: To&#224;n b&#7897; trang</span>
-                <span>B&#7887; tr&#7889;ng ph&#7841;m vi &#273;&#7875; kh&#243;a to&#224;n b&#7897; website.</span>
               </div>
             </div>
           </section>
