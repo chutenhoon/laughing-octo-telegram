@@ -269,6 +269,7 @@ function lockViewportScale() {
 
 const BK_AUTH_KEY = "bk_user";
 const BK_ADMIN_COOKIE = "bk_admin";
+const BK_MAINTENANCE_COOKIE = "bk_maint_key";
 const BK_CURRENCY_COOKIE = "bk_currency_selected";
 const BK_PING_INTERVAL = 30000;
 const BK_PING_GRACE = 15000;
@@ -294,6 +295,13 @@ function setCookieValue(name, value, maxAgeSeconds) {
   document.cookie = cookie;
 }
 
+function getCookieValue(name) {
+  if (typeof document === "undefined") return "";
+  const safe = String(name || "").replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+  const match = document.cookie.match(new RegExp(`(?:^|; )${safe}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : "";
+}
+
 function syncCurrencyCookie(code) {
   if (!code) return;
   setCookieValue(BK_CURRENCY_COOKIE, code, 60 * 60 * 24 * 30);
@@ -306,6 +314,214 @@ function syncAdminCookie(auth) {
     return;
   }
   setCookieValue(BK_ADMIN_COOKIE, "", 0);
+}
+
+const BK_MAINTENANCE_PATH = "/maintenance";
+const BK_MAINTENANCE_API_PATH = "/api/maintenance";
+const BK_MAINTENANCE_CACHE_TTL_MS = 2000;
+const BK_MAINTENANCE_MIN_BACKOFF_MS = 2000;
+const BK_MAINTENANCE_MAX_BACKOFF_MS = 30000;
+const BK_MAINTENANCE_COOKIE_TTL = 180;
+
+const maintenanceCache = {
+  config: null,
+  etag: "",
+  fetchedAt: 0,
+  skewMs: 0,
+  inFlight: null,
+  nextAllowedAt: 0,
+  failCount: 0,
+};
+
+let maintenanceLastPath = "";
+
+const getMaintenanceApiUrl = () => {
+  const root = typeof getRootPath === "function" ? getRootPath() : "/";
+  if (!root || root === "/") return BK_MAINTENANCE_API_PATH;
+  return `${root.replace(/\/$/, "")}${BK_MAINTENANCE_API_PATH}`;
+};
+
+const isMaintenanceBypassPath = (pathname) => {
+  if (!pathname) return false;
+  if (pathname.startsWith("/polyfluxdev2026")) return true;
+  if (pathname.startsWith(BK_MAINTENANCE_PATH)) return true;
+  return false;
+};
+
+const hasAdminBypass = () => {
+  const value = String(getCookieValue(BK_ADMIN_COOKIE) || "").toLowerCase();
+  return value === "1" || value === "true";
+};
+
+const toMs = (value) => {
+  if (!value) return 0;
+  const date = value instanceof Date ? value : new Date(value);
+  const ms = date.getTime();
+  return Number.isFinite(ms) ? ms : 0;
+};
+
+const hasRouteLocks = (locks) => Boolean(locks && Object.values(locks).some((value) => value === true));
+
+const getMaintenanceRouteKeyForPath = (pathname) => {
+  let rawPath = pathname || "";
+  try {
+    rawPath = decodeURIComponent(rawPath);
+  } catch (error) {
+    rawPath = pathname || "";
+  }
+  const path = rawPath.replace(/\\/g, "/").toLowerCase();
+  if (!path || path === "/" || path === "/index.html") return "home";
+  if (path.startsWith("/sanpham")) return "products";
+  if (path.startsWith("/dichvu")) return "services";
+  if (path.startsWith("/nhiemvu/tao")) return "task_posting";
+  if (path.startsWith("/nhiemvu")) return "tasks_market";
+  if (path.startsWith("/seller/panel") || path.startsWith("/seller/tasks") || path.startsWith("/seller/join")) return "seller_panel";
+  if (path.startsWith("/seller/")) return "seller_public";
+  if (path.startsWith("/checkout") || path.startsWith("/proof")) return "payments";
+  if (path.startsWith("/profile/messages")) return "profile.chat";
+  if (path.startsWith("/profile/orders")) return "profile.orders";
+  if (path.startsWith("/profile/favorites")) return "profile.favorites";
+  if (path.startsWith("/profile/following")) return "profile.following";
+  if (path.startsWith("/profile/history") || path.startsWith("/profile/logins")) return "profile.history";
+  if (path.startsWith("/profile/topups")) return "profile.withdraw";
+  if (path.startsWith("/profile/tasks")) return "profile.tasks";
+  if (path.startsWith("/profile/notifications")) return "profile.notifications";
+  if (path.startsWith("/profile/shops")) return "profile.shops";
+  if (path.startsWith("/profile/badges")) return "profile.badges";
+  if (path.startsWith("/profile/security")) return "profile.security";
+  if (path.startsWith("/profile/public")) return "profile.overview";
+  if (path.startsWith("/profile")) return "profile.overview";
+  if (path === "/u" || path.startsWith("/u/")) return "profile.overview";
+  if (path.startsWith("/login") || path.startsWith("/register") || path.startsWith("/forgot")) return "profile";
+  return null;
+};
+
+const isMaintenanceActive = (config, nowMs) => {
+  if (!config) return false;
+  const hasLocks = config.globalEnabled || hasRouteLocks(config.routeLocks);
+  if (!hasLocks) return false;
+  const endAtMs = toMs(config.endAt);
+  if (!endAtMs) return true;
+  return endAtMs > nowMs;
+};
+
+const isRouteLocked = (config, routeKey) => {
+  if (!config || !routeKey) return false;
+  const locks = config.routeLocks || {};
+  const parentProfileLocked = locks.profile === true;
+  if (routeKey === "profile.chat") return locks["profile.chat"] === true;
+  if (routeKey === "profile") return parentProfileLocked;
+  if (routeKey.startsWith("profile.")) {
+    if (parentProfileLocked) return true;
+    return locks[routeKey] === true;
+  }
+  return locks[routeKey] === true;
+};
+
+const fetchMaintenanceConfig = (force) => {
+  if (window.location.protocol === "file:") return Promise.resolve(null);
+  const now = Date.now();
+  if (maintenanceCache.inFlight) return maintenanceCache.inFlight;
+  if (!force && maintenanceCache.config && now - maintenanceCache.fetchedAt < BK_MAINTENANCE_CACHE_TTL_MS) {
+    return Promise.resolve(maintenanceCache.config);
+  }
+  if (!force && maintenanceCache.nextAllowedAt && now < maintenanceCache.nextAllowedAt) {
+    return Promise.resolve(maintenanceCache.config);
+  }
+  const headers = {};
+  if (maintenanceCache.etag) headers["if-none-match"] = maintenanceCache.etag;
+  const url = getMaintenanceApiUrl();
+  maintenanceCache.inFlight = fetch(url, { headers, cache: "no-cache" })
+    .then(async (response) => {
+      maintenanceCache.inFlight = null;
+      const headerNow = Number(response.headers.get("x-server-now")) || 0;
+      if (headerNow) maintenanceCache.skewMs = headerNow - Date.now();
+      if (response.status === 304) {
+        maintenanceCache.fetchedAt = Date.now();
+        maintenanceCache.failCount = 0;
+        return maintenanceCache.config;
+      }
+      const data = await response.json().catch(() => null);
+      if (response.ok && data && data.config) {
+        maintenanceCache.config = data.config;
+        maintenanceCache.etag = response.headers.get("etag") || maintenanceCache.etag;
+        maintenanceCache.fetchedAt = Date.now();
+        if (data.serverNow) {
+          maintenanceCache.skewMs = Number(data.serverNow) - Date.now();
+        }
+        maintenanceCache.failCount = 0;
+        maintenanceCache.nextAllowedAt = 0;
+        return maintenanceCache.config;
+      }
+      throw new Error("maintenance_fetch_failed");
+    })
+    .catch(() => {
+      maintenanceCache.inFlight = null;
+      maintenanceCache.failCount = Math.min(5, maintenanceCache.failCount + 1);
+      const backoff = Math.min(
+        BK_MAINTENANCE_MAX_BACKOFF_MS,
+        BK_MAINTENANCE_MIN_BACKOFF_MS * Math.pow(2, Math.max(0, maintenanceCache.failCount - 1))
+      );
+      maintenanceCache.nextAllowedAt = Date.now() + backoff;
+      return maintenanceCache.config;
+    });
+  return maintenanceCache.inFlight;
+};
+
+const redirectToMaintenance = (routeKey) => {
+  if (routeKey && routeKey !== "global") {
+    setCookieValue(BK_MAINTENANCE_COOKIE, routeKey, BK_MAINTENANCE_COOKIE_TTL);
+  }
+  if (window.location.pathname !== BK_MAINTENANCE_PATH) {
+    window.location.replace(BK_MAINTENANCE_PATH);
+  }
+};
+
+const checkMaintenanceForPath = async (pathname, force) => {
+  if (!pathname || isMaintenanceBypassPath(pathname) || hasAdminBypass()) return;
+  const config = await fetchMaintenanceConfig(force);
+  if (!config) return;
+  const now = Date.now() + maintenanceCache.skewMs;
+  if (!isMaintenanceActive(config, now)) return;
+  if (config.globalEnabled) {
+    redirectToMaintenance("global");
+    return;
+  }
+  const routeKey = getMaintenanceRouteKeyForPath(pathname);
+  if (!routeKey) return;
+  if (isRouteLocked(config, routeKey)) {
+    redirectToMaintenance(routeKey);
+  }
+};
+
+const scheduleMaintenanceCheck = (force) => {
+  if (window.location.protocol === "file:") return;
+  const pathname = window.location.pathname || "/";
+  if (!force && pathname === maintenanceLastPath) return;
+  maintenanceLastPath = pathname;
+  checkMaintenanceForPath(pathname, force);
+};
+
+if (window.location.protocol !== "file:") {
+  scheduleMaintenanceCheck(true);
+  window.addEventListener("popstate", () => scheduleMaintenanceCheck(false));
+  const originalPushState = history.pushState.bind(history);
+  const originalReplaceState = history.replaceState.bind(history);
+  history.pushState = function (...args) {
+    const result = originalPushState(...args);
+    scheduleMaintenanceCheck(false);
+    return result;
+  };
+  history.replaceState = function (...args) {
+    const result = originalReplaceState(...args);
+    scheduleMaintenanceCheck(false);
+    return result;
+  };
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      scheduleMaintenanceCheck(true);
+    }
+  });
 }
 const BK_I18N = {
   vi: {

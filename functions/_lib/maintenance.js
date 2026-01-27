@@ -23,6 +23,7 @@ export const MAINTENANCE_ROUTE_KEYS = [
   "profile.withdraw",
   "profile.tasks",
   "profile.notifications",
+  "profile.shops",
   "profile.badges",
   "profile.security",
   "profile.chat",
@@ -191,17 +192,20 @@ export const applyMaintenanceUpdate = (current, input, nowMs = Date.now()) => {
   const base = buildConfigPayload(normalizeMaintenanceConfig(current || {}, nowMs));
   const raw = input && typeof input === "object" ? input : {};
   const next = buildConfigPayload(base);
+  const hasRouteLocksInput =
+    Object.prototype.hasOwnProperty.call(raw, "routeLocks") || Object.prototype.hasOwnProperty.call(raw, "scopes");
+  const explicitGlobal = Object.prototype.hasOwnProperty.call(raw, "globalEnabled") || Object.prototype.hasOwnProperty.call(raw, "enabled");
 
   if (Object.prototype.hasOwnProperty.call(raw, "message")) {
     const message = typeof raw.message === "string" && raw.message.trim() ? raw.message.trim() : DEFAULT_MESSAGE;
     next.message = message;
   }
 
-  if (Object.prototype.hasOwnProperty.call(raw, "globalEnabled") || Object.prototype.hasOwnProperty.call(raw, "enabled")) {
+  if (explicitGlobal) {
     next.globalEnabled = normalizeBoolean(raw.globalEnabled != null ? raw.globalEnabled : raw.enabled);
   }
 
-  if (Object.prototype.hasOwnProperty.call(raw, "routeLocks") || Object.prototype.hasOwnProperty.call(raw, "scopes")) {
+  if (hasRouteLocksInput) {
     if (raw.routeLocks) {
       next.routeLocks = normalizeRouteLocks(raw.routeLocks);
     } else {
@@ -213,6 +217,8 @@ export const applyMaintenanceUpdate = (current, input, nowMs = Date.now()) => {
         next.routeLocks = normalizeRouteLocks(scopes);
       }
     }
+  } else if (explicitGlobal && normalizeBoolean(raw.globalEnabled != null ? raw.globalEnabled : raw.enabled) === false) {
+    next.routeLocks = normalizeRouteLocks({});
   }
 
   const hasLocks = next.globalEnabled || hasRouteLocks(next.routeLocks);
@@ -220,10 +226,14 @@ export const applyMaintenanceUpdate = (current, input, nowMs = Date.now()) => {
   const currentEnd = toMs(base.endAt);
   const currentStart = toMs(base.startAt);
   const durationHours = parseDurationHours(raw.durationHours ?? raw.duration ?? raw.hours);
+  const explicitEndAtMs = toMs(raw.endAt ?? raw.endTime ?? raw.endsAt);
 
   if (!hasLocks) {
     next.startAt = null;
     next.endAt = null;
+  } else if (explicitEndAtMs && explicitEndAtMs > nowMs) {
+    next.startAt = toIso(nowMs);
+    next.endAt = toIso(explicitEndAtMs);
   } else if (durationHours != null) {
     const startMs = nowMs;
     const endMs = nowMs + durationHours * 60 * 60 * 1000;
@@ -276,9 +286,10 @@ export const getRouteKeyForPath = (pathname) => {
   if (path.startsWith("/profile/topups")) return "profile.withdraw";
   if (path.startsWith("/profile/tasks")) return "profile.tasks";
   if (path.startsWith("/profile/notifications")) return "profile.notifications";
+  if (path.startsWith("/profile/shops")) return "profile.shops";
   if (path.startsWith("/profile/badges")) return "profile.badges";
   if (path.startsWith("/profile/security")) return "profile.security";
-  if (path.startsWith("/profile/public") || path.startsWith("/profile/shops")) return "profile.overview";
+  if (path.startsWith("/profile/public")) return "profile.overview";
   if (path.startsWith("/profile")) return "profile.overview";
   if (path === "/u" || path.startsWith("/u/")) return "profile.overview";
   if (path.startsWith("/login") || path.startsWith("/register") || path.startsWith("/forgot")) return "profile";

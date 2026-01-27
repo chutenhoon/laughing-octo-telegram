@@ -6,6 +6,11 @@ import {
   writeMaintenanceConfig,
 } from "../_lib/maintenance.js";
 
+const buildEtag = (config) => {
+  const version = config && Number.isFinite(Number(config.version)) ? Number(config.version) : 0;
+  return `W/"${version}"`;
+};
+
 function safeEqual(a, b) {
   const left = String(a || "");
   const right = String(b || "");
@@ -57,8 +62,23 @@ export async function onRequestGet(context) {
     const db = context?.env?.DB;
     if (!db) return jsonResponse({ ok: false, error: "DB_NOT_CONFIGURED" }, 500);
     const config = await readMaintenanceConfig(db);
-    const response = jsonResponse({ ok: true, config, serverNow: Date.now() }, 200);
-    response.headers.set("cache-control", "no-store");
+    const etag = buildEtag(config);
+    const ifNoneMatch = context.request.headers.get("if-none-match");
+    if (ifNoneMatch && ifNoneMatch.split(",").map((value) => value.trim()).includes(etag)) {
+      return new Response(null, {
+        status: 304,
+        headers: {
+          etag,
+          "cache-control": "no-cache",
+          "x-server-now": String(Date.now()),
+        },
+      });
+    }
+    const now = Date.now();
+    const response = jsonResponse({ ok: true, config, serverNow: now }, 200);
+    response.headers.set("cache-control", "no-cache");
+    response.headers.set("etag", etag);
+    response.headers.set("x-server-now", String(now));
     return response;
   } catch (error) {
     console.error("MAINTENANCE_GET_ERROR", error);
@@ -80,8 +100,11 @@ export async function onRequestPost(context) {
     const next = applyMaintenanceUpdate(current, rawConfig, Date.now());
     await writeMaintenanceConfig(db, next);
     purgeMaintenanceCache(context);
-    const response = jsonResponse({ ok: true, config: next, serverNow: Date.now() }, 200);
-    response.headers.set("cache-control", "no-store");
+    const now = Date.now();
+    const response = jsonResponse({ ok: true, config: next, serverNow: now }, 200);
+    response.headers.set("cache-control", "no-cache");
+    response.headers.set("etag", buildEtag(next));
+    response.headers.set("x-server-now", String(now));
     return response;
   } catch (error) {
     console.error("MAINTENANCE_POST_ERROR", error);

@@ -24,7 +24,7 @@ const MAINTENANCE_I18N = {
     subtitle: "Chúng tôi đang nâng cấp hệ thống. Vui lòng quay lại sau.",
     remaining: "Còn lại",
     reopen: "Mở lại lúc",
-    area: "Khu vực đang bảo trì",
+    area: "Khu Vực Đang Bảo Trì",
     backHome: "Quay lại trang chủ",
     global: "Toàn bộ hệ thống",
   },
@@ -86,6 +86,7 @@ const MAINTENANCE_ROUTE_LABELS = {
     "profile.withdraw": "Rút tiền",
     "profile.tasks": "Nhiệm vụ",
     "profile.notifications": "Thông báo",
+    "profile.shops": "Quản lý shop",
     "profile.badges": "Danh hiệu",
     "profile.security": "Bảo mật 2FA",
     "profile.chat": "Tin nhắn",
@@ -109,6 +110,7 @@ const MAINTENANCE_ROUTE_LABELS = {
     "profile.withdraw": "Withdrawals",
     "profile.tasks": "Tasks",
     "profile.notifications": "Notifications",
+    "profile.shops": "Shop management",
     "profile.badges": "Badges",
     "profile.security": "2FA security",
     "profile.chat": "Messages",
@@ -132,6 +134,7 @@ const MAINTENANCE_ROUTE_LABELS = {
     "profile.withdraw": "출금",
     "profile.tasks": "작업",
     "profile.notifications": "알림",
+    "profile.shops": "상점 관리",
     "profile.badges": "배지",
     "profile.security": "2FA 보안",
     "profile.chat": "메시지",
@@ -155,6 +158,7 @@ const MAINTENANCE_ROUTE_LABELS = {
     "profile.withdraw": "出金",
     "profile.tasks": "タスク",
     "profile.notifications": "通知",
+    "profile.shops": "ショップ管理",
     "profile.badges": "バッジ",
     "profile.security": "2FA セキュリティ",
     "profile.chat": "メッセージ",
@@ -178,6 +182,7 @@ const MAINTENANCE_ROUTE_LABELS = {
     "profile.withdraw": "提现",
     "profile.tasks": "任务",
     "profile.notifications": "通知",
+    "profile.shops": "店铺管理",
     "profile.badges": "称号",
     "profile.security": "2FA 安全",
     "profile.chat": "消息",
@@ -274,14 +279,15 @@ export async function onRequest(context) {
     <style>
       :root {
         color-scheme: dark;
-        --bg: #08080c;
-        --panel: rgba(12, 12, 18, 0.7);
-        --panel-strong: rgba(10, 10, 16, 0.82);
-        --stroke: rgba(255, 255, 255, 0.08);
-        --text: #f5f6ff;
-        --muted: rgba(255, 255, 255, 0.65);
-        --shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
-        --glass-blur: blur(20px) saturate(140%);
+        --bg: #0b0b10;
+        --panel: rgba(12, 12, 18, 0.72);
+        --panel-strong: rgba(10, 10, 16, 0.86);
+        --stroke: rgba(255, 255, 255, 0.1);
+        --text: #f2f2f4;
+        --muted: rgba(255, 255, 255, 0.66);
+        --shadow: 0 22px 60px rgba(0, 0, 0, 0.5);
+        --glass-blur: blur(16px) saturate(125%);
+        --accent: #f4d7c5;
       }
       * {
         box-sizing: border-box;
@@ -306,9 +312,9 @@ export async function onRequest(context) {
       .video-overlay {
         position: fixed;
         inset: 0;
-        background: radial-gradient(circle at 20% 20%, rgba(123, 90, 255, 0.22), transparent 55%),
-          radial-gradient(circle at 85% 40%, rgba(94, 190, 255, 0.2), transparent 60%),
-          linear-gradient(180deg, rgba(6, 6, 10, 0.7), rgba(6, 6, 10, 0.92));
+        background: radial-gradient(circle at 18% 22%, rgba(255, 255, 255, 0.08), transparent 55%),
+          radial-gradient(circle at 78% 35%, rgba(255, 255, 255, 0.06), transparent 60%),
+          linear-gradient(180deg, rgba(6, 6, 10, 0.6), rgba(6, 6, 10, 0.9));
         z-index: -2;
       }
       .page {
@@ -342,7 +348,7 @@ export async function onRequest(context) {
         border: 1px solid rgba(255, 255, 255, 0.2);
       }
       .brand b {
-        color: #8b7cff;
+        color: var(--accent);
       }
       h1 {
         font-family: "Outfit", "Manrope", system-ui, -apple-system, Segoe UI, sans-serif;
@@ -388,7 +394,7 @@ export async function onRequest(context) {
         padding: 10px 18px;
         border-radius: 999px;
         border: 1px solid var(--stroke);
-        background: rgba(255, 255, 255, 0.06);
+        background: rgba(255, 255, 255, 0.08);
         color: var(--text);
         font-weight: 700;
         cursor: pointer;

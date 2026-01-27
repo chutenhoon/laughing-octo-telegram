@@ -549,6 +549,10 @@
     const maintenanceMode = document.getElementById("admin-maintenance-mode");
     const maintenanceRouteFilter = document.getElementById("admin-maintenance-route-filter");
     const maintenanceRouteList = document.getElementById("admin-maintenance-routes");
+    const maintenanceEndTime = document.getElementById("admin-maintenance-endtime");
+    const maintenanceSummary = document.getElementById("admin-maintenance-summary");
+    const maintenanceLockAllBtn = document.getElementById("admin-maintenance-lock-all");
+    const maintenanceClearAllBtn = document.getElementById("admin-maintenance-clear-all");
     const legacyMaintenanceToggle = document.getElementById("admin-maintenance-toggle");
     const legacyMaintenanceSave = document.getElementById("admin-maintenance-save");
     const legacyMaintenanceScopes = Array.from(document.querySelectorAll("[data-maintenance-scope]"));
@@ -605,7 +609,7 @@
         label: "Hồ sơ / Tài khoản",
         routes: [
           { key: "profile", label: "Hồ sơ (toàn bộ)", paths: "/login, /register, /forgot", level: 0, tone: "parent" },
-          { key: "profile.overview", label: "Tổng quan hồ sơ", paths: "/profile, /profile/public", level: 1 },
+          { key: "profile.overview", label: "Tổng quan hồ sơ", paths: "/profile, /profile/public, /u", level: 1 },
           { key: "profile.orders", label: "Đơn hàng", paths: "/profile/orders", level: 1 },
           { key: "profile.favorites", label: "Yêu thích", paths: "/profile/favorites", level: 1 },
           { key: "profile.following", label: "Đang theo dõi", paths: "/profile/following", level: 1 },
@@ -613,6 +617,7 @@
           { key: "profile.withdraw", label: "Rút tiền", paths: "/profile/topups", level: 1 },
           { key: "profile.tasks", label: "Nhiệm vụ", paths: "/profile/tasks", level: 1 },
           { key: "profile.notifications", label: "Thông báo", paths: "/profile/notifications", level: 1 },
+          { key: "profile.shops", label: "Quản lý shop", paths: "/profile/shops", level: 1 },
           { key: "profile.badges", label: "Danh hiệu", paths: "/profile/badges", level: 1 },
           { key: "profile.security", label: "Bảo mật 2FA", paths: "/profile/security", level: 1 },
           { key: "profile.chat", label: "Tin nhắn / Chat", paths: "/profile/messages", level: 1 },
@@ -620,6 +625,12 @@
       },
     ];
     const MAINTENANCE_ROUTE_KEYS = MAINTENANCE_ROUTE_GROUPS.flatMap((group) => group.routes.map((route) => route.key));
+    const MAINTENANCE_ROUTE_LABELS = MAINTENANCE_ROUTE_GROUPS.reduce((acc, group) => {
+      group.routes.forEach((route) => {
+        acc[route.key] = route.label;
+      });
+      return acc;
+    }, {});
     const LEGACY_SCOPE_MAP = { checkout: "payments" };
     const LEGACY_SCOPE_REVERSE = { payments: "checkout" };
     const hasNewMaintenanceUi = Boolean(
@@ -1407,6 +1418,24 @@
 
     const getLockedRouteCount = (locks) => Object.values(locks || {}).filter((value) => value === true).length;
 
+    const getActiveRouteLabels = (config) => {
+      if (!config) return [];
+      if (config.globalEnabled) return ["Toàn bộ website"];
+      const locks = config.routeLocks || {};
+      const labels = [];
+      const profileLocked = locks.profile === true;
+      if (profileLocked && MAINTENANCE_ROUTE_LABELS.profile) {
+        labels.push(MAINTENANCE_ROUTE_LABELS.profile);
+      }
+      MAINTENANCE_ROUTE_KEYS.forEach((key) => {
+        if (!locks[key]) return;
+        if (key === "profile") return;
+        if (profileLocked && key.startsWith("profile.") && key !== "profile.chat") return;
+        labels.push(MAINTENANCE_ROUTE_LABELS[key] || key);
+      });
+      return labels;
+    };
+
     const formatDateTime = (value) => {
       if (!value) return "--";
       const date = new Date(value);
@@ -1422,6 +1451,28 @@
       } catch (error) {
         return date.toLocaleString();
       }
+    };
+
+    const toLocalDatetimeValue = (value) => {
+      if (!value) return "";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "";
+      const offset = date.getTimezoneOffset() * 60000;
+      return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+    };
+
+    const setEndTimeInput = (value) => {
+      if (!maintenanceEndTime) return;
+      maintenanceEndTime.value = value ? toLocalDatetimeValue(value) : "";
+    };
+
+    const readEndTimeMs = () => {
+      if (!maintenanceEndTime) return 0;
+      const raw = maintenanceEndTime.value;
+      if (!raw) return 0;
+      const parsed = new Date(raw);
+      const ms = parsed.getTime();
+      return Number.isFinite(ms) ? ms : 0;
     };
 
     const formatRemaining = (ms) => {
@@ -1455,11 +1506,13 @@
       if (!maintenanceDurationPreview) return;
       if (!minutes || minutes <= 0) {
         maintenanceDurationPreview.textContent = "Mở lại lúc: --";
+        if (maintenanceEndTime) maintenanceEndTime.value = "";
         return;
       }
       const now = Date.now() + maintenanceClockSkewMs;
       const endMs = now + minutes * 60000;
       maintenanceDurationPreview.textContent = `Mở lại lúc: ${formatDateTime(endMs)}`;
+      setEndTimeInput(endMs);
     };
 
     const setDurationInputs = (minutes) => {
@@ -1473,7 +1526,7 @@
       updateDurationPreview(safeMinutes);
     };
 
-    const readDurationMinutes = () => {
+    const readDurationMinutesFromInputs = () => {
       const rawHours = maintenanceDurationHours ? Number(maintenanceDurationHours.value) : 0;
       const rawMinutes = maintenanceDurationMinutes ? Number(maintenanceDurationMinutes.value) : 0;
       if (!Number.isFinite(rawHours) || rawHours < 0) return null;
@@ -1487,8 +1540,19 @@
       return total;
     };
 
+    const resolveDurationMinutes = () => {
+      const endMs = readEndTimeMs();
+      if (endMs) {
+        const now = Date.now() + maintenanceClockSkewMs;
+        const diffMs = endMs - now;
+        if (!Number.isFinite(diffMs) || diffMs < MAINTENANCE_DURATION_MINUTES * 60000) return null;
+        return Math.round(diffMs / 60000);
+      }
+      return readDurationMinutesFromInputs();
+    };
+
     const syncPresetFromInputs = () => {
-      const minutes = readDurationMinutes();
+      const minutes = readDurationMinutesFromInputs();
       const preset = MAINTENANCE_DURATION_PRESETS.find((value) => value === minutes);
       setPresetActive(preset != null ? preset : "custom");
       if (minutes) updateDurationPreview(minutes);
@@ -1548,6 +1612,11 @@
       if (maintenanceGlobalToggle) maintenanceGlobalToggle.checked = config.globalEnabled === true;
       const durationMinutes = getDurationMinutesFromConfig(config);
       setDurationInputs(durationMinutes);
+      const endMs = config.endAt ? new Date(config.endAt).getTime() : 0;
+      if (endMs && maintenanceDurationPreview) {
+        maintenanceDurationPreview.textContent = `Mở lại lúc: ${formatDateTime(endMs)}`;
+      }
+      setEndTimeInput(endMs);
       if (maintenanceRouteInputs.length) {
         maintenanceRouteInputs.forEach((input) => {
           const key = input.getAttribute("data-route-key");
@@ -1588,8 +1657,9 @@
 
     const renderMaintenanceStatus = (config) => {
       const active = hasActiveLocks(config);
-      const label = active ? "Dang bat" : "Dang tat";
+      const label = active ? "Đang bật" : "Đang tắt";
       const className = active ? "warn" : "good";
+      const activeLabels = getActiveRouteLabels(config);
       if (maintenanceStatus) {
         maintenanceStatus.textContent = label;
         maintenanceStatus.className = "admin-status-pill " + className;
@@ -1600,11 +1670,20 @@
       }
       if (maintenanceMode) {
         if (config.globalEnabled) {
-          maintenanceMode.textContent = "Pham vi: Toan bo website";
+          maintenanceMode.textContent = "Phạm vi: Toàn bộ website";
         } else if (getLockedRouteCount(config.routeLocks) > 0) {
-          maintenanceMode.textContent = `Pham vi: ${getLockedRouteCount(config.routeLocks)} khu vuc dang khoa`;
+          maintenanceMode.textContent = `Phạm vi: ${getLockedRouteCount(config.routeLocks)} khu vực đang khóa`;
         } else {
-          maintenanceMode.textContent = "Pham vi: Khong khoa";
+          maintenanceMode.textContent = "Phạm vi: Không khóa";
+        }
+      }
+      if (maintenanceSummary) {
+        if (config.globalEnabled) {
+          maintenanceSummary.textContent = "Đang khóa: Toàn bộ website";
+        } else if (activeLabels.length) {
+          maintenanceSummary.textContent = `Đang khóa: ${activeLabels.join(", ")}`;
+        } else {
+          maintenanceSummary.textContent = "Không có route bị khóa";
         }
       }
     };
@@ -1636,9 +1715,12 @@
         maintenanceDisableBtn,
         maintenanceApplyBtn,
         maintenanceUnlockBtn,
+        maintenanceLockAllBtn,
+        maintenanceClearAllBtn,
         maintenanceMessage,
         maintenanceDurationHours,
         maintenanceDurationMinutes,
+        maintenanceEndTime,
         maintenanceRouteFilter,
         legacyMaintenanceToggle,
         legacyMaintenanceSave,
@@ -1721,8 +1803,16 @@
       return locks;
     };
 
+    const buildAllRouteLocks = (value) => {
+      const locks = normalizeRouteLocks({});
+      MAINTENANCE_ROUTE_KEYS.forEach((key) => {
+        locks[key] = Boolean(value);
+      });
+      return locks;
+    };
+
     const readDurationHours = () => {
-      const minutes = readDurationMinutes();
+      const minutes = resolveDurationMinutes();
       if (minutes == null) return null;
       return minutes / 60;
     };
@@ -1790,6 +1880,24 @@
     if (maintenanceDurationMinutes) {
       maintenanceDurationMinutes.addEventListener("input", () => {
         syncPresetFromInputs();
+      });
+    }
+
+    if (maintenanceEndTime) {
+      maintenanceEndTime.addEventListener("input", () => {
+        const endMs = readEndTimeMs();
+        if (!endMs) {
+          syncPresetFromInputs();
+          return;
+        }
+        const now = Date.now() + maintenanceClockSkewMs;
+        const diffMs = endMs - now;
+        if (!Number.isFinite(diffMs) || diffMs < MAINTENANCE_DURATION_MINUTES * 60000) {
+          updateDurationPreview(null);
+          return;
+        }
+        const minutes = Math.round(diffMs / 60000);
+        setDurationInputs(minutes);
       });
     }
 
@@ -1897,6 +2005,46 @@
               routeLocks: normalizeRouteLocks({}),
             };
             saveMaintenanceConfig(payload, "Da mo khoa tat ca route.");
+          },
+        });
+      });
+    }
+
+    if (maintenanceLockAllBtn) {
+      maintenanceLockAllBtn.addEventListener("click", () => {
+        openModal({
+          title: "Khóa tất cả route?",
+          message: "Tất cả route sẽ được khóa ngay theo danh sách hiện tại.",
+          onConfirm: () => {
+            const durationHours = readDurationHours();
+            if (durationHours == null) {
+              showToast("Thời lượng bảo trì tối thiểu 1 phút.");
+              return;
+            }
+            const payload = {
+              globalEnabled: maintenanceState.globalEnabled,
+              message: maintenanceMessage ? maintenanceMessage.value.trim() : maintenanceState.message,
+              durationHours: durationHours != null ? durationHours : MAINTENANCE_DURATION_DEFAULT_MINUTES / 60,
+              routeLocks: buildAllRouteLocks(true),
+            };
+            saveMaintenanceConfig(payload, "Đã khóa tất cả route.");
+          },
+        });
+      });
+    }
+
+    if (maintenanceClearAllBtn) {
+      maintenanceClearAllBtn.addEventListener("click", () => {
+        openModal({
+          title: "Mở khóa tất cả route?",
+          message: "Tất cả route sẽ được bỏ khóa ngay.",
+          onConfirm: () => {
+            const payload = {
+              globalEnabled: maintenanceState.globalEnabled,
+              message: maintenanceMessage ? maintenanceMessage.value.trim() : maintenanceState.message,
+              routeLocks: buildAllRouteLocks(false),
+            };
+            saveMaintenanceConfig(payload, "Đã mở khóa tất cả route.");
           },
         });
       });
