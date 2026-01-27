@@ -180,10 +180,13 @@ const TABLE_DEFS = {
       sku TEXT UNIQUE,
       name TEXT NOT NULL,
       description TEXT,
+      description_short TEXT,
+      description_html TEXT,
       category TEXT,
       subcategory TEXT,
       price INTEGER NOT NULL,
       price_max INTEGER,
+      stock_count INTEGER NOT NULL DEFAULT 0,
       currency TEXT NOT NULL DEFAULT 'VND',
       status TEXT NOT NULL DEFAULT 'draft',
       kind TEXT NOT NULL DEFAULT 'product',
@@ -205,6 +208,8 @@ const TABLE_DEFS = {
       product_id TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'available',
       quantity INTEGER NOT NULL DEFAULT 1,
+      line_count INTEGER NOT NULL DEFAULT 0,
+      consumed_count INTEGER NOT NULL DEFAULT 0,
       r2_object_key TEXT,
       r2_object_etag TEXT,
       content_text TEXT,
@@ -257,6 +262,22 @@ const TABLE_DEFS = {
       FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT,
       FOREIGN KEY (shop_id) REFERENCES shops(id) ON DELETE RESTRICT,
       FOREIGN KEY (inventory_id) REFERENCES inventory(id) ON DELETE SET NULL
+    );
+  `,
+  service_requests: `
+    CREATE TABLE IF NOT EXISTS service_requests (
+      id TEXT PRIMARY KEY,
+      service_id TEXT NOT NULL,
+      buyer_user_id TEXT NOT NULL,
+      order_id TEXT,
+      note_text TEXT,
+      attachments_key TEXT,
+      status TEXT NOT NULL DEFAULT 'pending',
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+      updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+      FOREIGN KEY (service_id) REFERENCES products(id) ON DELETE CASCADE,
+      FOREIGN KEY (buyer_user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL
     );
   `,
   tasks: `
@@ -423,16 +444,33 @@ const COLUMN_DEFS = {
   ],
   products: [
     { name: "shop_id", def: "TEXT" },
+    { name: "description_short", def: "TEXT" },
+    { name: "description_html", def: "TEXT" },
     { name: "subcategory", def: "TEXT" },
     { name: "price_max", def: "INTEGER" },
+    { name: "stock_count", def: "INTEGER DEFAULT 0" },
     { name: "kind", def: "TEXT DEFAULT 'product'" },
     { name: "is_active", def: "INTEGER DEFAULT 1" },
     { name: "is_published", def: "INTEGER DEFAULT 1" },
   ],
-  inventory: [{ name: "content_text", def: "TEXT" }],
+  inventory: [
+    { name: "content_text", def: "TEXT" },
+    { name: "line_count", def: "INTEGER DEFAULT 0" },
+    { name: "consumed_count", def: "INTEGER DEFAULT 0" },
+  ],
   order_items: [
     { name: "shop_id", def: "TEXT" },
     { name: "content_text", def: "TEXT" },
+  ],
+  service_requests: [
+    { name: "service_id", def: "TEXT" },
+    { name: "buyer_user_id", def: "TEXT" },
+    { name: "order_id", def: "TEXT" },
+    { name: "note_text", def: "TEXT" },
+    { name: "attachments_key", def: "TEXT" },
+    { name: "status", def: "TEXT DEFAULT 'pending'" },
+    { name: "created_at", def: "TEXT" },
+    { name: "updated_at", def: "TEXT" },
   ],
   tasks: [{ name: "shop_id", def: "TEXT" }],
   media_metadata: [
@@ -1235,8 +1273,12 @@ export async function runMigrations(db, options = {}) {
   await ensureIndexes(db, report);
   await ensureUniqueIndexIfColumns(db, report, "users", "idx_users_id", ["id"]);
   await ensureIndexIfColumns(db, report, "products", "idx_products_shop", ["shop_id"]);
+  await ensureIndexIfColumns(db, report, "products", "idx_products_kind", ["kind"]);
   await ensureIndexIfColumns(db, report, "orders", "idx_orders_buyer_status", ["buyer_user_id", "status"]);
   await ensureIndexIfColumns(db, report, "order_items", "idx_order_items_shop", ["shop_id"]);
+  await ensureIndexIfColumns(db, report, "service_requests", "idx_service_requests_service", ["service_id"]);
+  await ensureIndexIfColumns(db, report, "service_requests", "idx_service_requests_buyer", ["buyer_user_id"]);
+  await ensureIndexIfColumns(db, report, "service_requests", "idx_service_requests_status", ["status"]);
   await ensureIndexIfColumns(db, report, "tasks", "idx_tasks_shop", ["shop_id"]);
   await ensureIndexIfColumns(db, report, "transactions", "idx_transactions_type_status_user", ["type", "status", "user_id"]);
   await ensureIndexIfColumns(db, report, "media_metadata", "idx_media_access", ["access_level"]);

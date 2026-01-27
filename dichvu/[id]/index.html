@@ -23,6 +23,7 @@
     <meta name="twitter:description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
     <meta name="twitter:image" content="../../asset/logo-preview.png" />
 <link rel="stylesheet" href="../../asset/base.css" />
+    <link rel="stylesheet" href="../../asset/catalog.css" />
   </head>
   <body>
     <video class="video-bg" autoplay muted loop playsinline preload="metadata">
@@ -178,95 +179,10 @@
     </nav>
 
     <script src="../../asset/render.js"></script>
-    <script>
-      (async function initDetail() {
-        let currentLanguage = typeof getCurrentLanguage === "function" ? getCurrentLanguage() : "vi";
-        const t = (key, fallback, vars) =>
-          typeof formatI18n === "function" ? formatI18n(currentLanguage, key, fallback, vars) : fallback || key;
-
-        const params = new URLSearchParams(window.location.search);
-        let id = params.get("id");
-        if (!id) {
-          const parts = window.location.pathname.split("/").filter(Boolean);
-          const last = parts[parts.length - 1];
-          if (last && last !== "[id]") id = last;
-        }
-
-        const data = await loadJSON("../../data/mock-services.json");
-        let currentService = data.find((s) => s.id === id) || data[0];
-        const renderService = (service) => {
-          const titleEl = document.getElementById("service-title");
-          const subEl = document.getElementById("service-sub");
-          if (!service) {
-            if (titleEl) titleEl.textContent = t("service.detail.notFound", "Offer not found");
-            if (subEl) {
-              subEl.textContent = t(
-                "service.detail.noData",
-                "No data available."
-              );
-            }
-            return;
-          }
-
-          const nameKey = service.id ? `service.data.${service.id}.name` : "";
-          const shortKey = service.id ? `service.data.${service.id}.short` : "";
-          const serviceName = nameKey
-            ? t(nameKey, service.name || t("service.detail.hero.loadingTitle", "Loading details..."))
-            : service.name || t("service.detail.hero.loadingTitle", "Loading details...");
-          const serviceShort = shortKey ? t(shortKey, service.short || "") : service.short || "";
-          if (titleEl) {
-            titleEl.textContent = serviceName;
-          }
-          if (subEl) {
-            subEl.textContent =
-              service.long ||
-              serviceShort ||
-              t("service.detail.fallback.summary", "Detailed information will appear here.");
-          }
-          const descEl = document.getElementById("service-description");
-          if (descEl) {
-            descEl.textContent =
-              service.long ||
-              t("service.detail.fallback.description", "Detailed information will appear when data is available.");
-          }
-
-          const priceEl = document.getElementById("service-price");
-          if (priceEl) {
-            priceEl.textContent = formatPrice(service.price);
-            const hasRange = typeof service.priceMax === "number" && service.priceMax > service.price;
-            priceEl.dataset.baseCurrency = "VND";
-            if (hasRange) {
-              priceEl.dataset.baseMin = String(service.price);
-              priceEl.dataset.baseMax = String(service.priceMax);
-              delete priceEl.dataset.baseAmount;
-            } else {
-              priceEl.dataset.baseAmount = String(service.price);
-              delete priceEl.dataset.baseMin;
-              delete priceEl.dataset.baseMax;
-            }
-            if (window.BKCurrency && typeof window.BKCurrency.applyToDom === "function") {
-              window.BKCurrency.applyToDom(priceEl.parentElement || priceEl);
-            }
-          }
-
-          const etaEl = document.getElementById("service-eta");
-          if (etaEl) {
-            etaEl.textContent = service.eta || t("service.fallback.eta", "Flexible timing");
-          }
-        };
-
-        renderService(currentService);
-
-        document.addEventListener("bk:i18n", (event) => {
-          currentLanguage =
-            (event && event.detail && event.detail.language) ||
-            (typeof getCurrentLanguage === "function" ? getCurrentLanguage() : currentLanguage);
-          renderService(currentService);
-        });
-      })();
-    </script>
+    <script src="../../asset/services/detail.js"></script>
   </body>
 </html>
+
 
 
 
