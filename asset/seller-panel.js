@@ -243,7 +243,7 @@
     const storeCancelBtn = document.getElementById("store-cancel-btn");
     const storeAvatar = document.getElementById("store-avatar");
     const storeAvatarPreview = document.getElementById("store-avatar-preview");
-    const defaultStoreAvatar = storeAvatarPreview ? storeAvatarPreview.getAttribute("src") : "";
+    const storeAvatarPreviewWrap = document.getElementById("store-avatar-preview-wrap");
 
     const productCreateBtn = document.getElementById("product-create-btn");
     const productSearch = document.getElementById("product-search");
@@ -484,9 +484,13 @@
           const status = statusMap[store.approvalStatus] || statusMap.approved;
           const activeTag = store.active ? "good" : "warn";
           const activeLabel = store.active ? "Đang mở" : "Tạm đóng";
+          const initials = getStoreInitials(store.name);
+          const avatar = store.avatarUrl
+            ? `<img src="${escapeHtml(store.avatarUrl)}" alt="Shop" loading="lazy" />`
+            : `<div class="shop-avatar-fallback">${escapeHtml(initials)}</div>`;
           return `
             <div class="seller-card seller-shop-card">
-              <img src="${escapeHtml(store.avatarUrl || defaultStoreAvatar)}" alt="Shop" loading="lazy" />
+              ${avatar}
               <h3>${escapeHtml(store.name)}</h3>
               <p class="hero-sub">Kho: ${Number(store.stock || 0).toLocaleString("vi-VN")} &bull; Đơn hàng: ${Number(
                 store.orders || 0
@@ -527,6 +531,27 @@
       }
     };
 
+    const getStoreInitials = (value) => {
+      const text = String(value || "").trim();
+      if (!text) return "BK";
+      const parts = text.split(/\s+/).filter(Boolean);
+      if (parts.length >= 2) {
+        return `${parts[0][0] || ""}${parts[1][0] || ""}`.toUpperCase();
+      }
+      return text.slice(0, 2).toUpperCase();
+    };
+
+    const setStoreAvatarPreview = (url) => {
+      if (!storeAvatarPreview) return;
+      if (url) {
+        storeAvatarPreview.src = url;
+        if (storeAvatarPreviewWrap) storeAvatarPreviewWrap.classList.remove("is-empty");
+      } else {
+        storeAvatarPreview.removeAttribute("src");
+        if (storeAvatarPreviewWrap) storeAvatarPreviewWrap.classList.add("is-empty");
+      }
+    };
+
     const openStoreEditor = (store) => {
       if (!storeEditorCard) return;
       const isEdit = Boolean(store);
@@ -542,9 +567,14 @@
       }
       if (storeShortDesc) storeShortDesc.value = store ? store.shortDesc : "";
       if (storeLongDesc) storeLongDesc.value = store ? store.longDesc : "";
-      if (storeAvatarPreview) {
-        storeAvatarPreview.src = store ? store.avatarUrl : defaultStoreAvatar;
-      }
+      setStoreAvatarPreview(store ? store.avatarUrl : "");
+      try {
+        document.dispatchEvent(
+          new CustomEvent("store-images:open", {
+            detail: { shopId: store ? store.storeId : "", isAdmin: false },
+          })
+        );
+      } catch (error) {}
       if (storeAvatar) {
         storeAvatar.value = "";
       }
@@ -628,13 +658,18 @@
               }
 
               const finalStoreId = storeId || (saved && saved.storeId);
+              try {
+                document.dispatchEvent(
+                  new CustomEvent("store-images:open", {
+                    detail: { shopId: finalStoreId || "", isAdmin: false },
+                  })
+                );
+              } catch (error) {}
               const avatarFile = storeAvatar && storeAvatar.files ? storeAvatar.files[0] : null;
               if (finalStoreId && avatarFile) {
                 try {
                   const avatar = await services.stores.uploadAvatar(finalStoreId, avatarFile);
-                  if (avatar && avatar.url && storeAvatarPreview) {
-                    storeAvatarPreview.src = avatar.url;
-                  }
+                  if (avatar && avatar.url) setStoreAvatarPreview(avatar.url);
                 } catch (error) {
                   showToast("Không thể tải ảnh đại diện. Vui lòng thử lại.");
                 }
@@ -666,7 +701,7 @@
           storeAvatar.value = "";
           return;
         }
-        storeAvatarPreview.src = URL.createObjectURL(file);
+        setStoreAvatarPreview(URL.createObjectURL(file));
       });
     }
     if (storeGrid) {

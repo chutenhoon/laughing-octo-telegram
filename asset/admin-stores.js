@@ -23,6 +23,15 @@
   const diffOld = document.getElementById("admin-store-diff-old");
   const diffNew = document.getElementById("admin-store-diff-new");
   const diffClose = document.getElementById("admin-store-diff-close");
+  const previewCard = document.getElementById("admin-store-preview-card");
+  const previewClose = document.getElementById("admin-store-preview-close");
+  const previewMedia = document.getElementById("admin-store-preview-media");
+  const previewName = document.getElementById("admin-store-preview-name");
+  const previewMeta = document.getElementById("admin-store-preview-meta");
+  const previewOwner = document.getElementById("admin-store-preview-owner");
+  const previewTags = document.getElementById("admin-store-preview-tags");
+  const previewShort = document.getElementById("admin-store-preview-short");
+  const previewLong = document.getElementById("admin-store-preview-long");
 
   if (!approveBody || !updateBody) return;
 
@@ -70,6 +79,30 @@
     const date = parseDateValue(value);
     if (!date) return "--";
     return date.toLocaleDateString("vi-VN");
+  };
+
+  const getStoreInitials = (value) => {
+    const text = String(value || "").trim();
+    if (!text) return "BK";
+    const parts = text.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return `${parts[0][0] || ""}${parts[1][0] || ""}`.toUpperCase();
+    }
+    return text.slice(0, 2).toUpperCase();
+  };
+
+  const statusTag = (status) => {
+    const map = {
+      approved: { label: "Đã duyệt", className: "good" },
+      active: { label: "Đã duyệt", className: "good" },
+      published: { label: "Đã duyệt", className: "good" },
+      pending: { label: "Chờ duyệt", className: "warn" },
+      pending_update: { label: "Chờ duyệt sửa", className: "warn" },
+      rejected: { label: "Từ chối", className: "bad" },
+    };
+    const value = String(status || "").toLowerCase();
+    const item = map[value] || { label: value || "--", className: "warn" };
+    return `<span class="seller-tag ${item.className}">${escapeHtml(item.label)}</span>`;
   };
 
   const getAdminHeaders = () => {
@@ -336,6 +369,7 @@
             <td>${escapeHtml(categoryText)}${tagsText}</td>
             <td><span class="seller-tag warn">pending</span></td>
             <td class="admin-store-actions">
+              <button class="btn sm ghost" type="button" data-action="preview">Xem</button>
               <button class="btn sm" type="button" data-action="approve">Duy\u1ec7t</button>
               <button class="btn sm ghost" type="button" data-action="reject">T\u1eeb ch\u1ed1i</button>
             </td>
@@ -404,7 +438,8 @@
             <td>${escapeHtml(categoryText)}${tagsText}</td>
             <td>${escapeHtml(formatDateLabel(submittedAt))}</td>
             <td class="admin-store-actions">
-              <button class="btn sm ghost" type="button" data-action="diff">Xem</button>
+              <button class="btn sm ghost" type="button" data-action="preview">Xem</button>
+              <button class="btn sm ghost" type="button" data-action="diff">So sánh</button>
               <button class="btn sm" type="button" data-action="approve">Duy\u1ec7t</button>
               <button class="btn sm ghost" type="button" data-action="reject">T\u1eeb ch\u1ed1i</button>
             </td>
@@ -462,6 +497,56 @@
 
   const hideDiff = () => {
     if (diffCard) diffCard.classList.add("is-hidden");
+  };
+
+  const hidePreview = () => {
+    if (previewCard) previewCard.classList.add("is-hidden");
+  };
+
+  const setPreviewCard = async (store) => {
+    if (!previewCard || !store) return;
+    const categories = await loadCategories();
+    const type = store.storeType || "product";
+    const typeLabel = type === "service" ? "Dịch vụ" : "Sản phẩm";
+    const categoryLabel = formatCategoryLabel(type, store.category, categories);
+    const tagLabels = formatTagLabels(type, store.category, store.tags || (store.subcategory ? [store.subcategory] : []), categories);
+    const owner = store.owner || {};
+    const ownerName = owner.displayName || owner.username || "--";
+    const titleParts = [];
+    if (owner.title) titleParts.push(owner.title);
+    if (owner.rank) titleParts.push(owner.rank);
+    const titleLabel = titleParts.length ? ` • ${titleParts.join(" • ")}` : "";
+
+    if (previewMedia) {
+      if (store.avatarUrl) {
+        previewMedia.innerHTML = `<img src="${escapeHtml(store.avatarUrl)}" alt="${escapeHtml(store.name || "Shop")}" loading="lazy" />`;
+      } else {
+        const initials = getStoreInitials(store.name || ownerName);
+        previewMedia.innerHTML = `<div class="preview-fallback">${escapeHtml(initials)}</div>`;
+      }
+    }
+    if (previewName) previewName.textContent = store.name || "--";
+    if (previewMeta) {
+      const categoryText = [typeLabel, categoryLabel].filter(Boolean).join(" • ");
+      previewMeta.innerHTML = `<span>${escapeHtml(categoryText)}</span>${statusTag(store.status)}`;
+    }
+    if (previewOwner) {
+      previewOwner.innerHTML = `<span>Seller: <strong>${escapeHtml(ownerName)}</strong>${escapeHtml(titleLabel)}</span>`;
+    }
+    if (previewTags) {
+      previewTags.textContent = tagLabels.length ? `Thẻ: ${tagLabels.join(", ")}` : "Thẻ: --";
+    }
+    if (previewShort) previewShort.textContent = store.descriptionShort || "";
+    if (previewLong) previewLong.textContent = store.descriptionLong || "";
+    if (diffCard) diffCard.classList.add("is-hidden");
+    previewCard.classList.remove("is-hidden");
+    try {
+      document.dispatchEvent(
+        new CustomEvent("store-images:open", {
+          detail: { shopId: store.id, isAdmin: true },
+        })
+      );
+    } catch (error) {}
   };
 
   const removeFromState = (storeId, targetState) => {
@@ -592,7 +677,9 @@
     const storeId = row.getAttribute("data-store-id");
     if (!storeId) return;
     const action = button.getAttribute("data-action");
+    const store = state.approve.data.find((item) => String(item.id) === String(storeId));
     if (action === "approve") approveStore(storeId, "approve");
+    if (action === "preview" && store) setPreviewCard(store);
     if (action === "reject") rejectStore(storeId, "approve");
   });
 
@@ -606,13 +693,21 @@
     const action = button.getAttribute("data-action");
     const store = state.update.data.find((item) => String(item.id) === String(storeId));
     if (!store) return;
-    if (action === "diff") setDiffCard(store);
+    if (action === "preview") setPreviewCard(store);
+    if (action === "diff") {
+      hidePreview();
+      setDiffCard(store);
+    }
     if (action === "approve") approveStore(storeId, "update");
     if (action === "reject") rejectStore(storeId, "update");
   });
 
   if (diffClose) {
     diffClose.addEventListener("click", hideDiff);
+  }
+
+  if (previewClose) {
+    previewClose.addEventListener("click", hidePreview);
   }
 
   if (bulkApproveBtn) {

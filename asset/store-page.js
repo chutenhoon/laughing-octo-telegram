@@ -194,6 +194,10 @@
     }
 
     state.shop = { ...shop, storeType: type };
+    try {
+      window.BKStoreShop = state.shop;
+      document.dispatchEvent(new CustomEvent("store:loaded", { detail: state.shop }));
+    } catch (error) {}
   };
 
   const renderSkeleton = () => {

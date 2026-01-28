@@ -63,3 +63,29 @@
   color: rgba(255, 255, 255, 0.7);
   font-size: 0.9rem;
 }
+
+.store-tags.is-disabled {
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.seller-editor-card .media-preview {
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.seller-editor-card .media-preview.is-empty img {
+  display: none;
+}
+
+.seller-editor-card .media-preview .media-placeholder {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+}
+
+.seller-editor-card .media-preview:not(.is-empty) .media-placeholder {
+  display: none;
+}

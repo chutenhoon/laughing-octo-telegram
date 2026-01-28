@@ -68,7 +68,16 @@
   const renderTags = (categoryInfo) => {
     tagsWrap.innerHTML = "";
     tagsWrap.classList.remove("empty");
+    tagsWrap.classList.remove("is-disabled");
     state.tags = new Set();
+
+    if (!categoryInfo) {
+      tagsWrap.classList.add("empty");
+      tagsWrap.classList.add("is-disabled");
+      tagsWrap.innerHTML = `<span>${escapeHtml(translate("store.tags.chooseCategory", "Chọn danh mục trước"))}</span>`;
+      if (tagsHint) tagsHint.textContent = translate("store.tags.pickCategory", "Chọn danh mục để hiện thẻ");
+      return;
+    }
 
     const tags = categoryInfo && Array.isArray(categoryInfo.subcategories) ? categoryInfo.subcategories : [];
     if (!tags.length) {
@@ -168,6 +177,7 @@
     tagsWrap.querySelectorAll("input").forEach((input) => {
       input.disabled = state.disabled || !state.category;
     });
+    tagsWrap.classList.toggle("is-disabled", state.disabled || !state.category);
   };
 
   typeOptions.addEventListener("click", (event) => {
