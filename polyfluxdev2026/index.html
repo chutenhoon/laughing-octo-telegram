@@ -22,7 +22,10 @@
     <meta name="twitter:title" content="polyflux.xyz" />
     <meta name="twitter:description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
     <meta name="twitter:image" content="../asset/logo-preview.png" />
-<link rel="stylesheet" href="../asset/base.css" />
+    <link rel="stylesheet" href="../asset/base.css" />
+    <link rel="stylesheet" href="../asset/admin-stores.css" />
+    <link rel="stylesheet" href="../asset/admin-shop-modal.css" />
+    <link rel="stylesheet" href="../asset/store-images.css" />
   </head>
   <body class="seller-shell admin-shell">
     <video class="video-bg" autoplay muted loop playsinline preload="metadata">
@@ -669,6 +672,7 @@
               </div>
             </div>
 
+
             <div class="seller-card">
               <div class="chart-head">
                 <div>
@@ -1076,9 +1080,81 @@
       </div>
     </div>
 
+    <div class="modal-backdrop admin-store-modal" id="admin-store-preview-modal" aria-hidden="true">
+      <div class="modal-card">
+        <div class="admin-store-modal-head">
+          <div>
+            <h3 id="admin-store-preview-title">Chi ti&#7871;t gian h&#224;ng</h3>
+            <p class="hero-sub" id="admin-store-preview-sub">Xem th&#244;ng tin gian h&#224;ng.</p>
+          </div>
+          <button class="btn ghost" id="admin-store-preview-close" type="button">&#272;&#243;ng</button>
+        </div>
+        <div class="admin-store-modal-body">
+          <div class="admin-store-preview">
+            <div class="preview-media" id="admin-store-preview-media"></div>
+            <div class="preview-body">
+              <div class="preview-line"><strong id="admin-store-preview-name">--</strong></div>
+              <div class="preview-meta" id="admin-store-preview-meta"></div>
+              <div class="preview-line" id="admin-store-preview-owner"></div>
+              <div class="preview-tags" id="admin-store-preview-tags"></div>
+              <div class="admin-store-preview-reason is-hidden" id="admin-store-preview-reason"></div>
+              <div class="admin-store-gallery is-hidden" id="admin-store-gallery">
+                <div class="admin-store-gallery-head">
+                  <strong>&#7842;nh gian h&#224;ng</strong>
+                  <div class="admin-store-gallery-controls">
+                    <button class="btn ghost" type="button" id="admin-store-gallery-prev">&#x2039;</button>
+                    <button class="btn ghost" type="button" id="admin-store-gallery-next">&#x203A;</button>
+                  </div>
+                </div>
+                <div class="admin-store-gallery-track" id="admin-store-gallery-track"></div>
+              </div>
+              <div class="preview-desc">
+                <strong>M&#244; t&#7843; ng&#7855;n</strong>
+                <p id="admin-store-preview-short"></p>
+              </div>
+              <div class="preview-desc">
+                <strong>M&#244; t&#7843; chi ti&#7871;t</strong>
+                <p id="admin-store-preview-long"></p>
+              </div>
+              <div class="panel-media store-image-manager" id="admin-store-image-manager" style="margin-top: 12px;">
+                <label>&#7842;nh gian h&#224;ng</label>
+                <div class="store-image-toolbar">
+                  <input type="file" id="admin-store-image-upload" accept="image/jpeg,image/png,image/webp" multiple />
+                  <span class="store-image-count" id="admin-store-image-count">0</span>
+                </div>
+                <div class="store-image-list" id="admin-store-image-list"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop admin-store-reject-modal" id="admin-store-reject-modal" aria-hidden="true">
+      <div class="modal-card">
+        <div class="admin-store-modal-head">
+          <div>
+            <h3>T&#7915; ch&#7889;i gian h&#224;ng</h3>
+            <p class="hero-sub">Nh&#7853;p l&#253; do t&#7915; ch&#7889;i.</p>
+          </div>
+        </div>
+        <div class="form-field" style="margin-top: 8px;">
+          <label for="admin-store-reject-input">L&#253; do t&#7915; ch&#7889;i</label>
+          <textarea id="admin-store-reject-input" rows="4"></textarea>
+        </div>
+        <div class="modal-actions">
+          <button class="btn ghost" id="admin-store-reject-cancel" type="button">H&#7911;y</button>
+          <button class="btn warning" id="admin-store-reject-confirm" type="button">T&#7915; ch&#7889;i</button>
+        </div>
+      </div>
+    </div>
+
     <script src="../asset/render.js"></script>
     <script src="../asset/panel-data.js"></script>
     <script src="../asset/admin-panel.js"></script>
+    <script src="../asset/admin-shop-modal.js"></script>
+    <script src="../asset/store-images.js"></script>
+    <script src="../asset/admin-stores.js"></script>
   </body>
 </html>
 
