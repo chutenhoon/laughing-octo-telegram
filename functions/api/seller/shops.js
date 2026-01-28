@@ -351,6 +351,11 @@ export async function onRequestPost(context) {
     } else {
       Object.entries(patch).forEach(([key, val]) => push(key, val));
     }
+    if (!isAdmin && (currentStatus === "rejected" || currentStatus === "withdrawn")) {
+      push("status", "pending");
+      push("review_note", null);
+      push("pending_change_json", null);
+    }
 
     if (body.isActive != null) push("is_active", body.isActive ? 1 : 0);
     if (shopColumns.has("updated_at")) {

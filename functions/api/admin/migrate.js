@@ -1308,6 +1308,7 @@ export async function runMigrations(db, options = {}) {
   await ensureUniqueIndexIfColumns(db, report, "users", "idx_users_id", ["id"]);
   await ensureIndexIfColumns(db, report, "products", "idx_products_shop", ["shop_id"]);
   await ensureIndexIfColumns(db, report, "products", "idx_products_kind", ["kind"]);
+  await ensureIndexIfColumns(db, report, "shops", "idx_shops_status_created_at", ["status", "created_at"]);
   await ensureIndexIfColumns(db, report, "shop_images", "idx_shop_images_shop_pos", ["shop_id", "position"]);
   await ensureIndexIfColumns(db, report, "orders", "idx_orders_buyer_status", ["buyer_user_id", "status"]);
   await ensureIndexIfColumns(db, report, "order_items", "idx_order_items_shop", ["shop_id"]);
