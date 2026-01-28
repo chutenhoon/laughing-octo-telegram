@@ -1,5 +1,5 @@
 import { jsonResponse, readJsonBody, generateId } from "../auth/_utils.js";
-import { requireSeller, toPlainText, toSafeHtml } from "../_catalog.js";
+import { requireSeller, toPlainText, toSafeHtml, PRODUCT_CATEGORIES } from "../_catalog.js";
 
 async function getSellerShops(db, userId) {
   const rows = await db.prepare("SELECT id FROM shops WHERE user_id = ?").bind(userId).all();
@@ -8,6 +8,14 @@ async function getSellerShops(db, userId) {
 }
 
 function mapProduct(row) {
+  let tags = [];
+  if (row.tags_json) {
+    try {
+      tags = JSON.parse(row.tags_json) || [];
+    } catch (error) {
+      tags = [];
+    }
+  }
   return {
     id: row.id,
     shopId: row.shop_id,
@@ -16,6 +24,7 @@ function mapProduct(row) {
     descriptionHtml: row.description_html || "",
     category: row.category || "",
     subcategory: row.subcategory || "",
+    tags,
     price: Number(row.price || 0),
     priceMax: row.price_max != null ? Number(row.price_max || 0) : null,
     stockCount: Number(row.stock_count || 0),
@@ -27,6 +36,32 @@ function mapProduct(row) {
   };
 }
 
+function findCategory(categoryId) {
+  return PRODUCT_CATEGORIES.find((item) => String(item.id) === String(categoryId)) || null;
+}
+
+function normalizeTags(input, category) {
+  const raw = Array.isArray(input)
+    ? input
+    : typeof input === "string"
+      ? input
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : [];
+  const allowed = new Set(
+    (category && Array.isArray(category.subcategories) ? category.subcategories : []).map((item) => String(item.id))
+  );
+  const tags = [];
+  raw.forEach((item) => {
+    const value = String(item || "").trim();
+    if (!value) return;
+    if (allowed.size && !allowed.has(value)) return;
+    if (!tags.includes(value)) tags.push(value);
+  });
+  return tags;
+}
+
 export async function onRequestGet(context) {
   const auth = await requireSeller(context);
   if (!auth.ok) return auth.response;
@@ -35,7 +70,7 @@ export async function onRequestGet(context) {
 
   const sql = `
     SELECT p.id, p.shop_id, p.name, p.description_short, p.description_html,
-           p.category, p.subcategory, p.price, p.price_max, p.stock_count,
+           p.category, p.subcategory, p.tags_json, p.price, p.price_max, p.stock_count,
            p.status, p.is_active, p.is_published, p.created_at, p.updated_at
       FROM products p
       JOIN shops s ON s.id = p.shop_id
@@ -59,7 +94,8 @@ export async function onRequestPost(context) {
   const title = String(body.title || body.name || "").trim();
   if (!title) return jsonResponse({ ok: false, error: "TITLE_REQUIRED" }, 400);
   const category = String(body.category || "").trim();
-  const subcategory = String(body.subcategory || "").trim();
+  const subcategoryInput = String(body.subcategory || "").trim();
+  const tagsInput = body.tags || body.tags_json || body.tagList || null;
   const price = Number(body.price || 0);
   if (!Number.isFinite(price) || price < 0) return jsonResponse({ ok: false, error: "INVALID_PRICE" }, 400);
   const priceMaxRaw = body.priceMax != null ? Number(body.priceMax) : body.price_max != null ? Number(body.price_max) : null;
@@ -77,6 +113,10 @@ export async function onRequestPost(context) {
   const existingId = body.id ? String(body.id).trim() : "";
   const isAdmin = String(auth.user.role || "").toLowerCase() === "admin";
 
+  const categoryInfo = category ? findCategory(category) : null;
+  const tags = normalizeTags(tagsInput, categoryInfo);
+  const primaryTag = tags.length ? tags[0] : subcategoryInput || "";
+
   if (existingId) {
     const row = await db.prepare("SELECT id, shop_id FROM products WHERE id = ? LIMIT 1").bind(existingId).first();
     if (!row || !sellerShops.includes(String(row.shop_id))) {
@@ -88,7 +128,8 @@ export async function onRequestPost(context) {
       { col: "description_short", val: descriptionShort || "" },
       { col: "description_html", val: descriptionHtml || "" },
       { col: "category", val: category || null },
-      { col: "subcategory", val: subcategory || null },
+      { col: "subcategory", val: primaryTag || null },
+      { col: "tags_json", val: tags.length ? JSON.stringify(tags) : null },
       { col: "price", val: price },
       { col: "price_max", val: priceMax },
     ];
@@ -106,7 +147,7 @@ export async function onRequestPost(context) {
       .bind(...updates.map((u) => u.val), existingId)
       .run();
     const updated = await db.prepare(
-      `SELECT id, shop_id, name, description_short, description_html, category, subcategory, price, price_max, stock_count,
+      `SELECT id, shop_id, name, description_short, description_html, category, subcategory, tags_json, price, price_max, stock_count,
               status, is_active, is_published, created_at, updated_at
          FROM products WHERE id = ? LIMIT 1`
     ).bind(existingId).first();
@@ -116,10 +157,10 @@ export async function onRequestPost(context) {
   const productId = generateId();
   const insertSql = `
     INSERT INTO products
-      (id, shop_id, name, description, description_short, description_html, category, subcategory,
+      (id, shop_id, name, description, description_short, description_html, category, subcategory, tags_json,
        price, price_max, currency, status, kind, type, stock_type, is_active, is_published, created_at, updated_at)
     VALUES
-      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'VND', ?, 'product', 'digital', 'inventory', 1, 1, ?, ?)
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'VND', ?, 'product', 'digital', 'inventory', 1, 1, ?, ?)
   `;
   await db.prepare(insertSql).bind(
     productId,
@@ -129,7 +170,8 @@ export async function onRequestPost(context) {
     descriptionShort || "",
     descriptionHtml || "",
     category || null,
-    subcategory || null,
+    primaryTag || null,
+    tags.length ? JSON.stringify(tags) : null,
     price,
     priceMax,
     "draft",
@@ -138,7 +180,7 @@ export async function onRequestPost(context) {
   ).run();
 
   const created = await db.prepare(
-    `SELECT id, shop_id, name, description_short, description_html, category, subcategory, price, price_max, stock_count,
+    `SELECT id, shop_id, name, description_short, description_html, category, subcategory, tags_json, price, price_max, stock_count,
             status, is_active, is_published, created_at, updated_at
        FROM products WHERE id = ? LIMIT 1`
   ).bind(productId).first();

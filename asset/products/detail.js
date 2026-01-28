@@ -247,12 +247,23 @@
           if (!response.ok || !result || result.ok === false) {
             if (modalError) modalError.textContent = translate("product.detail.orderFailed", "Order failed. Please try again.");
           } else {
+            let deliveredText = result.delivered || "";
+            if (!deliveredText && result.downloadUrl) {
+              try {
+                const deliveredResponse = await fetch(result.downloadUrl, { headers });
+                if (deliveredResponse.ok) {
+                  deliveredText = await deliveredResponse.text();
+                }
+              } catch (error) {
+                deliveredText = "";
+              }
+            }
             const deliveredBox = document.querySelector(".order-modal-delivered");
             const container = deliveredBox || document.createElement("div");
             container.className = "order-modal-delivered";
             container.innerHTML = `
               <strong>${translate("product.detail.delivered", "Delivered item")}</strong>
-              <textarea readonly>${result.delivered || ""}</textarea>
+              <textarea readonly>${deliveredText || ""}</textarea>
             `;
             const body = document.querySelector(".order-modal-body");
             if (body && !deliveredBox) body.appendChild(container);

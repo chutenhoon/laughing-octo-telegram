@@ -33,11 +33,11 @@ function buildWhere(params, binds) {
   ];
 
   if (params.category) {
-    clauses.push("p.category = ?");
+    clauses.push("COALESCE(p.category, s.category) = ?");
     binds.push(params.category);
   }
   if (params.subcategories.length) {
-    clauses.push(`p.subcategory IN (${params.subcategories.map(() => "?").join(", ")})`);
+    clauses.push(`COALESCE(p.subcategory, s.subcategory) IN (${params.subcategories.map(() => "?").join(", ")})`);
     binds.push(...params.subcategories);
   }
   if (params.shopId) {
@@ -92,10 +92,10 @@ export async function onRequestGet(context) {
     const soldCondition = SOLD_STATUSES.map(() => "?").join(", ");
     const soldBinds = [...binds, ...SOLD_STATUSES, params.perPage, offset];
     const listSql = `
-      SELECT p.id, p.shop_id, p.name, p.description_short, p.description, p.category, p.subcategory,
+      SELECT p.id, p.shop_id, p.name, p.description_short, p.description, p.category, p.subcategory, p.tags_json,
              p.price, p.price_max, p.stock_count, p.thumbnail_media_id, p.status, p.created_at,
-             s.store_name, s.store_slug, s.rating AS shop_rating,
-             u.badge, u.role,
+             s.store_name, s.store_slug, s.rating AS shop_rating, s.category AS store_category, s.subcategory AS store_subcategory, s.tags_json AS store_tags_json,
+             u.badge, u.role, u.display_name, u.title, u.rank,
              (
                SELECT COALESCE(SUM(oi.quantity), 0)
                  FROM order_items oi
@@ -110,28 +110,43 @@ export async function onRequestGet(context) {
        LIMIT ? OFFSET ?
     `;
     const rows = await db.prepare(listSql).bind(...soldBinds).all();
-    const items = (rows && Array.isArray(rows.results) ? rows.results : []).map((row) => ({
-      id: row.id,
-      shopId: row.shop_id,
-      title: row.name,
-      descriptionShort: row.description_short || toPlainText(row.description || ""),
-      category: row.category || "",
-      subcategory: row.subcategory || "",
-      price: Number(row.price || 0),
-      priceMax: row.price_max != null ? Number(row.price_max || 0) : null,
-      stockCount: Number(row.stock_count || 0),
-      soldCount: Number(row.sold_count || 0),
-      rating: Number(row.shop_rating || 0),
-      status: row.status || "draft",
-      createdAt: row.created_at || null,
-      thumbnailId: row.thumbnail_media_id || "",
-      seller: {
-        name: row.store_name || "",
-        slug: row.store_slug || "",
-        badge: row.badge || "",
-        role: row.role || "",
-      },
-    }));
+    const items = (rows && Array.isArray(rows.results) ? rows.results : []).map((row) => {
+      let tags = [];
+      const tagsSource = row.tags_json || row.store_tags_json;
+      if (tagsSource) {
+        try {
+          tags = JSON.parse(tagsSource) || [];
+        } catch (error) {
+          tags = [];
+        }
+      }
+      return {
+        id: row.id,
+        shopId: row.shop_id,
+        title: row.name,
+        descriptionShort: row.description_short || toPlainText(row.description || ""),
+        category: row.category || row.store_category || "",
+        subcategory: row.subcategory || row.store_subcategory || "",
+        tags,
+        price: Number(row.price || 0),
+        priceMax: row.price_max != null ? Number(row.price_max || 0) : null,
+        stockCount: Number(row.stock_count || 0),
+        soldCount: Number(row.sold_count || 0),
+        rating: Number(row.shop_rating || 0),
+        status: row.status || "draft",
+        createdAt: row.created_at || null,
+        thumbnailId: row.thumbnail_media_id || "",
+        seller: {
+          name: row.store_name || "",
+          slug: row.store_slug || "",
+          badge: row.badge || "",
+          role: row.role || "",
+          displayName: row.display_name || "",
+          title: row.title || "",
+          rank: row.rank || "",
+        },
+      };
+    });
 
     return jsonResponse({
       ok: true,

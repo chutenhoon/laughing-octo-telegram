@@ -15,12 +15,13 @@ export async function onRequestGet(context) {
 
     const sql = `
       SELECT p.id, p.shop_id, p.name, p.description_short, p.description, p.description_html,
-             p.category, p.subcategory, p.price, p.price_max, p.thumbnail_media_id,
+             p.category, p.subcategory, p.tags_json, p.price, p.price_max, p.thumbnail_media_id,
              p.status, p.is_active, p.is_published, p.created_at,
              s.store_name, s.store_slug, s.short_desc, s.long_desc, s.description AS shop_desc,
              s.rating AS shop_rating, s.status AS shop_status, s.is_active AS shop_active,
+             s.category AS store_category, s.subcategory AS store_subcategory, s.tags_json AS store_tags_json,
              s.user_id AS owner_user_id,
-             u.display_name, u.username, u.badge, u.role,
+             u.display_name, u.username, u.badge, u.title, u.rank, u.role,
              (
                SELECT COUNT(1)
                  FROM service_requests sr
@@ -50,14 +51,25 @@ export async function onRequestGet(context) {
       }
     }
 
+    let tags = [];
+    const tagsSource = row.tags_json || row.store_tags_json;
+    if (tagsSource) {
+      try {
+        tags = JSON.parse(tagsSource) || [];
+      } catch (error) {
+        tags = [];
+      }
+    }
+
     const service = {
       id: row.id,
       shopId: row.shop_id,
       title: row.name,
       descriptionShort: row.description_short || toPlainText(row.description || ""),
       descriptionHtml: row.description_html ? row.description_html : toSafeHtml(row.description || ""),
-      category: row.category || "",
-      subcategory: row.subcategory || "",
+      category: row.category || row.store_category || "",
+      subcategory: row.subcategory || row.store_subcategory || "",
+      tags,
       price: Number(row.price || 0),
       priceMax: row.price_max != null ? Number(row.price_max || 0) : null,
       requestCount: Number(row.request_count || 0),
@@ -72,6 +84,8 @@ export async function onRequestGet(context) {
         role: row.role || "",
         username: row.username || "",
         displayName: row.display_name || "",
+        title: row.title || "",
+        rank: row.rank || "",
       },
       shop: {
         id: row.shop_id,

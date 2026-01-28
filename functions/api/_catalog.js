@@ -1,6 +1,7 @@
 import { jsonResponse, normalizeEmail, normalizeUsername, readJsonBody } from "./auth/_utils.js";
 
 const encoder = new TextEncoder();
+let mediaSigningKeyCache = { secret: "", key: null };
 
 export const PRODUCT_CATEGORIES = [
   {
@@ -267,6 +268,54 @@ export function buildSlug(input) {
 export async function computeEtag(payload) {
   const hash = await crypto.subtle.digest("SHA-256", encoder.encode(payload));
   return Array.from(new Uint8Array(hash), (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function base64UrlEncodeBytes(bytes) {
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 1) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function base64UrlEncodeText(value) {
+  return base64UrlEncodeBytes(encoder.encode(String(value)));
+}
+
+async function getMediaSigningKey(secret) {
+  if (!secret) return null;
+  if (mediaSigningKeyCache.key && mediaSigningKeyCache.secret === secret) return mediaSigningKeyCache.key;
+  const key = await crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  mediaSigningKeyCache = { secret, key };
+  return key;
+}
+
+async function signMediaPayload(payloadB64, secret) {
+  const key = await getMediaSigningKey(secret);
+  if (!key) return "";
+  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(payloadB64));
+  return base64UrlEncodeBytes(new Uint8Array(signature));
+}
+
+export async function createSignedMediaToken(secret, key, exp, kind) {
+  if (!secret || !key) return "";
+  const payload = { key, exp };
+  if (kind) payload.kind = kind;
+  const payloadB64 = base64UrlEncodeText(JSON.stringify(payload));
+  const signature = await signMediaPayload(payloadB64, secret);
+  if (!signature) return "";
+  return `${payloadB64}.${signature}`;
+}
+
+export function buildMediaUrl(requestUrl, token) {
+  const safeToken = token ? encodeURIComponent(token) : "";
+  if (!safeToken) return "";
+  try {
+    const url = new URL(requestUrl);
+    return `${url.origin}/media/${safeToken}`;
+  } catch (error) {
+    return `/media/${safeToken}`;
+  }
 }
 
 export async function jsonCachedResponse(request, payload, options = {}) {

@@ -4,6 +4,17 @@
   const API_ROOT = "/api";
   let storeCache = [];
   let productCache = [];
+  const listeners = new Set();
+
+  const notify = () => {
+    listeners.forEach((fn) => {
+      try {
+        fn();
+      } catch (error) {
+        // noop
+      }
+    });
+  };
 
   const getAuthHeaders = (json = true) => {
     const headers = {};
@@ -33,7 +44,10 @@
   const mapStore = (shop) => ({
     storeId: shop.id,
     name: shop.name || "",
+    storeType: shop.storeType || shop.store_type || "",
     category: shop.category || "",
+    subcategory: shop.subcategory || "",
+    tags: Array.isArray(shop.tags) ? shop.tags : [],
     avatarUrl: shop.avatarUrl || "",
     shortDesc: shop.descriptionShort || "",
     longDesc: shop.descriptionLong || "",
@@ -45,6 +59,7 @@
     active: shop.isActive !== false,
     isAdmin: false,
     pendingChange: shop.pendingChange || null,
+    reviewNote: shop.reviewNote || "",
     createdAt: shop.createdAt || "",
     updatedAt: shop.updatedAt || "",
   });
@@ -82,6 +97,7 @@
           storeCache = storeCache.filter((s) => s.storeId !== shop.storeId);
           storeCache.unshift(shop);
         }
+        notify();
         return shop;
       },
       requestUpdate: async (storeId, updates) => {
@@ -91,6 +107,25 @@
         const current = storeCache.find((s) => s.storeId === storeId);
         const next = current ? !current.active : true;
         return services.stores.create({ id: storeId, isActive: next });
+      },
+      uploadAvatar: async (storeId, file) => {
+        if (!storeId || !file) return null;
+        const form = new FormData();
+        form.append("storeId", storeId);
+        form.append("file", file);
+        const data = await fetchJson(`${API_ROOT}/store/avatar`, {
+          method: "POST",
+          headers: getAuthHeaders(false),
+          body: form,
+        });
+        const avatar = data && data.avatar ? data.avatar : null;
+        if (avatar && avatar.url) {
+          storeCache = storeCache.map((store) =>
+            store.storeId === storeId ? { ...store, avatarUrl: avatar.url } : store
+          );
+          notify();
+        }
+        return avatar;
       },
     },
     products: {
@@ -111,6 +146,7 @@
           productCache = productCache.filter((p) => p.productId !== item.productId);
           productCache.unshift(item);
         }
+        notify();
         return item;
       },
       update: async (productId, updates) => {
@@ -157,6 +193,7 @@
           headers: getAuthHeaders(false),
           body: form,
         });
+        notify();
         return true;
       },
       removeItems: async () => true,
@@ -199,6 +236,17 @@
     },
   };
 
-  window.BKPanelData = window.BKPanelData || {};
-  window.BKPanelData.services = services;
+  const panel = window.BKPanelData || {};
+  const baseSubscribe = panel.subscribe;
+  panel.services = services;
+  panel.notify = notify;
+  panel.subscribe = (listener) => {
+    if (typeof listener === "function") listeners.add(listener);
+    const baseUnsub = typeof baseSubscribe === "function" ? baseSubscribe(listener) : null;
+    return () => {
+      if (typeof listener === "function") listeners.delete(listener);
+      if (typeof baseUnsub === "function") baseUnsub();
+    };
+  };
+  window.BKPanelData = panel;
 })();

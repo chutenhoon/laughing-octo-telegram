@@ -1,0 +1,14 @@
+.admin-store-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.admin-store-actions .btn {
+  min-width: 72px;
+}
+
+.diff-row {
+  margin: 6px 0;
+  line-height: 1.5;
+}

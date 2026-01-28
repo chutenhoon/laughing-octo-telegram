@@ -81,7 +81,7 @@ function timingSafeEqual(a, b) {
 
 function isSafeMediaKey(value) {
   const key = String(value || "");
-  if (!(key.startsWith("story/") || key.startsWith("messages/"))) return false;
+  if (!(key.startsWith("story/") || key.startsWith("messages/") || key.startsWith("store-avatar/"))) return false;
   if (key.includes("..") || key.includes("\\") || key.startsWith("/")) return false;
   return true;
 }
@@ -202,10 +202,11 @@ export async function onRequestGet(context) {
     if (verified.exp <= now) return errorResponse("TOKEN_EXPIRED", 403);
 
     const isMessageKey = verified.key.startsWith("messages/");
-    const bucket = isMessageKey ? context?.env?.R2_MESSAGES : context?.env?.R2_PROFILE;
+    const isStoreAvatarKey = verified.key.startsWith("store-avatar/");
+    const bucket = isMessageKey ? context?.env?.R2_MESSAGES : isStoreAvatarKey ? context?.env?.R2_STORE_AVATARS : context?.env?.R2_PROFILE;
     if (!bucket) {
       return errorResponse("R2_NOT_CONFIGURED", 500, {
-        hint: isMessageKey ? "Set R2_MESSAGES binding" : "Set R2_PROFILE binding",
+        hint: isMessageKey ? "Set R2_MESSAGES binding" : isStoreAvatarKey ? "Set R2_STORE_AVATARS binding" : "Set R2_PROFILE binding",
       });
     }
 

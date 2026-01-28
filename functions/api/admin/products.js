@@ -51,7 +51,7 @@ export async function onRequestGet(context) {
   const total = Number(countRow && countRow.total ? countRow.total : 0);
 
   const sql = `
-    SELECT p.id, p.shop_id, p.name, p.category, p.subcategory, p.price, p.price_max, p.stock_count,
+    SELECT p.id, p.shop_id, p.name, p.category, p.subcategory, p.tags_json, p.price, p.price_max, p.stock_count,
            p.status, p.is_active, p.is_published, p.created_at, p.updated_at,
            s.store_name, s.store_slug
       FROM products p
@@ -61,25 +61,36 @@ export async function onRequestGet(context) {
      LIMIT ? OFFSET ?
   `;
   const rows = await db.prepare(sql).bind(...binds, perPage, offset).all();
-  const items = (rows && Array.isArray(rows.results) ? rows.results : []).map((row) => ({
-    id: row.id,
-    shopId: row.shop_id,
-    name: row.name,
-    category: row.category || "",
-    subcategory: row.subcategory || "",
-    price: Number(row.price || 0),
-    priceMax: row.price_max != null ? Number(row.price_max || 0) : null,
-    stockCount: Number(row.stock_count || 0),
-    status: row.status || "draft",
-    isActive: Number(row.is_active || 0) === 1,
-    isPublished: Number(row.is_published || 0) === 1,
-    createdAt: row.created_at || null,
-    updatedAt: row.updated_at || null,
-    shop: {
-      name: row.store_name || "",
-      slug: row.store_slug || "",
-    },
-  }));
+  const items = (rows && Array.isArray(rows.results) ? rows.results : []).map((row) => {
+    let tags = [];
+    if (row.tags_json) {
+      try {
+        tags = JSON.parse(row.tags_json) || [];
+      } catch (error) {
+        tags = [];
+      }
+    }
+    return {
+      id: row.id,
+      shopId: row.shop_id,
+      name: row.name,
+      category: row.category || "",
+      subcategory: row.subcategory || "",
+      tags,
+      price: Number(row.price || 0),
+      priceMax: row.price_max != null ? Number(row.price_max || 0) : null,
+      stockCount: Number(row.stock_count || 0),
+      status: row.status || "draft",
+      isActive: Number(row.is_active || 0) === 1,
+      isPublished: Number(row.is_published || 0) === 1,
+      createdAt: row.created_at || null,
+      updatedAt: row.updated_at || null,
+      shop: {
+        name: row.store_name || "",
+        slug: row.store_slug || "",
+      },
+    };
+  });
 
   return jsonResponse({ ok: true, items, page, perPage, total, totalPages: Math.max(1, Math.ceil(total / perPage)) });
 }

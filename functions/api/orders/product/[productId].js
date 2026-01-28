@@ -132,13 +132,19 @@ export async function onRequestPost(context) {
       .bind(orderId, userId, price, price, now, now, now)
       .run();
 
+    const deliveryKey = `deliveries/${orderId}/${orderItemId}.txt`;
+    const deliveryPut = await bucket.put(deliveryKey, delivered, {
+      httpMetadata: { contentType: "text/plain; charset=utf-8" },
+    });
+    const deliveryEtag = deliveryPut && deliveryPut.etag ? String(deliveryPut.etag) : "";
+
     await db
       .prepare(
         `INSERT INTO order_items
-          (id, order_id, product_id, shop_id, inventory_id, quantity, unit_price, line_total, currency, fulfillment_status, content_text, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, 1, ?, ?, 'VND', 'delivered', ?, ?, ?)`
+          (id, order_id, product_id, shop_id, inventory_id, quantity, unit_price, line_total, currency, fulfillment_status, content_r2_key, content_r2_etag, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, 1, ?, ?, 'VND', 'delivered', ?, ?, ?, ?)`
       )
-      .bind(orderItemId, orderId, productId, productRow.shop_id, reservation.id, price, price, delivered, now, now)
+      .bind(orderItemId, orderId, productId, productRow.shop_id, reservation.id, price, price, deliveryKey, deliveryEtag, now, now)
       .run();
 
     await db
@@ -152,8 +158,10 @@ export async function onRequestPost(context) {
     return jsonResponse({
       ok: true,
       orderId,
+      orderItemId,
       productId,
-      delivered,
+      deliveryId: orderItemId,
+      downloadUrl: `/api/inventory/download?id=${encodeURIComponent(orderItemId)}`,
       stockCount: stock,
     });
   } catch (error) {

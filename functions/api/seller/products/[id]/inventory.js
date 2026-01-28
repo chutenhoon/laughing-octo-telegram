@@ -19,6 +19,16 @@ async function getProductOwner(db, productId) {
   return row || null;
 }
 
+async function getInventoryColumns(db) {
+  const result = await db.prepare("PRAGMA table_info(inventory)").all();
+  const rows = result && Array.isArray(result.results) ? result.results : [];
+  const cols = new Set();
+  rows.forEach((row) => {
+    if (row && row.name) cols.add(String(row.name));
+  });
+  return cols;
+}
+
 async function recomputeStock(db, productId, shopId) {
   const now = new Date().toISOString();
   const row = await db
@@ -130,16 +140,32 @@ export async function onRequestPost(context) {
     httpMetadata: { contentType: "text/plain; charset=utf-8" },
   });
   const etag = put && put.etag ? String(put.etag) : "";
+  const size = Number(file.size || 0);
 
   const now = new Date().toISOString();
   const inventoryId = generateId();
+  const inventoryCols = await getInventoryColumns(db);
+  const columns = [
+    "id",
+    "product_id",
+    "status",
+    "quantity",
+    "line_count",
+    "consumed_count",
+    "r2_object_key",
+    "r2_object_etag",
+  ];
+  const values = [inventoryId, productId, "available", lines.length, lines.length, 0, key, etag];
+  if (inventoryCols.has("r2_object_size")) {
+    columns.push("r2_object_size");
+    values.push(size);
+  }
+  columns.push("notes", "created_at", "updated_at");
+  values.push(filename || null, now, now);
+  const placeholders = columns.map(() => "?").join(", ");
   await db
-    .prepare(
-      `INSERT INTO inventory
-         (id, product_id, status, quantity, line_count, consumed_count, r2_object_key, r2_object_etag, notes, created_at, updated_at)
-       VALUES (?, ?, 'available', ?, ?, 0, ?, ?, ?, ?, ?)`
-    )
-    .bind(inventoryId, productId, lines.length, lines.length, key, etag, filename || null, now, now)
+    .prepare(`INSERT INTO inventory (${columns.join(", ")}) VALUES (${placeholders})`)
+    .bind(...values)
     .run();
 
   const stock = await recomputeStock(db, productId, owner.shop_id);

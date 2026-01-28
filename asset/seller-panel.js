@@ -519,6 +519,12 @@
     const closeStoreEditor = () => {
       if (storeEditorCard) storeEditorCard.classList.add("is-hidden");
       if (storeApprovalNote) storeApprovalNote.style.display = "none";
+      if (window.BKStoreEditor && typeof window.BKStoreEditor.open === "function") {
+        window.BKStoreEditor.open(null);
+        if (typeof window.BKStoreEditor.setDisabled === "function") {
+          window.BKStoreEditor.setDisabled(false);
+        }
+      }
     };
 
     const openStoreEditor = (store) => {
@@ -539,14 +545,30 @@
       if (storeAvatarPreview) {
         storeAvatarPreview.src = store ? store.avatarUrl : defaultStoreAvatar;
       }
+      if (storeAvatar) {
+        storeAvatar.value = "";
+      }
       if (storeApprovalNote) {
         if (store && store.approvalStatus !== "approved") {
+          const statusMap = {
+            pending: "Ch\u1edd duy\u1ec7t",
+            pending_update: "Ch\u1edd duy\u1ec7t s\u1eeda",
+            rejected: "T\u1eeb ch\u1ed1i",
+          };
+          const reason = store.reviewNote || store.lastReviewNote || "";
+          const label = statusMap[store.approvalStatus] || "Ch\u1edd duy\u1ec7t";
           storeApprovalNote.style.display = "flex";
-          storeApprovalNote.innerHTML = `<span>Trạng thái duyệt:</span><span class="seller-tag warn">${
-            store.approvalStatus === "pending_update" ? "Chờ duyệt sửa" : "Chờ duyệt"
-          }</span>`;
+          storeApprovalNote.innerHTML = `<span>Tr\u1ea1ng th\u00e1i duy\u1ec7t:</span><span class="seller-tag warn">${label}</span>${
+            reason ? `<span class="form-hint">${escapeHtml(reason)}</span>` : ""
+          }`;
         } else {
           storeApprovalNote.style.display = "none";
+        }
+      }
+      if (window.BKStoreEditor && typeof window.BKStoreEditor.open === "function") {
+        window.BKStoreEditor.open(store);
+        if (typeof window.BKStoreEditor.setDisabled === "function") {
+          window.BKStoreEditor.setDisabled(isEdit);
         }
       }
     };
@@ -564,10 +586,24 @@
           showToast("Vui lòng nhập tên gian hàng.");
           return;
         }
+        const selection =
+          window.BKStoreEditor && typeof window.BKStoreEditor.getSelection === "function"
+            ? window.BKStoreEditor.getSelection()
+            : { storeType: "", category: "", tags: [], subcategory: "" };
+        if (!selection.storeType) {
+          showToast("Vui lòng chọn loại gian hàng.");
+          return;
+        }
+        if (!selection.category) {
+          showToast("Vui lòng chọn danh mục.");
+          return;
+        }
         const payload = {
           name,
-          category: storeCategorySelect ? storeCategorySelect.value : "",
-          avatarUrl: storeAvatarPreview ? storeAvatarPreview.getAttribute("src") : "",
+          storeType: selection.storeType,
+          category: selection.category,
+          subcategory: selection.subcategory || "",
+          tags: selection.tags || [],
           shortDesc: storeShortDesc ? storeShortDesc.value.trim() : "",
           longDesc: storeLongDesc ? storeLongDesc.value.trim() : "",
         };
@@ -576,15 +612,42 @@
           title: storeId ? "Lưu thay đổi?" : "Tạo gian hàng?",
           message: storeId ? "Yêu cầu cập nhật sẽ được gửi đi để duyệt." : "Gian hàng sẽ được gửi đi để duyệt.",
           confirmText: "Xác nhận",
-          onConfirm: () => {
-            if (storeId) {
-              services.stores.requestUpdate(storeId, payload);
-              showToast("Đã gửi yêu cầu cập nhật.");
-            } else {
-              services.stores.create(payload);
-              showToast("Đã gửi yêu cầu tạo gian hàng.");
+          onConfirm: async () => {
+            if (storeSaveBtn) {
+              storeSaveBtn.disabled = true;
+              storeSaveBtn.setAttribute("aria-busy", "true");
             }
-            closeStoreEditor();
+            try {
+              let saved = null;
+              if (storeId) {
+                saved = await services.stores.requestUpdate(storeId, payload);
+                showToast("Đã gửi yêu cầu cập nhật.");
+              } else {
+                saved = await services.stores.create(payload);
+                showToast("Đã gửi yêu cầu tạo gian hàng.");
+              }
+
+              const finalStoreId = storeId || (saved && saved.storeId);
+              const avatarFile = storeAvatar && storeAvatar.files ? storeAvatar.files[0] : null;
+              if (finalStoreId && avatarFile) {
+                try {
+                  const avatar = await services.stores.uploadAvatar(finalStoreId, avatarFile);
+                  if (avatar && avatar.url && storeAvatarPreview) {
+                    storeAvatarPreview.src = avatar.url;
+                  }
+                } catch (error) {
+                  showToast("Không thể tải ảnh đại diện. Vui lòng thử lại.");
+                }
+              }
+              closeStoreEditor();
+            } catch (error) {
+              showToast("Không thể lưu gian hàng. Vui lòng thử lại.");
+            } finally {
+              if (storeSaveBtn) {
+                storeSaveBtn.disabled = false;
+                storeSaveBtn.removeAttribute("aria-busy");
+              }
+            }
           },
         });
       });
