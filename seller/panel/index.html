@@ -22,7 +22,8 @@
     <meta name="twitter:title" content="polyflux.xyz" />
     <meta name="twitter:description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
     <meta name="twitter:image" content="../../asset/logo-preview.png" />
-<link rel="stylesheet" href="../../asset/base.css" />
+    <link rel="stylesheet" href="../../asset/base.css" />
+    <link rel="stylesheet" href="../../asset/store-editor.css" />
   </head>
   <body class="seller-shell">
     <video class="video-bg" autoplay muted loop playsinline preload="metadata">
@@ -291,14 +292,25 @@
                       <input id="store-name" placeholder="VD: Gmail Trust 2012 - 2025" />
                     </div>
                     <div class="form-field">
+                      <label>Lo&#7841;i gian h&#224;ng</label>
+                      <div class="store-type-options" id="store-type-options">
+                        <button class="store-type-pill" type="button" data-type="product">S&#7843;n ph&#7849;m</button>
+                        <button class="store-type-pill" type="button" data-type="service">D&#7883;ch v&#7909;</button>
+                      </div>
+                      <input type="hidden" id="store-type" />
+                      <div class="form-hint">Ch&#7885;n lo&#7841;i gian h&#224;ng tr&#432;&#7899;c khi ch&#7885;n danh m&#7909;c.</div>
+                    </div>
+                    <div class="form-field">
                       <label>Danh m&#7909;c</label>
-                      <select id="store-category">
-                        <option>Email &gt; Gmail</option>
-                        <option>T&#224;i kho&#7843;n</option>
-                        <option>Tool</option>
-                        <option>D&#7883;ch v&#7909;</option>
+                      <select id="store-category" disabled>
+                        <option value="">Ch&#7885;n danh m&#7909;c</option>
                       </select>
                       <div class="form-hint">Danh m&#7909;c ch&#7881; thay &#273;&#7893;i khi t&#7841;o m&#7899;i.</div>
+                    </div>
+                    <div class="form-field" style="grid-column: 1 / -1;">
+                      <label>Th&#7867; l&#7885;c</label>
+                      <div class="store-tags" id="store-tags"></div>
+                      <div class="form-hint" id="store-tags-hint">Ch&#7885;n th&#7867; ph&#249; h&#7907;p v&#7899;i gian h&#224;ng.</div>
                     </div>
                     <div class="form-field" style="grid-column: 1 / -1;">
                       <label>M&#244; t&#7843; ng&#7855;n</label>
@@ -1095,6 +1107,8 @@
 
     <script src="../../asset/render.js"></script>
     <script src="../../asset/panel-data.js"></script>
+    <script src="../../asset/seller/panel-services.js"></script>
+    <script src="../../asset/store-editor.js"></script>
     <script src="../../asset/seller-panel.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
