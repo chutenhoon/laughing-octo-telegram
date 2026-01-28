@@ -19,6 +19,89 @@ async function getShopColumns(db) {
   return cols;
 }
 
+const SHOP_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS shops (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL UNIQUE,
+    store_name TEXT NOT NULL,
+    store_slug TEXT UNIQUE,
+    store_type TEXT,
+    category TEXT,
+    subcategory TEXT,
+    tags_json TEXT,
+    short_desc TEXT,
+    long_desc TEXT,
+    description TEXT,
+    contact_email TEXT,
+    contact_phone TEXT,
+    avatar_media_id TEXT,
+    avatar_r2_key TEXT,
+    avatar_r2_etag TEXT,
+    avatar_content_type TEXT,
+    avatar_size INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'pending',
+    is_active INTEGER NOT NULL DEFAULT 1,
+    rating REAL NOT NULL DEFAULT 0,
+    total_reviews INTEGER NOT NULL DEFAULT 0,
+    total_orders INTEGER NOT NULL DEFAULT 0,
+    stock_count INTEGER NOT NULL DEFAULT 0,
+    pending_change_json TEXT,
+    review_note TEXT,
+    rejected_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (avatar_media_id) REFERENCES media_metadata(id) ON DELETE SET NULL
+  );
+`;
+
+const SHOP_COLUMN_DEFS = [
+  { name: "store_type", def: "TEXT" },
+  { name: "category", def: "TEXT" },
+  { name: "subcategory", def: "TEXT" },
+  { name: "tags_json", def: "TEXT" },
+  { name: "short_desc", def: "TEXT" },
+  { name: "long_desc", def: "TEXT" },
+  { name: "description", def: "TEXT" },
+  { name: "contact_email", def: "TEXT" },
+  { name: "contact_phone", def: "TEXT" },
+  { name: "avatar_media_id", def: "TEXT" },
+  { name: "avatar_r2_key", def: "TEXT" },
+  { name: "avatar_r2_etag", def: "TEXT" },
+  { name: "avatar_content_type", def: "TEXT" },
+  { name: "avatar_size", def: "INTEGER DEFAULT 0" },
+  { name: "status", def: "TEXT DEFAULT 'pending'" },
+  { name: "is_active", def: "INTEGER DEFAULT 1" },
+  { name: "rating", def: "REAL DEFAULT 0" },
+  { name: "total_reviews", def: "INTEGER DEFAULT 0" },
+  { name: "total_orders", def: "INTEGER DEFAULT 0" },
+  { name: "stock_count", def: "INTEGER DEFAULT 0" },
+  { name: "pending_change_json", def: "TEXT" },
+  { name: "review_note", def: "TEXT" },
+  { name: "rejected_at", def: "TEXT" },
+  { name: "created_at", def: "TEXT" },
+  { name: "updated_at", def: "TEXT" },
+];
+
+async function ensureShopSchema(db) {
+  try {
+    await db.prepare(SHOP_TABLE_SQL).run();
+  } catch (error) {
+    // ignore create failures
+  }
+  const cols = await getShopColumns(db);
+  for (const column of SHOP_COLUMN_DEFS) {
+    if (cols.has(column.name)) continue;
+    try {
+      await db.prepare(`ALTER TABLE shops ADD COLUMN ${column.name} ${column.def}`).run();
+      cols.add(column.name);
+    } catch (error) {
+      // ignore add failures
+    }
+  }
+  return cols;
+}
+
 async function ensureUniqueSlug(db, slug, shopId) {
   if (!slug) return "";
   let next = slug;
@@ -167,7 +250,7 @@ export async function onRequestPost(context) {
   const shortDesc = String(body.description_short || body.short_desc || body.shortDesc || "").trim();
   const longDescRaw = String(body.description_long || body.long_desc || body.description || body.longDesc || "").trim();
 
-  const shopColumns = await getShopColumns(db);
+  const shopColumns = await ensureShopSchema(db);
   const now = new Date().toISOString();
   let shopId = body.id ? String(body.id).trim() : "";
 
@@ -189,7 +272,6 @@ export async function onRequestPost(context) {
 
   let slug = String(body.slug || body.store_slug || body.storeSlug || "").trim();
   if (!slug) slug = buildSlug(name);
-  slug = await ensureUniqueSlug(db, slug, shopId);
 
   if (!shopId) {
     const storeType = requestedType;
@@ -202,28 +284,30 @@ export async function onRequestPost(context) {
       return jsonResponse({ ok: false, error: "INVALID_TAG" }, 400);
     }
     shopId = generateId();
-    const sql = `
-      INSERT INTO shops (id, user_id, store_name, store_slug, store_type, category, subcategory, tags_json, short_desc, long_desc, description,
-                         status, is_active, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
-    `;
+    if (!slug) slug = `store-${shopId.slice(0, 8)}`;
+    slug = await ensureUniqueSlug(db, slug, shopId);
     const description = toPlainText(longDescRaw);
-    await db.prepare(sql).bind(
-      shopId,
-      userId,
-      name,
-      slug,
-      storeType,
-      category || null,
-      primaryTag || null,
-      JSON.stringify(tags),
-      shortDesc || null,
-      longDescRaw || null,
-      description || null,
-      "pending",
-      now,
-      now
-    ).run();
+    const columns = ["id", "user_id", "store_name"];
+    const values = [shopId, userId, name];
+    const push = (col, val) => {
+      if (!shopColumns.has(col)) return;
+      columns.push(col);
+      values.push(val);
+    };
+    push("store_slug", slug || null);
+    push("store_type", storeType || null);
+    push("category", category || null);
+    push("subcategory", primaryTag || null);
+    push("tags_json", JSON.stringify(tags));
+    push("short_desc", shortDesc || null);
+    push("long_desc", longDescRaw || null);
+    push("description", description || null);
+    push("status", "pending");
+    push("is_active", 1);
+    push("created_at", now);
+    push("updated_at", now);
+    const placeholders = columns.map(() => "?").join(", ");
+    await db.prepare(`INSERT INTO shops (${columns.join(", ")}) VALUES (${placeholders})`).bind(...values).run();
   } else {
     const updates = [];
     const binds = [];
@@ -240,6 +324,9 @@ export async function onRequestPost(context) {
     const categoryInfo = category ? findCategory(currentType || "product", category) : null;
     const tags = normalizeTags(tagsInput, categoryInfo);
     const primaryTag = tags.length ? tags[0] : subcategoryInput || "";
+
+    if (!slug) slug = `store-${shopId.slice(0, 8)}`;
+    slug = await ensureUniqueSlug(db, slug, shopId);
 
     const patch = {
       store_name: name,

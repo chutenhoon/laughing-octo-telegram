@@ -29,6 +29,28 @@ async function getInventoryColumns(db) {
   return cols;
 }
 
+const INVENTORY_COLUMN_DEFS = [
+  { name: "r2_object_key", def: "TEXT" },
+  { name: "r2_object_etag", def: "TEXT" },
+  { name: "r2_object_size", def: "INTEGER" },
+  { name: "line_count", def: "INTEGER DEFAULT 0" },
+  { name: "consumed_count", def: "INTEGER DEFAULT 0" },
+];
+
+async function ensureInventorySchema(db) {
+  const cols = await getInventoryColumns(db);
+  for (const column of INVENTORY_COLUMN_DEFS) {
+    if (cols.has(column.name)) continue;
+    try {
+      await db.prepare(`ALTER TABLE inventory ADD COLUMN ${column.name} ${column.def}`).run();
+      cols.add(column.name);
+    } catch (error) {
+      // ignore add failures
+    }
+  }
+  return cols;
+}
+
 async function recomputeStock(db, productId, shopId) {
   const now = new Date().toISOString();
   const row = await db
@@ -101,7 +123,7 @@ export async function onRequestPost(context) {
     return jsonResponse({ ok: false, error: "FORBIDDEN" }, 403);
   }
 
-  const bucket = context?.env?.R2_INVENTORY;
+  const bucket = context?.env?.R2_INVENTORY || context?.env?.R2_BUCKET;
   if (!bucket) return jsonResponse({ ok: false, error: "R2_NOT_CONFIGURED" }, 500);
 
   const contentType = context.request.headers.get("content-type") || "";
@@ -144,7 +166,7 @@ export async function onRequestPost(context) {
 
   const now = new Date().toISOString();
   const inventoryId = generateId();
-  const inventoryCols = await getInventoryColumns(db);
+  const inventoryCols = await ensureInventorySchema(db);
   const columns = [
     "id",
     "product_id",

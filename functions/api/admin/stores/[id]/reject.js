@@ -30,3 +30,4 @@ export async function onRequestPost(context) {
 
   return jsonResponse({ ok: true, storeId, reason });
 }
+

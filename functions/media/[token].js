@@ -81,7 +81,7 @@ function timingSafeEqual(a, b) {
 
 function isSafeMediaKey(value) {
   const key = String(value || "");
-  if (!(key.startsWith("story/") || key.startsWith("messages/") || key.startsWith("store-avatar/"))) return false;
+  if (!(key.startsWith("story/") || key.startsWith("messages/") || key.startsWith("store-avatar/") || key.startsWith("store-image/"))) return false;
   if (key.includes("..") || key.includes("\\") || key.startsWith("/")) return false;
   return true;
 }
@@ -203,10 +203,20 @@ export async function onRequestGet(context) {
 
     const isMessageKey = verified.key.startsWith("messages/");
     const isStoreAvatarKey = verified.key.startsWith("store-avatar/");
-    const bucket = isMessageKey ? context?.env?.R2_MESSAGES : isStoreAvatarKey ? context?.env?.R2_STORE_AVATARS : context?.env?.R2_PROFILE;
+    const isStoreImageKey = verified.key.startsWith("store-image/");
+    const storeBucket = context?.env?.R2_STORE_AVATARS || context?.env?.R2_BUCKET;
+    const bucket = isMessageKey
+      ? context?.env?.R2_MESSAGES
+      : isStoreAvatarKey || isStoreImageKey
+        ? storeBucket
+        : context?.env?.R2_PROFILE;
     if (!bucket) {
       return errorResponse("R2_NOT_CONFIGURED", 500, {
-        hint: isMessageKey ? "Set R2_MESSAGES binding" : isStoreAvatarKey ? "Set R2_STORE_AVATARS binding" : "Set R2_PROFILE binding",
+        hint: isMessageKey
+          ? "Set R2_MESSAGES binding"
+          : isStoreAvatarKey || isStoreImageKey
+            ? "Set R2_STORE_AVATARS or R2_BUCKET binding"
+            : "Set R2_PROFILE binding",
       });
     }
 

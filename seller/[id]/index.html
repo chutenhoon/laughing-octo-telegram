@@ -25,6 +25,7 @@
     <link rel="stylesheet" href="../../asset/base.css" />
     <link rel="stylesheet" href="../../asset/catalog.css" />
     <link rel="stylesheet" href="../../asset/store-page.css" />
+    <link rel="stylesheet" href="../../asset/store-gallery.css" />
   </head>
   <body>
     <video class="video-bg" autoplay muted loop playsinline preload="metadata">
@@ -69,6 +70,17 @@
           </div>
         </div>
 
+        <div class="store-gallery glass is-hidden" id="store-gallery">
+          <div class="store-gallery-head">
+            <h3>H&#236;nh &#7843;nh gian h&#224;ng</h3>
+            <div class="store-gallery-controls">
+              <button class="btn ghost" type="button" id="store-gallery-prev">&#x2039;</button>
+              <button class="btn ghost" type="button" id="store-gallery-next">&#x203A;</button>
+            </div>
+          </div>
+          <div class="store-gallery-track" id="store-gallery-track"></div>
+        </div>
+
         <div class="store-desc glass" id="store-long-desc"></div>
 
         <div class="store-items-head">
@@ -108,5 +120,6 @@
 
     <script src="../../asset/render.js"></script>
     <script src="../../asset/store-page.js"></script>
+    <script src="../../asset/store-gallery.js"></script>
   </body>
 </html>

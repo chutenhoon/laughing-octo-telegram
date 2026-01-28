@@ -37,6 +37,62 @@ function isApproved(shop) {
   return active && (status === "approved" || status === "active" || status === "published");
 }
 
+async function ensureShopImagesTable(db) {
+  try {
+    await db
+      .prepare(
+        `CREATE TABLE IF NOT EXISTS shop_images (
+          id TEXT PRIMARY KEY,
+          shop_id TEXT NOT NULL,
+          r2_object_key TEXT NOT NULL,
+          position INTEGER NOT NULL DEFAULT 1,
+          uploaded_by_role TEXT NOT NULL DEFAULT 'seller',
+          created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+          FOREIGN KEY (shop_id) REFERENCES shops(id) ON DELETE CASCADE
+        );`
+      )
+      .run();
+    await db.prepare("CREATE INDEX IF NOT EXISTS idx_shop_images_shop_pos ON shop_images(shop_id, position)").run();
+  } catch (error) {
+    // ignore missing table errors
+  }
+}
+
+async function loadShopImages(db, shopId, secret, requestUrl) {
+  if (!shopId || !secret) return [];
+  await ensureShopImagesTable(db);
+  let rows = [];
+  try {
+    const result = await db
+      .prepare(
+        `SELECT id, r2_object_key, position, created_at
+           FROM shop_images
+          WHERE shop_id = ?
+          ORDER BY position ASC, created_at ASC
+          LIMIT 5`
+      )
+      .bind(shopId)
+      .all();
+    rows = result && Array.isArray(result.results) ? result.results : [];
+  } catch (error) {
+    rows = [];
+  }
+  const exp = Math.floor(Date.now() / 1000) + 24 * 60 * 60;
+  const items = [];
+  for (const row of rows) {
+    const key = row.r2_object_key;
+    if (!key) continue;
+    const token = await createSignedMediaToken(secret, key, exp, "store-image");
+    if (!token) continue;
+    items.push({
+      id: row.id,
+      url: buildMediaUrl(requestUrl, token),
+      position: Number(row.position || 0),
+    });
+  }
+  return items;
+}
+
 export async function onRequestGet(context) {
   const db = context?.env?.DB;
   if (!db) return jsonResponse({ ok: false, error: "DB_NOT_CONFIGURED" }, 500);
@@ -66,6 +122,7 @@ export async function onRequestGet(context) {
     const token = await createSignedMediaToken(secret, shop.avatar_r2_key, exp, "store-avatar");
     avatarUrl = token ? buildMediaUrl(context.request.url, token) : "";
   }
+  const images = await loadShopImages(db, shop.id, secret, context.request.url);
   let tags = [];
   if (shop.tags_json) {
     try {
@@ -97,9 +154,10 @@ export async function onRequestGet(context) {
       createdAt: shop.created_at || null,
       updatedAt: shop.updated_at || null,
       avatarUrl,
+      images,
       owner: {
         username: shop.username || "",
-        displayName: shop.display_name || shop.store_name,
+        displayName: shop.display_name || shop.username || "",
         badge: shop.badge || "",
         title: shop.title || "",
         rank: shop.rank || "",

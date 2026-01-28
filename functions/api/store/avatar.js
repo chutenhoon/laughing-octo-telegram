@@ -38,7 +38,7 @@ export async function onRequestPost(context) {
   const userId = user.resolvedId || user.id;
   const isAdmin = String(user.role || "").toLowerCase() === "admin";
 
-  const bucket = context?.env?.R2_STORE_AVATARS;
+  const bucket = context?.env?.R2_STORE_AVATARS || context?.env?.R2_BUCKET;
   if (!bucket) return jsonResponse({ ok: false, error: "R2_NOT_CONFIGURED" }, 500);
 
   const secret = context?.env?.MEDIA_SIGNING_SECRET ? String(context.env.MEDIA_SIGNING_SECRET).trim() : "";

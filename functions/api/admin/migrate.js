@@ -181,6 +181,17 @@ const TABLE_DEFS = {
       FOREIGN KEY (avatar_media_id) REFERENCES media_metadata(id) ON DELETE SET NULL
     );
   `,
+  shop_images: `
+    CREATE TABLE IF NOT EXISTS shop_images (
+      id TEXT PRIMARY KEY,
+      shop_id TEXT NOT NULL,
+      r2_object_key TEXT NOT NULL,
+      position INTEGER NOT NULL DEFAULT 1,
+      uploaded_by_role TEXT NOT NULL DEFAULT 'seller',
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+      FOREIGN KEY (shop_id) REFERENCES shops(id) ON DELETE CASCADE
+    );
+  `,
   products: `
     CREATE TABLE IF NOT EXISTS products (
       id TEXT PRIMARY KEY,
@@ -1297,6 +1308,7 @@ export async function runMigrations(db, options = {}) {
   await ensureUniqueIndexIfColumns(db, report, "users", "idx_users_id", ["id"]);
   await ensureIndexIfColumns(db, report, "products", "idx_products_shop", ["shop_id"]);
   await ensureIndexIfColumns(db, report, "products", "idx_products_kind", ["kind"]);
+  await ensureIndexIfColumns(db, report, "shop_images", "idx_shop_images_shop_pos", ["shop_id", "position"]);
   await ensureIndexIfColumns(db, report, "orders", "idx_orders_buyer_status", ["buyer_user_id", "status"]);
   await ensureIndexIfColumns(db, report, "order_items", "idx_order_items_shop", ["shop_id"]);
   await ensureIndexIfColumns(db, report, "service_requests", "idx_service_requests_service", ["service_id"]);
