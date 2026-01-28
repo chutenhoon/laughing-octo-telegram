@@ -40,6 +40,7 @@
       modal.classList.add("open");
       if (document.body) document.body.classList.add("modal-open");
     };
+    window.BKSellerModal = { open: openModal };
 
     if (modalCancel) modalCancel.addEventListener("click", closeModal);
     if (modalConfirm) {
@@ -65,6 +66,7 @@
       if (toastTimer) window.clearTimeout(toastTimer);
       toastTimer = window.setTimeout(() => toast.classList.remove("show"), 2400);
     };
+    window.BKSellerToast = { show: showToast };
     const getLanguage = () => (typeof getCurrentLanguage === "function" ? getCurrentLanguage() : "vi");
     const t = (key, fallback) =>
       typeof formatI18n === "function" ? formatI18n(getLanguage(), key, fallback) : fallback || key;
@@ -478,6 +480,7 @@
         pending: { label: "Chờ duyệt", className: "warn" },
         pending_update: { label: "Chờ duyệt sửa", className: "warn" },
         rejected: { label: "Từ chối", className: "bad" },
+        withdrawn: { label: "Đã rút", className: "warn" },
       };
       storeGrid.innerHTML = pageItems
         .map((store) => {
@@ -488,6 +491,12 @@
           const avatar = store.avatarUrl
             ? `<img src="${escapeHtml(store.avatarUrl)}" alt="Shop" loading="lazy" />`
             : `<div class="shop-avatar-fallback">${escapeHtml(initials)}</div>`;
+          const canWithdraw = store.approvalStatus === "pending" || store.approvalStatus === "pending_update";
+          const actionButton = canWithdraw
+            ? `<button class="btn ghost" type="button" data-action="withdraw-store" data-store-id="${store.storeId}">Rút yêu cầu</button>`
+            : `<button class="btn ghost" type="button" data-action="toggle-store" data-store-id="${store.storeId}">
+                  ${store.active ? "Đóng" : "Mở"}
+                </button>`;
           return `
             <div class="seller-card seller-shop-card">
               ${avatar}
@@ -502,9 +511,7 @@
               <div class="seller-shop-actions">
                 <button class="btn" type="button" data-action="edit-store" data-store-id="${store.storeId}">Chỉnh sửa</button>
                 <button class="btn" type="button" data-action="view-products" data-store-id="${store.storeId}">Sản phẩm</button>
-                <button class="btn ghost" type="button" data-action="toggle-store" data-store-id="${store.storeId}">
-                  ${store.active ? "Đóng" : "Mở"}
-                </button>
+                ${actionButton}
               </div>
             </div>
           `;
@@ -584,6 +591,7 @@
             pending: "Ch\u1edd duy\u1ec7t",
             pending_update: "Ch\u1edd duy\u1ec7t s\u1eeda",
             rejected: "T\u1eeb ch\u1ed1i",
+            withdrawn: "\u0110\u00e3 r\u00fat",
           };
           const reason = store.reviewNote || store.lastReviewNote || "";
           const label = statusMap[store.approvalStatus] || "Ch\u1edd duy\u1ec7t";

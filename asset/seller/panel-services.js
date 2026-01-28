@@ -108,6 +108,20 @@
         const next = current ? !current.active : true;
         return services.stores.create({ id: storeId, isActive: next });
       },
+      withdraw: async (storeId) => {
+        if (!storeId) return null;
+        const data = await fetchJson(`${API_ROOT}/seller/shops/${encodeURIComponent(storeId)}/withdraw`, {
+          method: "POST",
+          headers: getAuthHeaders(),
+        });
+        const nextStatus = data && data.status ? data.status : "withdrawn";
+        const updatedAt = data && data.updatedAt ? data.updatedAt : new Date().toISOString();
+        storeCache = storeCache.map((store) =>
+          store.storeId === storeId ? { ...store, approvalStatus: nextStatus, active: false, updatedAt } : store
+        );
+        notify();
+        return data;
+      },
       uploadAvatar: async (storeId, file) => {
         if (!storeId || !file) return null;
         const form = new FormData();

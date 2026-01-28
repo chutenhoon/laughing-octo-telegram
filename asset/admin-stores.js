@@ -23,8 +23,7 @@
   const diffOld = document.getElementById("admin-store-diff-old");
   const diffNew = document.getElementById("admin-store-diff-new");
   const diffClose = document.getElementById("admin-store-diff-close");
-  const previewCard = document.getElementById("admin-store-preview-card");
-  const previewClose = document.getElementById("admin-store-preview-close");
+  const previewModal = document.getElementById("admin-store-preview-modal");
   const previewMedia = document.getElementById("admin-store-preview-media");
   const previewName = document.getElementById("admin-store-preview-name");
   const previewMeta = document.getElementById("admin-store-preview-meta");
@@ -32,6 +31,7 @@
   const previewTags = document.getElementById("admin-store-preview-tags");
   const previewShort = document.getElementById("admin-store-preview-short");
   const previewLong = document.getElementById("admin-store-preview-long");
+  const previewReason = document.getElementById("admin-store-preview-reason");
 
   if (!approveBody || !updateBody) return;
 
@@ -59,6 +59,14 @@
     });
 
   const normalizeText = (value) => String(value || "").toLowerCase();
+
+  const debounce = (fn, wait = 250) => {
+    let timer = null;
+    return (...args) => {
+      if (timer) window.clearTimeout(timer);
+      timer = window.setTimeout(() => fn(...args), wait);
+    };
+  };
 
   const formatNumber = (value) => Number(value || 0).toLocaleString("vi-VN");
 
@@ -99,6 +107,7 @@
       pending: { label: "Chờ duyệt", className: "warn" },
       pending_update: { label: "Chờ duyệt sửa", className: "warn" },
       rejected: { label: "Từ chối", className: "bad" },
+      withdrawn: { label: "Đã rút", className: "warn" },
     };
     const value = String(status || "").toLowerCase();
     const item = map[value] || { label: value || "--", className: "warn" };
@@ -500,11 +509,16 @@
   };
 
   const hidePreview = () => {
-    if (previewCard) previewCard.classList.add("is-hidden");
+    if (window.BKAdminShopModal && typeof window.BKAdminShopModal.closePreview === "function") {
+      window.BKAdminShopModal.closePreview();
+      return;
+    }
+    if (previewModal) previewModal.classList.remove("open");
+    if (document.body) document.body.classList.remove("modal-open");
   };
 
   const setPreviewCard = async (store) => {
-    if (!previewCard || !store) return;
+    if (!store) return;
     const categories = await loadCategories();
     const type = store.storeType || "product";
     const typeLabel = type === "service" ? "Dịch vụ" : "Sản phẩm";
@@ -536,10 +550,20 @@
     if (previewTags) {
       previewTags.textContent = tagLabels.length ? `Thẻ: ${tagLabels.join(", ")}` : "Thẻ: --";
     }
+    if (previewReason) {
+      const reason = store.status === "rejected" && store.reviewNote ? store.reviewNote : "";
+      previewReason.textContent = reason ? `Lý do: ${reason}` : "";
+      previewReason.classList.toggle("is-hidden", !reason);
+    }
     if (previewShort) previewShort.textContent = store.descriptionShort || "";
     if (previewLong) previewLong.textContent = store.descriptionLong || "";
     if (diffCard) diffCard.classList.add("is-hidden");
-    previewCard.classList.remove("is-hidden");
+    if (window.BKAdminShopModal && typeof window.BKAdminShopModal.openPreview === "function") {
+      window.BKAdminShopModal.openPreview(store.id);
+    } else if (previewModal) {
+      previewModal.classList.add("open");
+      if (document.body) document.body.classList.add("modal-open");
+    }
     try {
       document.dispatchEvent(
         new CustomEvent("store-images:open", {
@@ -584,36 +608,50 @@
   };
 
   const rejectStore = async (storeId, listType) => {
-    const reason = window.prompt("L\u00fd do t\u1eeb ch\u1ed1i", "Gian h\u00e0ng ch\u01b0a \u0111\u1ea1t y\u00eau c\u1ea7u");
-    if (reason == null) return;
-    const targetState = listType === "update" ? state.update : state.approve;
-    const backup = removeFromState(storeId, targetState);
-    await renderApproveList();
-    await renderUpdateList();
-    try {
-      await fetchJson(`/api/admin/stores/${encodeURIComponent(storeId)}/reject`, {
-        method: "POST",
-        headers: buildHeaders(true),
-        body: JSON.stringify({ reason: reason || "Gian h\u00e0ng ch\u01b0a \u0111\u1ea1t y\u00eau c\u1ea7u" }),
-      });
-      showToast("\u0110\u00e3 t\u1eeb ch\u1ed1i gian h\u00e0ng.");
-      await loadMetrics();
-      return;
-    } catch (error) {
-      restoreToState(backup, targetState);
+    const defaultReason = "Gian h\u00e0ng ch\u01b0a \u0111\u1ea1t y\u00eau c\u1ea7u";
+    const handleReject = async (note) => {
+      const reason = note || defaultReason;
+      const targetState = listType === "update" ? state.update : state.approve;
+      const backup = removeFromState(storeId, targetState);
       await renderApproveList();
       await renderUpdateList();
-      showToast("Kh\u00f4ng th\u1ec3 t\u1eeb ch\u1ed1i gian h\u00e0ng.");
+      try {
+        await fetchJson(`/api/admin/stores/${encodeURIComponent(storeId)}/reject`, {
+          method: "POST",
+          headers: buildHeaders(true),
+          body: JSON.stringify({ reason }),
+        });
+        showToast("\u0110\u00e3 t\u1eeb ch\u1ed1i gian h\u00e0ng.");
+        await loadMetrics();
+        return;
+      } catch (error) {
+        restoreToState(backup, targetState);
+        await renderApproveList();
+        await renderUpdateList();
+        showToast("Kh\u00f4ng th\u1ec3 t\u1eeb ch\u1ed1i gian h\u00e0ng.");
+      }
+    };
+
+    if (window.BKAdminShopModal && typeof window.BKAdminShopModal.openReject === "function") {
+      window.BKAdminShopModal.openReject({ defaultReason, onConfirm: handleReject });
+      return;
     }
+
+    const reason = window.prompt("L\u00fd do t\u1eeb ch\u1ed1i", defaultReason);
+    if (reason == null) return;
+    await handleReject(reason);
   };
 
-  const loadStores = async () => {
-    state.approve.loading = true;
-    state.update.loading = true;
-    state.approve.error = false;
-    state.update.error = false;
-    renderApproveList();
-    renderUpdateList();
+  const loadStores = async (options = {}) => {
+    const silent = options.silent === true;
+    if (!silent) {
+      state.approve.loading = true;
+      state.update.loading = true;
+      state.approve.error = false;
+      state.update.error = false;
+      renderApproveList();
+      renderUpdateList();
+    }
     const headers = buildHeaders();
     try {
       const [pending, updates] = await Promise.all([
@@ -628,24 +666,29 @@
       state.update.error = false;
       renderApproveList();
       renderUpdateList();
-      await loadMetrics();
+      if (!silent) {
+        await loadMetrics();
+      }
     } catch (error) {
-      state.approve.loading = false;
-      state.update.loading = false;
-      state.approve.error = true;
-      state.update.error = true;
-      renderApproveList();
-      renderUpdateList();
-      showToast("Kh\u00f4ng th\u1ec3 t\u1ea3i danh s\u00e1ch gian h\u00e0ng.");
+      if (!silent) {
+        state.approve.loading = false;
+        state.update.loading = false;
+        state.approve.error = true;
+        state.update.error = true;
+        renderApproveList();
+        renderUpdateList();
+        showToast("Kh\u00f4ng th\u1ec3 t\u1ea3i danh s\u00e1ch gian h\u00e0ng.");
+      }
     }
   };
 
   if (approveSearch) {
-    approveSearch.addEventListener("input", () => {
+    const onApproveSearch = debounce(() => {
       state.approve.search = approveSearch.value || "";
       state.approve.page = 1;
       renderApproveList();
     });
+    approveSearch.addEventListener("input", onApproveSearch);
   }
   if (approveSort) {
     approveSort.addEventListener("change", () => {
@@ -655,11 +698,12 @@
     });
   }
   if (updateSearch) {
-    updateSearch.addEventListener("input", () => {
+    const onUpdateSearch = debounce(() => {
       state.update.search = updateSearch.value || "";
       state.update.page = 1;
       renderUpdateList();
     });
+    updateSearch.addEventListener("input", onUpdateSearch);
   }
   if (updateSort) {
     updateSort.addEventListener("change", () => {
@@ -706,10 +750,6 @@
     diffClose.addEventListener("click", hideDiff);
   }
 
-  if (previewClose) {
-    previewClose.addEventListener("click", hidePreview);
-  }
-
   if (bulkApproveBtn) {
     bulkApproveBtn.addEventListener("click", async () => {
       if (!state.approve.data.length) return;
@@ -721,5 +761,22 @@
     });
   }
 
+  let refreshTimer = null;
+  let refreshInFlight = false;
+  const startAutoRefresh = () => {
+    if (refreshTimer) return;
+    refreshTimer = window.setInterval(() => {
+      const section = document.querySelector('.seller-section[data-view="shops"].active');
+      if (!section) return;
+      if (document.visibilityState !== "visible") return;
+      if (refreshInFlight) return;
+      refreshInFlight = true;
+      loadStores({ silent: true }).finally(() => {
+        refreshInFlight = false;
+      });
+    }, 60000);
+  };
+
   loadStores();
+  startAutoRefresh();
 })();
