@@ -1,5 +1,5 @@
-import { jsonResponse, readJsonBody } from "../auth/_utils.js";
-import { requireSeller } from "../_catalog.js";
+import { jsonResponse, readJsonBody } from "../../auth/_utils.js";
+import { requireSeller } from "../../_catalog.js";
 
 function normalizeId(value) {
   const raw = String(value || "").trim();
