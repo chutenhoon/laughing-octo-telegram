@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Tạo gian hàng | polyflux.xyz</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="../../../apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="../../../favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="../../../favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="../../../android-chrome-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="../../../android-chrome-512x512.png" />
+    <link rel="manifest" href="../../../site.webmanifest" />
+    <link rel="icon" href="../../../favicon.ico" />
+    <meta name="description" content="Sàn thương mại điện tử uy tín, giao nhanh, bảo hành rõ ràng, hỗ trợ 24/7." />
+    <meta property="og:title" content="polyflux.xyz" />
+    <meta property="og:description" content="Sàn thương mại điện tử uy tín, giao nhanh, bảo hành rõ ràng, hỗ trợ 24/7." />
+    <meta property="og:image" content="../../../asset/logo-preview.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="vi_VN" />
+    <meta property="og:site_name" content="polyflux.xyz" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="polyflux.xyz" />
+    <meta name="twitter:description" content="Sàn thương mại điện tử uy tín, giao nhanh, bảo hành rõ ràng, hỗ trợ 24/7." />
+    <meta name="twitter:image" content="../../../asset/logo-preview.png" />
+    <link rel="stylesheet" href="../../../asset/base.css" />
+    <link rel="stylesheet" href="../../../asset/store-editor.css" />
+    <link rel="stylesheet" href="../../../asset/store-images.css" />
+    <link rel="stylesheet" href="../../../asset/seller-create.css" />
+  </head>
+  <body class="seller-shell">
+    <video class="video-bg" autoplay muted loop playsinline preload="metadata">
+      <source src="../../../asset/bg-donut.mp4" type="video/mp4" />
+    </video>
+    <div class="video-overlay"></div>
+
+    <div
+      class="card seller-guard"
+      id="seller-create-guard"
+      data-guard-login="Bạn cần đăng nhập để tạo gian hàng."
+      data-guard-pending="Tài khoản của bạn chưa được duyệt seller. Vui lòng chờ admin xác nhận."
+      style="display: none;"
+    >
+      <h3>Yêu cầu quyền seller</h3>
+      <p class="hero-sub" id="seller-create-guard-text"></p>
+      <div class="seller-guard-actions">
+        <a class="btn primary" data-auth-login href="#">Đăng nhập</a>
+        <a class="btn" id="seller-create-guard-apply" href="../../join/">Đăng ký seller</a>
+      </div>
+    </div>
+
+    <main class="seller-layout" id="seller-create-panel" style="display: none;">
+      <aside class="seller-sidebar glass">
+        <a href="/" class="seller-brand" style="text-decoration: none;">
+          <img src="../../../asset/logo.png" alt="PolyFlux" />
+          <span>polyflux<b>.xyz</b></span>
+        </a>
+        <nav class="seller-nav">
+          <button type="button" data-link="../../panel/">
+            Danh sách gian hàng
+          </button>
+          <button class="active" type="button">
+            Tạo gian hàng
+          </button>
+        </nav>
+      </aside>
+
+      <section class="seller-main">
+        <div class="seller-topbar glass">
+          <div>
+            <h1>Tạo gian hàng</h1>
+            <p class="hero-sub">Điền thông tin và gửi yêu cầu xét duyệt gian hàng mới.</p>
+          </div>
+          <div class="seller-topbar-actions">
+            <button class="btn ghost" id="seller-create-back" type="button">Quay lại</button>
+          </div>
+        </div>
+
+        <div class="seller-content">
+          <section class="seller-section active">
+            <div class="seller-card seller-editor-card">
+              <div class="seller-editor-head">
+                <h3>Tạo gian hàng</h3>
+                <p class="hero-sub">Cập nhật thông tin gian hàng, ảnh đại diện và mô tả hiển thị.</p>
+              </div>
+              <div class="seller-editor-grid">
+                <div class="seller-editor-main">
+                  <form class="form-grid" id="seller-create-form">
+                    <div class="form-field">
+                      <label>Tên gian hàng</label>
+                      <input id="store-name" placeholder="VD: Gmail Trust 2012 - 2025" />
+                    </div>
+                    <div class="form-field">
+                      <label>Loại gian hàng</label>
+                      <div class="store-type-options" id="store-type-options">
+                        <button class="store-type-pill" type="button" data-type="product">Sản phẩm</button>
+                        <button class="store-type-pill" type="button" data-type="service">Dịch vụ</button>
+                      </div>
+                      <input type="hidden" id="store-type" />
+                      <div class="form-hint">Chọn loại gian hàng trước khi chọn danh mục.</div>
+                    </div>
+                    <div class="form-field">
+                      <label>Danh mục</label>
+                      <select id="store-category" disabled>
+                        <option value="">Chọn danh mục</option>
+                      </select>
+                    </div>
+                    <div class="form-field" style="grid-column: 1 / -1;">
+                      <label>Thẻ lọc</label>
+                      <div class="store-tags" id="store-tags"></div>
+                      <div class="form-hint" id="store-tags-hint">Chọn thẻ phù hợp với gian hàng.</div>
+                    </div>
+                    <div class="form-field" style="grid-column: 1 / -1;">
+                      <label>Mô tả ngắn</label>
+                      <textarea
+                        rows="3"
+                        id="store-short-desc"
+                        placeholder="- Bảo hành 7 ngày&#10;- Full quyền truy cập&#10;- Đổi pass nên sau 3-7 ngày"
+                      ></textarea>
+                    </div>
+                    <div class="form-field" style="grid-column: 1 / -1;">
+                      <label>Mô tả chi tiết</label>
+                      <textarea rows="6" id="store-long-desc" placeholder="Nhập mô tả chi tiết gian hàng..."></textarea>
+                    </div>
+                    <div class="seller-form-actions" style="grid-column: 1 / -1;">
+                      <button class="btn primary" id="store-save-btn" type="button">Gửi yêu cầu</button>
+                      <button class="btn ghost" id="store-reset-btn" type="button">Làm mới</button>
+                    </div>
+                  </form>
+                </div>
+                <div class="seller-editor-aside">
+                  <div class="panel-media">
+                    <label>Ảnh đại diện</label>
+                    <div class="media-preview is-empty" id="store-avatar-preview-wrap">
+                      <span class="media-placeholder">Chưa có ảnh</span>
+                      <img alt="Preview" loading="lazy" id="store-avatar-preview" />
+                    </div>
+                    <div class="panel-file">
+                      <input type="file" accept="image/*" id="store-avatar" />
+                    </div>
+                    <div class="form-hint">Kích thước gợi ý: 800 x 800px.</div>
+                  </div>
+                  <div class="panel-media store-image-manager" id="create-store-image-manager">
+                    <label>Ảnh gian hàng</label>
+                    <div class="form-hint">Tối đa 5 ảnh.</div>
+                    <div class="store-image-toolbar">
+                      <input type="file" id="create-store-image-upload" accept="image/jpeg,image/png,image/webp" multiple />
+                      <span class="store-image-count" id="create-store-image-count">0/5</span>
+                    </div>
+                    <div class="store-image-list" id="create-store-image-list">
+                      <div class="store-image-empty">Chưa có ảnh</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <div class="modal-backdrop seller-create-loading" id="seller-create-loading" aria-hidden="true">
+      <div class="modal-card">
+        <div class="seller-create-spinner"></div>
+        <p>Đang tạo gian hàng...</p>
+      </div>
+    </div>
+
+    <script src="../../../asset/render.js"></script>
+    <script src="../../../asset/panel-data.js"></script>
+    <script src="../../../asset/seller/panel-services.js"></script>
+    <script src="../../../asset/store-editor.js"></script>
+    <script src="../../../asset/seller-create.js"></script>
+  </body>
+</html>

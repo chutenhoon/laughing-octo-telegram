@@ -1,0 +1,72 @@
+.admin-feature-modal .modal-card {
+  width: min(520px, 92vw);
+}
+
+.admin-feature-modal .modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-feature-results {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.admin-feature-item {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--stroke);
+  background: rgba(12, 12, 18, 0.7);
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-feature-item:hover {
+  border-color: rgba(123, 107, 255, 0.5);
+}
+
+.admin-feature-title {
+  font-weight: 600;
+  color: #f2f2ff;
+}
+
+.admin-feature-sub {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.admin-feature-loading {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 10, 18, 0.55);
+  z-index: 2000;
+}
+
+.admin-feature-loading.active {
+  display: flex;
+}
+
+.admin-feature-spinner {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #7b6bff;
+  animation: adminFeatureSpin 0.8s linear infinite;
+}
+
+@keyframes adminFeatureSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}

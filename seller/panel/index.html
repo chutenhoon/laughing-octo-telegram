@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Seller Dashboard | polyflux.xyz</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="../../apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="../../favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="../../favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="../../android-chrome-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="../../android-chrome-512x512.png" />
+    <link rel="manifest" href="../../site.webmanifest" />
+    <link rel="icon" href="../../favicon.ico" />
+    <meta name="description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta property="og:title" content="polyflux.xyz" />
+    <meta property="og:description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta property="og:image" content="../../asset/logo-preview.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="vi_VN" />
+    <meta property="og:site_name" content="polyflux.xyz" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="polyflux.xyz" />
+    <meta name="twitter:description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta name="twitter:image" content="../../asset/logo-preview.png" />
+    <link rel="stylesheet" href="../../asset/base.css" />
+    <link rel="stylesheet" href="../../asset/store-editor.css" />
+    <link rel="stylesheet" href="../../asset/store-images.css" />
+    <link rel="stylesheet" href="../../asset/seller-shop-delete.css" />
+  </head>
+  <body class="seller-shell">
+    <video class="video-bg" autoplay muted loop playsinline preload="metadata">
+      <source src="../../asset/bg-donut.mp4" type="video/mp4" />
+    </video>
+    <div class="video-overlay"></div>
+
+    <div
+      class="card seller-guard"
+      id="seller-guard"
+      data-guard-login="B&#7841;n c&#7847;n &#273;&#259;ng nh&#7853;p &#273;&#7875; truy c&#7853;p b&#7843;ng qu&#7843;n l&#253; seller."
+      data-guard-pending="T&#224;i kho&#7843;n c&#7911;a b&#7841;n ch&#432;a &#273;&#432;&#7907;c duy&#7879;t seller. Vui l&#242;ng ch&#7901; admin x&#225;c nh&#7853;n."
+      style="display: none;"
+    >
+      <h3>Y&#234;u c&#7847;u quy&#7873;n seller</h3>
+      <p class="hero-sub" id="seller-guard-text"></p>
+      <div class="seller-guard-actions">
+        <a class="btn primary" data-auth-login href="#">&#272;&#259;ng nh&#7853;p</a>
+        <a class="btn" id="seller-guard-apply" href="../join/">&#272;&#259;ng k&#253; seller</a>
+      </div>
+    </div>
+
+    <main class="seller-layout" id="seller-dashboard" style="display: none;">
+      <aside class="seller-sidebar glass">
+        <a href="/" class="seller-brand" style="text-decoration: none;">
+          <img src="../../asset/logo.png" alt="PolyFlux" />
+          <span>polyflux<b>.xyz</b></span>
+        </a>
+        <nav class="seller-nav" id="seller-nav">
+          <button
+            class="active"
+            type="button"
+            data-view="overview"
+            data-title="T&#7893;ng quan"
+            data-sub="T&#7893;ng h&#7907;p hi&#7879;u su&#7845;t gian h&#224;ng theo th&#7901;i gian th&#7921;c."
+          >
+            T&#7893;ng quan
+          </button>
+          <button
+            type="button"
+            data-view="shops"
+            data-title="Gian h&#224;ng"
+            data-sub="Qu&#7843;n l&#253; gian h&#224;ng, ph&#234; duy&#7879;t v&#224; tr&#7841;ng th&#225;i."
+          >
+            Gian h&#224;ng
+          </button>
+          <button
+            type="button"
+            data-view="products"
+            data-title="S&#7843;n ph&#7849;m"
+            data-sub="S&#7855;p x&#7871;p danh m&#7909;c s&#7843;n ph&#7849;m v&#224; t&#7891;n kho."
+          >
+            S&#7843;n ph&#7849;m
+          </button>
+          <button
+            type="button"
+            data-view="orders"
+            data-title="&#272;&#417;n h&#224;ng"
+            data-sub="Theo d&#245;i &#273;&#417;n h&#224;ng theo th&#7901;i gian."
+          >
+            &#272;&#417;n h&#224;ng
+          </button>
+          <button
+            type="button"
+            data-view="preorders"
+            data-title="&#272;&#417;n &#273;&#7863;t tr&#432;&#7899;c"
+            data-sub="Danh s&#225;ch &#273;&#417;n &#273;&#7863;t tr&#432;&#7899;c &#273;ang ch&#7901; x&#7917; l&#253;."
+          >
+            &#272;&#417;n &#273;&#7863;t tr&#432;&#7899;c
+          </button>
+          <button
+            type="button"
+            data-view="coupons"
+            data-title="M&#227; gi&#7843;m gi&#225;"
+            data-sub="T&#7841;o v&#224; qu&#7843;n l&#253; m&#227; gi&#7843;m gi&#225; cho shop."
+          >
+            M&#227; gi&#7843;m gi&#225;
+          </button>
+          <button
+            type="button"
+            data-view="complaints"
+            data-title="Khi&#7871;u n&#7841;i"
+            data-sub="Theo d&#245;i khi&#7871;u n&#7841;i v&#224; tranh ch&#7845;p."
+          >
+            Khi&#7871;u n&#7841;i
+          </button>
+          <button
+            type="button"
+            data-view="reviews"
+            data-title="&#272;&#225;nh gi&#225;"
+            data-sub="L&#7885;c &#273;&#225;nh gi&#225; theo gian h&#224;ng v&#224; tr&#7841;ng th&#225;i."
+          >
+            &#272;&#225;nh gi&#225;
+          </button>
+          <button
+            type="button"
+            data-view="account"
+            data-title="T&#224;i kho&#7843;n"
+            data-sub="C&#7853;p nh&#7853;t th&#244;ng tin thanh to&#225;n v&#224; s&#7889; d&#432;."
+          >
+            T&#224;i kho&#7843;n
+          </button>
+        </nav>
+      </aside>
+
+      <section class="seller-main">
+        <div class="seller-topbar glass">
+          <div>
+            <h1 id="seller-page-title">T&#7893;ng quan</h1>
+            <p class="hero-sub" id="seller-page-sub">T&#7893;ng h&#7907;p hi&#7879;u su&#7845;t gian h&#224;ng theo th&#7901;i gian th&#7921;c.</p>
+          </div>
+          <div class="seller-topbar-actions">
+            <span class="seller-pill">Seller &#273;&#227; duy&#7879;t</span>
+            <button class="btn ghost" id="seller-logout" type="button">&#272;&#259;ng xu&#7845;t</button>
+          </div>
+        </div>
+
+        <div class="seller-content">
+          <section class="seller-section active" data-view="overview">
+            <div class="seller-stat-grid">
+              <div class="seller-card">
+                <span class="seller-stat-label">T&#7893;ng s&#7843;n ph&#7849;m</span>
+                <div class="seller-stat-value">0</div>
+                <span class="seller-stat-note">0 tu&#7847;n n&#224;y</span>
+              </div>
+              <div class="seller-card">
+                <span class="seller-stat-label">&#272;&#417;n h&#224;ng</span>
+                <div class="seller-stat-value">0</div>
+                <span class="seller-stat-note">0 h&#244;m nay</span>
+              </div>
+              <div class="seller-card">
+                <span class="seller-stat-label">Doanh thu</span>
+                <div class="seller-stat-value" id="metric-revenue-summary">--</div>
+                <span class="seller-stat-note">0% so v&#7899;i tu&#7847;n tr&#432;&#7899;c</span>
+              </div>
+            </div>
+
+            <div class="seller-card seller-chart-card">
+              <div class="chart-head">
+                <div>
+                  <h3>Doanh thu</h3>
+                  <p class="hero-sub">Bi&#7875;u &#273;&#7891; doanh thu theo th&#7901;i gian.</p>
+                </div>
+                <div class="chart-range" id="chart-range">
+                  <button class="pill active" type="button" data-range="60p">60p</button>
+                  <button class="pill" type="button" data-range="24h">24h</button>
+                  <button class="pill" type="button" data-range="3d">3d</button>
+                  <button class="pill" type="button" data-range="7d">7d</button>
+                  <button class="pill" type="button" data-range="28d">28d</button>
+                  <button class="pill" type="button" data-range="365d">365d</button>
+                  <button class="pill" type="button" data-range="lifetime">lifetime</button>
+                </div>
+              </div>
+              <div class="chart-metrics">
+                <div class="chart-metric">
+                  <span>Doanh thu</span>
+                  <strong id="metric-revenue">--</strong>
+                </div>
+                <div class="chart-metric">
+                  <span>&#272;&#417;n h&#224;ng</span>
+                  <strong id="metric-orders">--</strong>
+                </div>
+                <div class="chart-metric">
+                  <span>T&#7927; l&#7879; chuy&#7875;n &#273;&#7893;i</span>
+                  <strong id="metric-conversion">--</strong>
+                </div>
+                <div class="chart-metric">
+                  <span>Gi&#225; tr&#7883; trung b&#236;nh</span>
+                  <strong id="metric-avg">--</strong>
+                </div>
+              </div>
+              <div class="admin-chart-shell seller-chart-shell">
+                <div class="admin-chart-y" id="seller-chart-y"></div>
+                <div class="admin-chart-area">
+                  <div class="chart-wrap">
+                    <svg class="chart-svg" viewBox="0 0 600 240" preserveAspectRatio="none">
+                      <defs>
+                        <linearGradient id="chart-gradient" x1="0" x2="0" y1="0" y2="1">
+                          <stop offset="0%" stop-color="#8b7cff" stop-opacity="0.35" />
+                          <stop offset="100%" stop-color="#8b7cff" stop-opacity="0" />
+                        </linearGradient>
+                      </defs>
+                      <g class="chart-grid">
+                        <line x1="0" y1="40" x2="600" y2="40" />
+                        <line x1="0" y1="80" x2="600" y2="80" />
+                        <line x1="0" y1="120" x2="600" y2="120" />
+                        <line x1="0" y1="160" x2="600" y2="160" />
+                        <line x1="0" y1="200" x2="600" y2="200" />
+                      </g>
+                      <path id="seller-chart-area" class="chart-area" d=""></path>
+                      <path id="seller-chart-line" class="chart-line" d=""></path>
+                      <circle id="seller-chart-dot" class="chart-dot" r="4" cx="0" cy="0"></circle>
+                    </svg>
+                  </div>
+                  <div class="admin-chart-x" id="seller-chart-x"></div>
+                  <div class="admin-chart-axis-note" id="seller-chart-axis-note">Tr&#7909;c X: Gi&#7901;</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="seller-stat-grid">
+              <div class="seller-card" id="seller-store-status-card">
+                <h3>T&#236;nh tr&#7841;ng gian h&#224;ng</h3>
+                <span class="seller-stat-label">S&#7889; &#273;&#225;nh gi&#225; m&#7899;i nh&#7845;t</span>
+                <div class="seller-stat-value" id="seller-latest-rating">--</div>
+                <span class="seller-stat-note" id="seller-latest-rating-note">&#272;ang t&#7843;i d&#7919; li&#7879;u...</span>
+                <div class="seller-inline-meta" id="seller-total-reviews">T&#7893;ng s&#7889; &#273;&#225;nh gi&#225;: --</div>
+              </div>
+              <div class="seller-card">
+                <h3>H&#7895; tr&#7907; nhanh</h3>
+                <p class="hero-sub">Trung b&#236;nh 3 ph&#250;t ph&#7843;n h&#7891;i, kh&#244;ng c&#243; khi&#7871;u n&#7841;i m&#7899;i.</p>
+                <span class="seller-tag good">0 khi&#7871;u n&#7841;i</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="seller-section" data-view="shops">
+            <div class="seller-card">
+              <div class="chart-head">
+                <div>
+                  <h3>Gian h&#224;ng</h3>
+                  <p class="hero-sub">Qu&#7843;n l&#253; gian h&#224;ng, ph&#234; duy&#7879;t v&#224; tr&#7841;ng th&#225;i.</p>
+                </div>
+                <button class="btn primary" id="store-create-btn" type="button">+ T&#7841;o gian h&#224;ng</button>
+              </div>
+              <div class="table-tools" style="margin-top: 12px;">
+                <div class="form-field">
+                  <label>T&#236;m gian h&#224;ng</label>
+                  <input id="store-search" placeholder="Nh&#7853;p t&#234;n gian h&#224;ng" />
+                </div>
+                <div class="form-field">
+                  <label>Tr&#7841;ng th&#225;i</label>
+                  <select id="store-filter-status">
+                    <option value="all">T&#7845;t c&#7843;</option>
+                    <option value="approved">&#272;&#227; duy&#7879;t</option>
+                    <option value="pending">Ch&#7901; duy&#7879;t</option>
+                    <option value="pending_update">Ch&#7901; duy&#7879;t s&#7917;a</option>
+                    <option value="rejected">T&#7915; ch&#7889;i</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>S&#7855;p x&#7871;p</label>
+                  <select id="store-sort">
+                    <option value="recent">M&#7899;i nh&#7845;t</option>
+                    <option value="rating">&#272;&#225;nh gi&#225; cao</option>
+                    <option value="orders">&#272;&#417;n h&#224;ng nhi&#7873;u</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="seller-shop-grid" id="seller-shop-grid"></div>
+            <div class="empty-state is-hidden" id="store-empty">Ch&#432;a c&#243; d&#7919; li&#7879;u</div>
+            <div class="empty-state is-hidden" id="store-error">Kh&#244;ng th&#7875; t&#7843;i d&#7919; li&#7879;u, vui l&#242;ng th&#7917; l&#7841;i</div>
+            <div class="table-pagination" id="store-pagination"></div>
+            <div class="seller-card seller-editor-card is-hidden" id="store-editor-card">
+              <div class="seller-editor-head">
+                <h3 id="store-editor-title">T&#7841;o gian h&#224;ng</h3>
+                <p class="hero-sub" id="store-editor-sub">C&#7853;p nh&#7853;t th&#244;ng tin gian h&#224;ng, &#7843;nh &#273;&#7841;i di&#7879;n v&#224; m&#244; t&#7843; hi&#7875;n th&#7883;.</p>
+              </div>
+              <div class="seller-editor-grid">
+                <div class="seller-editor-main">
+                  <form class="form-grid" id="store-editor-form">
+                    <input type="hidden" id="store-editor-id" />
+                    <div class="form-field">
+                      <label>T&#234;n gian h&#224;ng</label>
+                      <input id="store-name" placeholder="VD: Gmail Trust 2012 - 2025" />
+                    </div>
+                    <div class="form-field">
+                      <label>Lo&#7841;i gian h&#224;ng</label>
+                      <div class="store-type-options" id="store-type-options">
+                        <button class="store-type-pill" type="button" data-type="product">S&#7843;n ph&#7849;m</button>
+                        <button class="store-type-pill" type="button" data-type="service">D&#7883;ch v&#7909;</button>
+                      </div>
+                      <input type="hidden" id="store-type" />
+                      <div class="form-hint">Ch&#7885;n lo&#7841;i gian h&#224;ng tr&#432;&#7899;c khi ch&#7885;n danh m&#7909;c.</div>
+                    </div>
+                    <div class="form-field">
+                      <label>Danh m&#7909;c</label>
+                      <select id="store-category" disabled>
+                        <option value="">Ch&#7885;n danh m&#7909;c</option>
+                      </select>
+                      <div class="form-hint">Danh m&#7909;c ch&#7881; thay &#273;&#7893;i khi t&#7841;o m&#7899;i.</div>
+                    </div>
+                    <div class="form-field" style="grid-column: 1 / -1;">
+                      <label>Th&#7867; l&#7885;c</label>
+                      <div class="store-tags" id="store-tags"></div>
+                      <div class="form-hint" id="store-tags-hint">Ch&#7885;n th&#7867; ph&#249; h&#7907;p v&#7899;i gian h&#224;ng.</div>
+                    </div>
+                    <div class="form-field" style="grid-column: 1 / -1;">
+                      <label>M&#244; t&#7843; ng&#7855;n</label>
+                      <textarea
+                        rows="3"
+                        id="store-short-desc"
+                        placeholder="- B&#7843;o h&#224;nh 7 ng&#224;y&#10;- Full quy&#7873;n truy c&#7853;p&#10;- &#272;&#7893;i pass n&#234;n sau 3-7 ng&#224;y"
+                      ></textarea>
+                    </div>
+                    <div class="form-field" style="grid-column: 1 / -1;">
+                      <label>M&#244; t&#7843; chi ti&#7871;t</label>
+                      <textarea rows="6" id="store-long-desc" placeholder="Nh&#7853;p m&#244; t&#7843; chi ti&#7871;t gian h&#224;ng..."></textarea>
+                    </div>
+                    <div class="seller-approval" id="store-approval-note" style="grid-column: 1 / -1; display: none;"></div>
+                    <div class="seller-form-actions" style="grid-column: 1 / -1;">
+                      <button class="btn warning" id="store-save-btn" type="button">L&#432;u thay &#273;&#7893;i</button>
+                      <button class="btn ghost" id="store-cancel-btn" type="button">H&#7911;y</button>
+                    </div>
+                  </form>
+                </div>
+                <div class="seller-editor-aside">
+                  <div class="panel-media">
+                    <label>&#7842;nh &#273;&#7841;i di&#7879;n</label>
+                    <div class="media-preview is-empty" id="store-avatar-preview-wrap">
+                      <span class="media-placeholder">Ch&#432;a c&#243; &#7843;nh</span>
+                      <img alt="Preview" loading="lazy" id="store-avatar-preview" />
+                    </div>
+                    <div class="panel-file">
+                      <input type="file" accept="image/*" id="store-avatar" />
+                    </div>
+                    <div class="form-hint">K&#237;ch th&#432;&#7899;c g&#7907;i &#253;: 800 x 800px.</div>
+                  </div>
+                  <div class="panel-media store-image-manager" id="store-image-manager">
+                    <label>&#7842;nh gian h&#224;ng</label>
+                    <div class="form-hint">T&#7889;i &#273;a 5 &#7843;nh (seller).</div>
+                    <div class="store-image-toolbar">
+                      <input type="file" id="store-image-upload" accept="image/jpeg,image/png,image/webp" multiple />
+                      <span class="store-image-count" id="store-image-count">0/5</span>
+                    </div>
+                    <div class="store-image-list" id="store-image-list"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="seller-section" data-view="products">
+            <div class="seller-card">
+              <div class="chart-head">
+                <div>
+                  <h3>S&#7843;n ph&#7849;m</h3>
+                  <p class="hero-sub">S&#7855;p x&#7871;p v&#224; qu&#7843;n l&#253; danh m&#7909;c s&#7843;n ph&#7849;m.</p>
+                </div>
+                <button class="btn primary" id="product-create-btn" type="button">+ T&#7841;o s&#7843;n ph&#7849;m</button>
+              </div>
+              <div class="table-tools" style="margin-top: 12px;">
+                <div class="form-field">
+                  <label>T&#236;m s&#7843;n ph&#7849;m</label>
+                  <input id="product-search" placeholder="Nh&#7853;p t&#234;n s&#7843;n ph&#7849;m" />
+                </div>
+                <div class="form-field">
+                  <label>L&#7885;c theo gian h&#224;ng</label>
+                  <select id="product-store-filter">
+                    <option value="all">T&#7845;t c&#7843; gian h&#224;ng</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>S&#7855;p x&#7871;p</label>
+                  <select id="product-sort">
+                    <option value="recent">M&#7899;i nh&#7845;t</option>
+                    <option value="price_high">Gi&#225; cao nh&#7845;t</option>
+                    <option value="price_low">Gi&#225; th&#7845;p nh&#7845;t</option>
+                    <option value="stock_high">T&#7891;n kho nhi&#7873;u</option>
+                  </select>
+                </div>
+              </div>
+              <div class="seller-table-wrap" style="margin-top: 12px;">
+                <table class="seller-table">
+                  <thead>
+                    <tr>
+                      <th>S&#7843;n ph&#7849;m</th>
+                      <th>Gi&#225;</th>
+                      <th>T&#7891;n kho</th>
+                      <th>Lo&#7841;i</th>
+                      <th>Ho&#7841;t &#273;&#7897;ng</th>
+                      <th>Published</th>
+                      <th>Tr&#7841;ng th&#225;i duy&#7879;t</th>
+                      <th>Thao t&#225;c</th>
+                    </tr>
+                  </thead>
+                  <tbody id="product-table-body"></tbody>
+                </table>
+              </div>
+              <div class="empty-state is-hidden" id="product-empty">Ch&#432;a c&#243; d&#7919; li&#7879;u</div>
+              <div class="empty-state is-hidden" id="product-error">Kh&#244;ng th&#7875; t&#7843;i d&#7919; li&#7879;u, vui l&#242;ng th&#7917; l&#7841;i</div>
+              <div class="table-pagination" id="product-pagination"></div>
+            </div>
+            <div class="seller-card seller-editor-card is-hidden" id="product-editor-card">
+              <div class="seller-editor-head">
+                <h3 id="product-editor-title">T&#7841;o s&#7843;n ph&#7849;m</h3>
+                <p class="hero-sub" id="product-editor-sub">C&#7853;p nh&#7853;t th&#244;ng tin, gi&#225; b&#225;n v&#224; tr&#7841;ng th&#225;i hi&#7875;n th&#7883;.</p>
+              </div>
+              <form class="form-grid" id="product-editor-form">
+                <input type="hidden" id="product-editor-id" />
+                <div class="form-field">
+                  <label>Gian h&#224;ng</label>
+                  <select id="product-store"></select>
+                </div>
+                <div class="form-field">
+                  <label>T&#234;n s&#7843;n ph&#7849;m</label>
+                  <input id="product-name" placeholder="Gmail (2012 - 2025) 2FA" />
+                </div>
+                <div class="form-field">
+                  <label>Gi&#225; (VND)</label>
+                  <input id="product-price" type="number" min="0" step="1000" placeholder="79000" />
+                </div>
+                <div class="form-field" style="grid-column: 1 / -1;">
+                  <label>H&#236;nh th&#7913;c mua h&#224;ng</label>
+                  <select id="product-type">
+                    <option value="instant">T&#7921; &#273;&#7897;ng tr&#7843; h&#224;ng trong kho</option>
+                    <option value="preorder">&#272;&#7863;t tr&#432;&#7899;c (d&#7883;ch v&#7909;)</option>
+                  </select>
+                  <div class="form-hint">Ph&#249; h&#7907;p v&#7899;i h&#224;ng h&#243;a s&#7861;n c&#243;. Upload stock &#8594; &#272;&#417;n h&#224;ng &#273;&#432;&#7907;c giao t&#7921; &#273;&#7897;ng.</div>
+                </div>
+                <div class="form-field">
+                  <label>&#272;&#7883;nh d&#7841;ng Stock</label>
+                  <select id="product-stock-format">
+                    <option>Text (email|password|data)</option>
+                    <option>Text (username|password|data)</option>
+                  </select>
+                  <div class="form-hint">T&#7843;i l&#234;n stock d&#7841;ng text (m&#7895;i d&#242;ng m&#7897;t t&#224;i kho&#7843;n: email|password|data). Ch&#7881; cho ph&#233;p upload text.</div>
+                </div>
+                <div class="form-field inline">
+                  <label>
+                    <input type="checkbox" id="product-active" checked />
+                    Hi&#7875;n th&#7883; s&#7843;n ph&#7849;m (Active)
+                  </label>
+                </div>
+                <div class="form-field inline">
+                  <label>
+                    <input type="checkbox" id="product-published" checked />
+                    Published
+                  </label>
+                </div>
+                <div class="seller-approval" id="product-approval-note" style="grid-column: 1 / -1; display: none;"></div>
+                <div class="seller-form-actions" style="grid-column: 1 / -1;">
+                  <button class="btn warning" id="product-save-btn" type="button">L&#432;u thay &#273;&#7893;i</button>
+                  <button class="btn ghost" id="product-cancel-btn" type="button">Quay l&#7841;i</button>
+                </div>
+              </form>
+            </div>
+            <div class="seller-card is-hidden" id="inventory-card">
+              <div class="chart-head">
+                <div>
+                  <h3>Qu&#7843;n l&#253; kho</h3>
+                  <p class="hero-sub" id="inventory-sub">N&#7841;p d&#7919; li&#7879;u kho, l&#7885;c v&#224; t&#7843;i xu&#7889;ng nhanh.</p>
+                </div>
+                <button class="btn ghost" id="inventory-close" type="button">&#272;&#243;ng</button>
+              </div>
+              <div class="sort-tabs stock-tabs">
+                <button class="sort-pill active" type="button" data-tab="list">Danh s&#225;ch</button>
+                <button class="sort-pill" type="button" data-tab="upload">Upload</button>
+                <button class="sort-pill" type="button" data-tab="download">Download</button>
+                <button class="sort-pill" type="button" data-tab="delete">Delete</button>
+                <button class="sort-pill" type="button" data-tab="history">L&#7883;ch s&#7917;</button>
+              </div>
+              <div class="stock-panel">
+                <div class="stock-tab" data-tab="list">
+                  <div class="table-tools" style="margin-top: 6px;">
+                    <div class="form-field">
+                      <label>T&#236;m item</label>
+                      <input id="inventory-search" placeholder="Nh&#7853;p key item" />
+                    </div>
+                    <div class="form-field">
+                      <label>S&#7855;p x&#7871;p</label>
+                      <select id="inventory-sort">
+                        <option value="newest">M&#7899;i nh&#7845;t</option>
+                        <option value="oldest">C&#361; nh&#7845;t</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="seller-table-wrap" style="margin-top: 12px;">
+                    <table class="seller-table">
+                      <thead>
+                        <tr>
+                          <th>Item</th>
+                          <th>Tr&#7841;ng th&#225;i</th>
+                          <th>Ng&#224;y</th>
+                        </tr>
+                      </thead>
+                      <tbody id="inventory-table-body"></tbody>
+                    </table>
+                  </div>
+                  <div class="empty-state is-hidden" id="inventory-empty">Ch&#432;a c&#243; d&#7919; li&#7879;u</div>
+                  <div class="table-pagination" id="inventory-pagination"></div>
+                </div>
+                <div class="stock-tab is-hidden" data-tab="upload">
+                  <div class="stock-mode">
+                    <label>
+                      <input type="radio" name="stock-mode" checked />
+                      D&#225;n v&#259;n b&#7843;n
+                    </label>
+                    <label>
+                      <input type="radio" name="stock-mode" />
+                      Upload file
+                    </label>
+                  </div>
+                  <div class="form-field">
+                    <label>Nh&#7853;p items kho</label>
+                    <textarea
+                      rows="6"
+                      id="inventory-input"
+                      placeholder="email@example.com|[secret]|other_data&#10;username|[secret]|data"
+                    ></textarea>
+                    <div class="stock-note">
+                      Format: email|password|other_data ho&#7863;c username|password|data. M&#7895;i d&#242;ng l&#224; m&#7897;t item. Ph&#7847;n &#273;&#7847;u ti&#234;n (email/username) s&#7869; &#273;&#432;&#7907;c d&#249;ng l&#224;m key &#273;&#7875; ki&#7875;m tra tr&#249;ng l&#7863;p.
+                    </div>
+                  </div>
+                  <div class="stock-actions">
+                    <button class="btn warning" id="inventory-upload-btn" type="button">Upload</button>
+                    <button class="btn ghost" id="inventory-upload-close" type="button">K&#7871;t th&#250;c</button>
+                  </div>
+                </div>
+                <div class="stock-tab is-hidden" data-tab="download">
+                  <div class="form-field">
+                    <label>&#272;&#7883;nh d&#7841;ng t&#7843;i xu&#7889;ng</label>
+                    <select id="inventory-download-format">
+                      <option value="txt">TXT</option>
+                      <option value="csv">CSV</option>
+                    </select>
+                  </div>
+                  <div class="stock-actions">
+                    <button class="btn warning" id="inventory-download-btn" type="button">T&#7843;i xu&#7889;ng</button>
+                    <button class="btn ghost" id="inventory-export-btn" type="button">Xu&#7845;t danh s&#225;ch</button>
+                  </div>
+                </div>
+                <div class="stock-tab is-hidden" data-tab="delete">
+                  <div class="form-field">
+                    <label>S&#7889; l&#432;&#7907;ng c&#7847;n x&#243;a</label>
+                    <input id="inventory-delete-count" type="number" min="1" placeholder="0" />
+                  </div>
+                  <div class="stock-actions">
+                    <button class="btn warning" id="inventory-delete-btn" type="button">X&#243;a kh&#7887;i kho</button>
+                  </div>
+                </div>
+                <div class="stock-tab is-hidden" data-tab="history">
+                  <div class="seller-table-wrap" style="margin-top: 12px;">
+                    <table class="seller-table">
+                      <thead>
+                        <tr>
+                          <th>H&#224;nh &#273;&#7897;ng</th>
+                          <th>S&#7889; l&#432;&#7907;ng</th>
+                          <th>Ghi ch&#250;</th>
+                          <th>Ng&#224;y</th>
+                        </tr>
+                      </thead>
+                      <tbody id="inventory-history-body"></tbody>
+                    </table>
+                  </div>
+                  <div class="empty-state is-hidden" id="inventory-history-empty">Ch&#432;a c&#243; d&#7919; li&#7879;u</div>
+                  <div class="table-pagination" id="inventory-history-pagination"></div>
+                </div>
+              </div>
+            </div>
+            <div class="seller-card is-hidden" id="variant-card">
+              <div class="chart-head">
+                <div>
+                  <h3>S&#7843;n ph&#7849;m con</h3>
+                  <p class="hero-sub" id="variant-sub">T&#7841;o bi&#7871;n th&#7875; s&#7843;n ph&#7849;m cho t&#7915;ng gian h&#224;ng.</p>
+                </div>
+                <button class="btn ghost" id="variant-close" type="button">&#272;&#243;ng</button>
+              </div>
+              <div class="table-tools" style="margin-top: 12px;">
+                <div class="form-field">
+                  <label>T&#236;m s&#7843;n ph&#7849;m con</label>
+                  <input id="variant-search" placeholder="Nh&#7853;p t&#234;n s&#7843;n ph&#7849;m con" />
+                </div>
+                <div class="form-field">
+                  <label>S&#7855;p x&#7871;p</label>
+                  <select id="variant-sort">
+                    <option value="recent">M&#7899;i nh&#7845;t</option>
+                    <option value="price_high">Gi&#225; cao nh&#7845;t</option>
+                    <option value="stock_high">T&#7891;n kho nhi&#7873;u</option>
+                  </select>
+                </div>
+              </div>
+              <div class="seller-table-wrap" style="margin-top: 12px;">
+                <table class="seller-table">
+                  <thead>
+                    <tr>
+                      <th>T&#234;n</th>
+                      <th>Gi&#225;</th>
+                      <th>T&#7891;n kho</th>
+                      <th>Tr&#7841;ng th&#225;i</th>
+                    </tr>
+                  </thead>
+                  <tbody id="variant-table-body"></tbody>
+                </table>
+              </div>
+              <div class="empty-state is-hidden" id="variant-empty">Ch&#432;a c&#243; d&#7919; li&#7879;u</div>
+              <div class="table-pagination" id="variant-pagination"></div>
+              <form class="form-grid two-col" id="variant-form" style="margin-top: 16px;">
+                <input type="hidden" id="variant-product-id" />
+                <input type="hidden" id="variant-store-id" />
+                <div class="form-field">
+                  <label>Gian h&#224;ng</label>
+                  <select id="variant-store" disabled></select>
+                </div>
+                <div class="form-field">
+                  <label>S&#7843;n ph&#7849;m cha</label>
+                  <select id="variant-product" disabled></select>
+                </div>
+                <div class="form-field">
+                  <label>T&#234;n s&#7843;n ph&#7849;m con</label>
+                  <input id="variant-name" placeholder="VD: Gmail EDU" />
+                </div>
+                <div class="form-field">
+                  <label>Gi&#225;</label>
+                  <input id="variant-price" type="number" min="0" placeholder="25000" />
+                </div>
+                <div class="form-field">
+                  <label>T&#7891;n kho</label>
+                  <input id="variant-stock" type="number" min="0" placeholder="0" />
+                </div>
+                <div class="form-field">
+                  <label>Tr&#7841;ng th&#225;i</label>
+                  <select id="variant-status">
+                    <option value="active">&#272;ang b&#225;n</option>
+                    <option value="inactive">T&#7841;m &#7849;n</option>
+                  </select>
+                </div>
+                <div class="form-field" style="grid-column: 1 / -1;">
+                  <label>M&#244; t&#7843; ng&#7855;n</label>
+                  <textarea id="variant-short-desc" rows="3" placeholder="T&#243;m t&#7855;t nhanh v&#7873; s&#7843;n ph&#7849;m con..."></textarea>
+                </div>
+                <div class="seller-form-actions" style="grid-column: 1 / -1;">
+                  <button class="btn warning" id="variant-save-btn" type="button">Th&#234;m s&#7843;n ph&#7849;m con</button>
+                  <button class="btn ghost" id="variant-reset-btn" type="button">L&#224;m m&#7899;i</button>
+                </div>
+              </form>
+            </div>
+          </section>
+
+          <section class="seller-section" data-view="orders">
+            <div class="seller-card">
+              <div class="chart-head">
+                <div>
+                  <h3>&#272;&#417;n h&#224;ng &#273;&#227; b&#225;n</h3>
+                  <p class="hero-sub">Theo d&#245;i &#273;&#417;n h&#224;ng theo th&#7901;i gian.</p>
+                </div>
+                <button class="btn" id="order-export-btn" type="button">Xu&#7845;t b&#225;o c&#225;o</button>
+              </div>
+              <div class="seller-filter-grid" style="margin-top: 12px;">
+                <div class="form-field">
+                  <label>T&#236;m &#273;&#417;n</label>
+                  <input id="order-search" placeholder="M&#227; &#273;&#417;n ho&#7863;c ng&#432;&#7901;i mua" />
+                </div>
+                <div class="form-field">
+                  <label>Tr&#7841;ng th&#225;i</label>
+                  <select id="order-status-filter">
+                    <option value="all">T&#7845;t c&#7843;</option>
+                    <option value="Paid">Paid</option>
+                    <option value="Pending">Pending</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>Gian h&#224;ng</label>
+                  <select id="order-store-filter">
+                    <option value="all">T&#7845;t c&#7843;</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>T&#7915; ng&#224;y</label>
+                  <input id="order-start-date" type="date" />
+                </div>
+                <div class="form-field">
+                  <label>&#272;&#7871;n ng&#224;y</label>
+                  <input id="order-end-date" type="date" />
+                </div>
+                <div class="form-field">
+                  <label>S&#7855;p x&#7871;p</label>
+                  <select id="order-sort">
+                    <option value="recent">M&#7899;i nh&#7845;t</option>
+                    <option value="total_high">Gi&#225; tr&#7883; cao</option>
+                    <option value="total_low">Gi&#225; tr&#7883; th&#7845;p</option>
+                  </select>
+                </div>
+              </div>
+              <div class="seller-table-wrap" style="margin-top: 12px;">
+                <table class="seller-table">
+                  <thead>
+                    <tr>
+                      <th>M&#227; &#273;&#417;n h&#224;ng</th>
+                      <th>Gian h&#224;ng</th>
+                      <th>Ng&#432;&#7901;i mua</th>
+                      <th>S&#7843;n ph&#7849;m</th>
+                      <th>T&#7893;ng</th>
+                      <th>Ph&#237;</th>
+                      <th>Th&#7921;c nh&#7853;n</th>
+                      <th>Tr&#7841;ng th&#225;i</th>
+                      <th>Ng&#224;y</th>
+                    </tr>
+                  </thead>
+                  <tbody id="order-table-body"></tbody>
+                </table>
+              </div>
+              <div class="empty-state is-hidden" id="order-empty">Ch&#432;a c&#243; d&#7919; li&#7879;u</div>
+              <div class="empty-state is-hidden" id="order-error">Kh&#244;ng th&#7875; t&#7843;i d&#7919; li&#7879;u, vui l&#242;ng th&#7917; l&#7841;i</div>
+              <div class="table-pagination" id="order-pagination"></div>
+            </div>
+            <div class="seller-card">
+              <div class="chart-head">
+                <div>
+                  <h3>B&#7843;o h&#224;nh &amp; Ho&#224;n ti&#7873;n</h3>
+                  <p class="hero-sub">Qu&#7843;n l&#253; y&#234;u c&#7847;u b&#7843;o h&#224;nh, ho&#224;n ti&#7873;n cho &#273;&#417;n h&#224;ng.</p>
+                </div>
+                <button class="btn" id="refund-export-btn" type="button">Xu&#7845;t danh s&#225;ch</button>
+              </div>
+              <div class="seller-filter-grid" style="margin-top: 12px;">
+                <div class="form-field">
+                  <label>T&#236;m y&#234;u c&#7847;u</label>
+                  <input id="refund-search" placeholder="M&#227; y&#234;u c&#7847;u ho&#7863;c m&#227; &#273;&#417;n" />
+                </div>
+                <div class="form-field">
+                  <label>Tr&#7841;ng th&#225;i</label>
+                  <select id="refund-status-filter">
+                    <option value="all">T&#7845;t c&#7843;</option>
+                    <option value="pending">Ch&#7901; duy&#7879;t</option>
+                    <option value="approved">Ho&#224;n th&#224;nh</option>
+                    <option value="rejected">T&#7915; ch&#7889;i</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>Lo&#7841;i</label>
+                  <select id="refund-type-filter">
+                    <option value="all">T&#7845;t c&#7843;</option>
+                    <option value="warranty">B&#7843;o h&#224;nh</option>
+                    <option value="refund">Ho&#224;n ti&#7873;n</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>T&#7915; ng&#224;y</label>
+                  <input id="refund-start-date" type="date" />
+                </div>
+                <div class="form-field">
+                  <label>S&#7855;p x&#7871;p</label>
+                  <select id="refund-sort">
+                    <option value="recent">M&#7899;i nh&#7845;t</option>
+                    <option value="value_high">Gi&#225; tr&#7883; cao</option>
+                    <option value="value_low">Gi&#225; tr&#7883; th&#7845;p</option>
+                  </select>
+                </div>
+              </div>
+              <div class="seller-table-wrap" style="margin-top: 12px;">
+                <table class="seller-table">
+                  <thead>
+                    <tr>
+                      <th>M&#227; y&#234;u c&#7847;u</th>
+                      <th>M&#227; &#273;&#417;n</th>
+                      <th>Ng&#432;&#7901;i mua</th>
+                      <th>Lo&#7841;i</th>
+                      <th>Gi&#225; tr&#7883;</th>
+                      <th>Tr&#7841;ng th&#225;i</th>
+                      <th>Thao t&#225;c</th>
+                    </tr>
+                  </thead>
+                  <tbody id="refund-table-body"></tbody>
+                </table>
+              </div>
+              <div class="empty-state is-hidden" id="refund-empty">Ch&#432;a c&#243; d&#7919; li&#7879;u</div>
+              <div class="empty-state is-hidden" id="refund-error">Kh&#244;ng th&#7875; t&#7843;i d&#7919; li&#7879;u, vui l&#242;ng th&#7917; l&#7841;i</div>
+              <div class="table-pagination" id="refund-pagination"></div>
+            </div>
+          </section>
+
+          <section class="seller-section" data-view="preorders">
+            <div class="seller-card">
+              <div class="chart-head">
+                <div>
+                  <h3>&#272;&#417;n &#273;&#7863;t tr&#432;&#7899;c</h3>
+                  <p class="hero-sub">Danh s&#225;ch &#273;&#417;n &#273;&#7863;t tr&#432;&#7899;c &#273;ang ch&#7901; x&#7917; l&#253;.</p>
+                </div>
+                <button class="btn" id="preorder-reset-btn" type="button">X&#243;a b&#7897; l&#7885;c</button>
+              </div>
+              <div class="seller-filter-grid" style="margin-top: 12px;">
+                <div class="form-field">
+                  <label>T&#236;m &#273;&#417;n</label>
+                  <input id="preorder-search" placeholder="M&#227; &#273;&#417;n ho&#7863;c ng&#432;&#7901;i mua" />
+                </div>
+                <div class="form-field">
+                  <label>Tr&#7841;ng th&#225;i</label>
+                  <select id="preorder-status-filter">
+                    <option value="all">T&#7845;t c&#7843;</option>
+                    <option value="pending">Ch&#7901; x&#7917; l&#253;</option>
+                    <option value="completed">&#272;&#227; x&#7917; l&#253;</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>S&#7855;p x&#7871;p</label>
+                  <select id="preorder-sort">
+                    <option value="recent">M&#7899;i nh&#7845;t</option>
+                    <option value="total_high">Gi&#225; tr&#7883; cao</option>
+                  </select>
+                </div>
+              </div>
+              <div class="seller-table-wrap" style="margin-top: 12px;">
+                <table class="seller-table">
+                  <thead>
+                    <tr>
+                      <th>M&#227; &#273;&#417;n</th>
+                      <th>Gian h&#224;ng</th>
+                      <th>Ng&#432;&#7901;i mua</th>
+                      <th>S&#7843;n ph&#7849;m</th>
+                      <th>T&#7893;ng</th>
+                      <th>H&#7841;n giao</th>
+                      <th>Thao t&#225;c</th>
+                    </tr>
+                  </thead>
+                  <tbody id="preorder-table-body"></tbody>
+                </table>
+              </div>
+              <div class="empty-state is-hidden" id="preorder-empty">Ch&#432;a c&#243; d&#7919; li&#7879;u</div>
+              <div class="empty-state is-hidden" id="preorder-error">Kh&#244;ng th&#7875; t&#7843;i d&#7919; li&#7879;u, vui l&#242;ng th&#7917; l&#7841;i</div>
+              <div class="table-pagination" id="preorder-pagination"></div>
+            </div>
+          </section>
+
+          <section class="seller-section" data-view="coupons">
+            <div class="seller-card">
+              <div class="chart-head">
+                <div>
+                  <h3>M&#227; gi&#7843;m gi&#225;</h3>
+                  <p class="hero-sub">T&#7841;o m&#227; gi&#7843;m gi&#225; cho gian h&#224;ng c&#7911;a b&#7841;n.</p>
+                </div>
+                <button class="btn primary" id="coupon-create-btn" type="button">+ T&#7841;o m&#227; gi&#7843;m gi&#225;</button>
+              </div>
+              <div class="seller-filter-grid" style="margin-top: 12px;">
+                <div class="form-field">
+                  <label>Gian h&#224;ng</label>
+                  <select id="coupon-store-filter">
+                    <option value="all">T&#7845;t c&#7843;</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>Tr&#7841;ng th&#225;i</label>
+                  <select id="coupon-status-filter">
+                    <option value="all">T&#7845;t c&#7843;</option>
+                    <option value="active">Active</option>
+                    <option value="expired">Expired</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>T&#236;m m&#227;</label>
+                  <input id="coupon-search" placeholder="Nh&#7853;p m&#227; gi&#7843;m gi&#225;" />
+                </div>
+                <div class="form-field">
+                  <label>S&#7855;p x&#7871;p</label>
+                  <select id="coupon-sort">
+                    <option value="recent">M&#7899;i nh&#7845;t</option>
+                    <option value="value_high">Gi&#225; tr&#7883; cao</option>
+                  </select>
+                </div>
+              </div>
+              <div class="seller-table-wrap" style="margin-top: 12px;">
+                <table class="seller-table">
+                  <thead>
+                    <tr>
+                      <th>M&#227;</th>
+                      <th>Gi&#225; tr&#7883;</th>
+                      <th>Tr&#7841;ng th&#225;i</th>
+                      <th>H&#7871;t h&#7841;n</th>
+                      <th>Thao t&#225;c</th>
+                    </tr>
+                  </thead>
+                  <tbody id="coupon-table-body"></tbody>
+                </table>
+              </div>
+              <div class="empty-state is-hidden" id="coupon-empty">Ch&#432;a c&#243; d&#7919; li&#7879;u</div>
+              <div class="empty-state is-hidden" id="coupon-error">Kh&#244;ng th&#7875; t&#7843;i d&#7919; li&#7879;u, vui l&#242;ng th&#7917; l&#7841;i</div>
+              <div class="table-pagination" id="coupon-pagination"></div>
+            </div>
+          </section>
+
+          <section class="seller-section" data-view="complaints">
+            <div class="seller-card">
+              <div class="chart-head">
+                <div>
+                  <h3>Khi&#7871;u n&#7841;i &amp; tranh ch&#7845;p</h3>
+                  <p class="hero-sub">Theo d&#245;i t&#7845;t c&#7843; ticket h&#7895; tr&#7907;.</p>
+                </div>
+                <button class="btn" id="complaint-filter-btn" type="button">T&#7845;t c&#7843; tr&#7841;ng th&#225;i</button>
+              </div>
+              <div class="seller-filter-grid" style="margin-top: 12px;">
+                <div class="form-field">
+                  <label>T&#236;m ticket</label>
+                  <input id="complaint-search" placeholder="M&#227; ticket ho&#7863;c kh&#225;ch h&#224;ng" />
+                </div>
+                <div class="form-field">
+                  <label>M&#7913;c &#273;&#7897;</label>
+                  <select id="complaint-level-filter">
+                    <option value="all">T&#7845;t c&#7843;</option>
+                    <option value="high">Kh&#7849;n</option>
+                    <option value="medium">Trung b&#236;nh</option>
+                    <option value="low">Th&#7845;p</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>S&#7855;p x&#7871;p</label>
+                  <select id="complaint-sort">
+                    <option value="recent">M&#7899;i nh&#7845;t</option>
+                    <option value="priority">&#431;u ti&#234;n</option>
+                  </select>
+                </div>
+              </div>
+              <div class="seller-table-wrap" style="margin-top: 12px;">
+                <table class="seller-table">
+                  <thead>
+                    <tr>
+                      <th>M&#227; ticket</th>
+                      <th>Kh&#225;ch h&#224;ng</th>
+                      <th>M&#7913;c &#273;&#7897;</th>
+                      <th>Tr&#7841;ng th&#225;i</th>
+                      <th>Ng&#224;y</th>
+                    </tr>
+                  </thead>
+                  <tbody id="complaint-table-body"></tbody>
+                </table>
+              </div>
+              <div class="empty-state is-hidden" id="complaint-empty">Ch&#432;a c&#243; d&#7919; li&#7879;u</div>
+              <div class="empty-state is-hidden" id="complaint-error">Kh&#244;ng th&#7875; t&#7843;i d&#7919; li&#7879;u, vui l&#242;ng th&#7917; l&#7841;i</div>
+              <div class="table-pagination" id="complaint-pagination"></div>
+            </div>
+          </section>
+
+          <section class="seller-section" data-view="reviews">
+            <div class="seller-card">
+              <div class="chart-head">
+                <div>
+                  <h3>&#272;&#225;nh gi&#225; t&#7915; kh&#225;ch h&#224;ng</h3>
+                  <p class="hero-sub">L&#7885;c &#273;&#225;nh gi&#225; theo gian h&#224;ng v&#224; tr&#7841;ng th&#225;i.</p>
+                </div>
+                <button class="btn" id="review-export-btn" type="button">Xu&#7845;t danh s&#225;ch</button>
+              </div>
+              <div class="seller-filter-grid" style="margin-top: 12px;">
+                <div class="form-field">
+                  <label>Gian h&#224;ng</label>
+                  <select id="review-store-filter">
+                    <option value="all">T&#7845;t c&#7843;</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>Tr&#7841;ng th&#225;i</label>
+                  <select id="review-status-filter">
+                    <option value="all">T&#7845;t c&#7843;</option>
+                    <option value="positive">T&#237;ch c&#7921;c</option>
+                    <option value="neutral">Trung b&#236;nh</option>
+                    <option value="negative">C&#7847;n c&#7843;i thi&#7879;n</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>T&#236;m &#273;&#225;nh gi&#225;</label>
+                  <input id="review-search" placeholder="T&#234;n kh&#225;ch h&#224;ng" />
+                </div>
+                <div class="form-field">
+                  <label>S&#7855;p x&#7871;p</label>
+                  <select id="review-sort">
+                    <option value="recent">M&#7899;i nh&#7845;t</option>
+                    <option value="rating_high">&#272;i&#7875;m cao</option>
+                  </select>
+                </div>
+              </div>
+              <div class="seller-table-wrap" style="margin-top: 12px;">
+                <table class="seller-table">
+                  <thead>
+                    <tr>
+                      <th>Kh&#225;ch h&#224;ng</th>
+                      <th>&#272;i&#7875;m</th>
+                      <th>N&#7897;i dung</th>
+                      <th>Tr&#7841;ng th&#225;i</th>
+                      <th>Ng&#224;y</th>
+                    </tr>
+                  </thead>
+                  <tbody id="review-table-body"></tbody>
+                </table>
+              </div>
+              <div class="empty-state is-hidden" id="review-empty">Ch&#432;a c&#243; d&#7919; li&#7879;u</div>
+              <div class="empty-state is-hidden" id="review-error">Kh&#244;ng th&#7875; t&#7843;i d&#7919; li&#7879;u, vui l&#242;ng th&#7917; l&#7841;i</div>
+              <div class="table-pagination" id="review-pagination"></div>
+            </div>
+          </section>
+
+          <section class="seller-section" data-view="account">
+            <div class="seller-stat-grid">
+              <div class="seller-card">
+                <span class="seller-stat-label">S&#7889; d&#432; kh&#7843; d&#7909;ng</span>
+                <div class="seller-stat-value" id="seller-balance-available">--</div>
+                <span class="seller-stat-note">C&#243; th&#7875; r&#250;t ngay</span>
+              </div>
+              <div class="seller-card">
+                <span class="seller-stat-label">S&#7889; d&#432; &#273;ang gi&#7919;</span>
+                <div class="seller-stat-value" id="seller-balance-hold">--</div>
+                <span class="seller-stat-note">&#272;ang trong escrow</span>
+              </div>
+              <div class="seller-card">
+                <span class="seller-stat-label">T&#7893;ng s&#7889; d&#432;</span>
+                <div class="seller-stat-value" id="seller-balance-total">--</div>
+                <span class="seller-stat-note">T&#7893;ng t&#224;i s&#7843;n</span>
+              </div>
+            </div>
+            <div class="seller-card">
+              <h3>Thi&#7871;t l&#7853;p thanh to&#225;n</h3>
+              <p class="hero-sub">Th&#234;m th&#244;ng tin nh&#7853;n thanh to&#225;n &#273;&#7875; r&#250;t ti&#7873;n nhanh ch&#243;ng.</p>
+              <div class="form-grid two-col" style="margin-top: 12px;">
+                <div class="form-field">
+                  <label>Ng&#226;n h&#224;ng / V&#237;</label>
+                  <input id="payment-bank" placeholder="VD: Vietcombank, Momo" />
+                </div>
+                <div class="form-field">
+                  <label>S&#7889; t&#224;i kho&#7843;n</label>
+                  <input id="payment-account" placeholder="Nh&#7853;p s&#7889; t&#224;i kho&#7843;n" />
+                </div>
+                <div class="form-field">
+                  <label>T&#234;n ch&#7911; t&#224;i kho&#7843;n</label>
+                  <input id="payment-holder" placeholder="Nh&#7853;p t&#234;n ch&#7911; t&#224;i kho&#7843;n" />
+                </div>
+                <div class="form-field">
+                  <label>Crypto</label>
+                  <input id="payment-crypto" placeholder="T&#7841;m kh&#243;a" disabled />
+                  <div class="form-hint"><span class="seller-tag warn">T&#7841;m kh&#243;a</span></div>
+                </div>
+                <button class="btn primary" id="payment-save-btn" type="button" style="grid-column: 1 / -1;">L&#432;u thi&#7871;t l&#7853;p</button>
+              </div>
+            </div>
+            <div class="seller-card">
+              <div class="chart-head">
+                <div>
+                  <h3>L&#7883;ch s&#7917; r&#250;t ti&#7873;n</h3>
+                  <p class="hero-sub">Theo d&#245;i 15 giao d&#7883;ch g&#7847;n nh&#7845;t.</p>
+                </div>
+              </div>
+              <div class="seller-filter-grid" style="margin-top: 12px;">
+                <div class="form-field">
+                  <label>Tr&#7841;ng th&#225;i</label>
+                  <select id="withdraw-status-filter">
+                    <option value="all">T&#7845;t c&#7843;</option>
+                    <option value="success">Th&#224;nh c&#244;ng</option>
+                    <option value="processing">&#272;ang x&#7917; l&#253;</option>
+                    <option value="rejected">B&#7883; t&#7915; ch&#7889;i</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>T&#236;m giao d&#7883;ch</label>
+                  <input id="withdraw-search" placeholder="M&#227; giao d&#7883;ch" />
+                </div>
+                <div class="form-field">
+                  <label>S&#7855;p x&#7871;p</label>
+                  <select id="withdraw-sort">
+                    <option value="recent">M&#7899;i nh&#7845;t</option>
+                    <option value="amount_high">S&#7889; ti&#7873;n cao</option>
+                  </select>
+                </div>
+              </div>
+              <div class="seller-table-wrap" style="margin-top: 12px;">
+                <table class="seller-table">
+                  <thead>
+                    <tr>
+                      <th>M&#227; giao d&#7883;ch</th>
+                      <th>S&#7889; ti&#7873;n</th>
+                      <th>Tr&#7841;ng th&#225;i</th>
+                      <th>Ph&#432;&#417;ng th&#7913;c</th>
+                      <th>Ng&#224;y</th>
+                    </tr>
+                  </thead>
+                  <tbody id="withdraw-table-body"></tbody>
+                </table>
+              </div>
+              <div class="empty-state is-hidden" id="withdraw-empty">Ch&#432;a c&#243; d&#7919; li&#7879;u</div>
+              <div class="empty-state is-hidden" id="withdraw-error">Kh&#244;ng th&#7875; t&#7843;i d&#7919; li&#7879;u, vui l&#242;ng th&#7917; l&#7841;i</div>
+              <div class="table-pagination" id="withdraw-pagination"></div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <div class="modal-backdrop" id="seller-modal" aria-hidden="true">
+      <div class="modal-card">
+        <h3 id="seller-modal-title"></h3>
+        <p id="seller-modal-desc"></p>
+        <div class="form-field is-hidden" id="seller-modal-field">
+          <label id="seller-modal-label">N&#7897;i dung x&#7917; l&#253;</label>
+          <textarea id="seller-modal-input" rows="4"></textarea>
+        </div>
+        <div class="modal-actions">
+          <button class="btn ghost" id="seller-modal-cancel" type="button">H&#7911;y</button>
+          <button class="btn primary" id="seller-modal-confirm" type="button">X&#225;c nh&#7853;n</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-backdrop seller-delete-modal" id="seller-delete-modal" aria-hidden="true">
+      <div class="modal-card">
+        <h3>Xóa gian hàng?</h3>
+        <p>Nhập mật khẩu để xác nhận xóa vĩnh viễn. Thao tác này không thể hoàn tác.</p>
+        <div class="form-field">
+          <label for="seller-delete-password">Mật khẩu</label>
+          <input id="seller-delete-password" type="password" autocomplete="current-password" />
+        </div>
+        <div class="modal-actions">
+          <button class="btn ghost" id="seller-delete-cancel" type="button">Hủy</button>
+          <button class="btn warning" id="seller-delete-confirm" type="button">Xóa gian hàng</button>
+        </div>
+      </div>
+    </div>
+    <div class="order-toast" id="seller-toast">
+      <span class="order-toast-text" id="seller-toast-text"></span>
+    </div>
+
+    <script src="../../asset/render.js"></script>
+    <script src="../../asset/panel-data.js"></script>
+    <script src="../../asset/seller/panel-services.js"></script>
+    <script src="../../asset/store-editor.js"></script>
+    <script src="../../asset/store-images.js"></script>
+    <script src="../../asset/seller-shop-delete.js"></script>
+    <script src="../../asset/seller-panel.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const guard = document.getElementById("seller-guard");
+        const guardText = document.getElementById("seller-guard-text");
+        const dashboard = document.getElementById("seller-dashboard");
+        const auth = window.BKAuth ? window.BKAuth.read() : { loggedIn: false };
+
+        if (!auth.loggedIn) {
+          if (guard) {
+            guard.style.display = "block";
+            if (guardText) guardText.innerHTML = guard.dataset.guardLogin || "";
+          }
+          if (dashboard) dashboard.style.display = "none";
+          return;
+        }
+
+        if (!window.BKAuth || !window.BKAuth.isSellerApproved(auth)) {
+          if (guard) {
+            guard.style.display = "block";
+            if (guardText) guardText.innerHTML = guard.dataset.guardPending || "";
+          }
+          if (dashboard) dashboard.style.display = "none";
+          return;
+        }
+
+        if (guard) guard.style.display = "none";
+        if (dashboard) dashboard.style.display = "grid";
+
+        const userName = document.getElementById("seller-user-name");
+        if (userName) {
+          const fallbackName = "Seller";
+          userName.textContent =
+            typeof getUserDisplayName === "function" ? getUserDisplayName(auth.user || null, fallbackName) : fallbackName;
+        }
+
+        const logoutBtn = document.getElementById("seller-logout");
+        if (logoutBtn) {
+          logoutBtn.addEventListener("click", () => {
+            window.BKAuth.clear();
+            window.location.href = window.BKAuth.getHomeUrl();
+          });
+        }
+
+        const navButtons = document.querySelectorAll(".seller-nav button");
+        const sections = document.querySelectorAll(".seller-section");
+        const pageTitle = document.getElementById("seller-page-title");
+        const pageSub = document.getElementById("seller-page-sub");
+
+        navButtons.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const view = btn.getAttribute("data-view");
+            navButtons.forEach((item) => item.classList.toggle("active", item === btn));
+            sections.forEach((section) => {
+              section.classList.toggle("active", section.getAttribute("data-view") === view);
+            });
+            if (pageTitle && btn.dataset.title) pageTitle.innerHTML = btn.dataset.title;
+            if (pageSub && btn.dataset.sub) pageSub.innerHTML = btn.dataset.sub;
+          });
+        });
+
+        const chartData = {
+          "60p": {
+            points: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            labels: ["00:00", "00:05", "00:10", "00:15", "00:20", "00:25", "00:30", "00:35", "00:40", "00:45", "00:50", "00:55"],
+            revenue: 0,
+            orders: 0,
+            conversion: 0,
+            avg: 0,
+          },
+          "24h": {
+            points: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            labels: ["00:00", "02:00", "04:00", "06:00", "08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00", "22:00"],
+            revenue: 0,
+            orders: 0,
+            conversion: 0,
+            avg: 0,
+          },
+          "3d": {
+            points: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            labels: ["D1 00h", "D1 06h", "D1 12h", "D1 18h", "D2 00h", "D2 06h", "D2 12h", "D2 18h", "D3 00h", "D3 06h", "D3 12h", "D3 18h"],
+            revenue: 0,
+            orders: 0,
+            conversion: 0,
+            avg: 0,
+          },
+          "7d": {
+            points: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            labels: ["T2", "T3", "T4", "T5", "T6", "T7", "CN", "T2", "T3", "T4", "T5", "T6"],
+            revenue: 0,
+            orders: 0,
+            conversion: 0,
+            avg: 0,
+          },
+          "28d": {
+            points: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            labels: ["W1", "W1", "W2", "W2", "W2", "W3", "W3", "W3", "W4", "W4", "W4", "W4"],
+            revenue: 0,
+            orders: 0,
+            conversion: 0,
+            avg: 0,
+          },
+          "365d": {
+            points: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            labels: ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"],
+            revenue: 0,
+            orders: 0,
+            conversion: 0,
+            avg: 0,
+          },
+          lifetime: {
+            points: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            labels: ["2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026", "2027", "2028", "2029", "2030"],
+            revenue: 0,
+            orders: 0,
+            conversion: 0,
+            avg: 0,
+          },
+        };
+
+        const metricRevenue = document.getElementById("metric-revenue");
+        const metricOrders = document.getElementById("metric-orders");
+        const metricConversion = document.getElementById("metric-conversion");
+        const metricAvg = document.getElementById("metric-avg");
+        const metricSummary = document.getElementById("metric-revenue-summary");
+        const linePath = document.getElementById("seller-chart-line");
+        const areaPath = document.getElementById("seller-chart-area");
+        const dot = document.getElementById("seller-chart-dot");
+        const chartSvg = document.querySelector(".seller-chart-card .chart-svg");
+        const chartGridLines = chartSvg ? chartSvg.querySelectorAll(".chart-grid line") : [];
+        const chartWrap = chartSvg ? chartSvg.parentElement : null;
+        const chartYAxis = document.getElementById("seller-chart-y");
+        const chartXAxis = document.getElementById("seller-chart-x");
+        const chartAxisNote = document.getElementById("seller-chart-axis-note");
+
+        const axisNoteMap = {
+          "60p": "Tr&#7909;c X: Ph&#250;t",
+          "24h": "Tr&#7909;c X: Gi&#7901;",
+          "3d": "Tr&#7909;c X: Gi&#7901;",
+          "7d": "Tr&#7909;c X: Ng&#224;y",
+          "28d": "Tr&#7909;c X: Tu&#7847;n",
+          "365d": "Tr&#7909;c X: Th&#225;ng",
+          lifetime: "Tr&#7909;c X: N&#259;m",
+        };
+
+        const formatAxis = (value) => {
+          const amount = Number(value) || 0;
+          if (amount >= 1000000000) {
+            const val = (amount / 1000000000).toFixed(1).replace(/\.0$/, "");
+            return `${val}B`;
+          }
+          if (amount >= 1000000) {
+            const val = (amount / 1000000).toFixed(1).replace(/\.0$/, "");
+            return `${val}M`;
+          }
+          if (amount >= 1000) {
+            const val = (amount / 1000).toFixed(1).replace(/\.0$/, "");
+            return `${val}K`;
+          }
+          return String(amount);
+        };
+
+        const getChartSize = () => {
+          if (!chartWrap) return { width: 600, height: 240 };
+          const width = chartWrap.clientWidth;
+          const height = chartWrap.clientHeight;
+          if (width < 10 || height < 10) return { width: 600, height: 240 };
+          return { width, height };
+        };
+
+        const renderChart = (key) => {
+          const data = chartData[key];
+          if (!data) return;
+          const points = data.points || [];
+          if (!points.length) return;
+          const size = getChartSize();
+          const width = size.width;
+          const height = size.height;
+          const padding = Math.round(Math.min(32, Math.max(18, height * 0.1)));
+          if (chartSvg) {
+            chartSvg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+          }
+          if (chartGridLines && chartGridLines.length) {
+            const gridStep = height / (chartGridLines.length + 1);
+            chartGridLines.forEach((line, index) => {
+              const y = gridStep * (index + 1);
+              line.setAttribute("x1", "0");
+              line.setAttribute("x2", String(width));
+              line.setAttribute("y1", String(y));
+              line.setAttribute("y2", String(y));
+            });
+          }
+          const max = Math.max(...points);
+          const min = 0;
+          const range = max - min || 1;
+          const step = points.length > 1 ? (width - padding * 2) / (points.length - 1) : 0;
+          const coords = points.map((value, index) => {
+            const x = padding + step * index;
+            const y = height - padding - ((value - min) / range) * (height - padding * 2);
+            return { x, y };
+          });
+          const line = coords.map((point, index) => `${index === 0 ? "M" : "L"}${point.x} ${point.y}`).join(" ");
+          const last = coords[coords.length - 1];
+          const area = `${line} L ${last.x} ${height - padding} L ${coords[0].x} ${height - padding} Z`;
+          if (linePath) linePath.setAttribute("d", line);
+          if (areaPath) areaPath.setAttribute("d", area);
+          if (dot) {
+            dot.setAttribute("cx", last.x);
+            dot.setAttribute("cy", last.y);
+          }
+          if (metricRevenue) {
+            metricRevenue.textContent = typeof formatPrice === "function" ? formatPrice(data.revenue) : data.revenue;
+            metricRevenue.dataset.baseAmount = String(data.revenue);
+            metricRevenue.dataset.baseCurrency = "VND";
+          }
+          if (metricOrders) {
+            metricOrders.textContent = data.orders.toLocaleString("vi-VN");
+          }
+          if (metricConversion) {
+            metricConversion.textContent = `${data.conversion}%`;
+          }
+          if (metricAvg) {
+            metricAvg.textContent = typeof formatPrice === "function" ? formatPrice(data.avg) : data.avg;
+            metricAvg.dataset.baseAmount = String(data.avg);
+            metricAvg.dataset.baseCurrency = "VND";
+          }
+          if (metricSummary) {
+            metricSummary.textContent = typeof formatPrice === "function" ? formatPrice(data.revenue) : data.revenue;
+            metricSummary.dataset.baseAmount = String(data.revenue);
+            metricSummary.dataset.baseCurrency = "VND";
+          }
+          if (chartYAxis) {
+            const ticks = 5;
+            const values = Array.from({ length: ticks }, (_, idx) => {
+              const ratio = 1 - idx / (ticks - 1);
+              return Math.round(min + range * ratio);
+            });
+            chartYAxis.innerHTML = values.map((value) => `<span>${formatAxis(value)}</span>`).join("");
+          }
+          if (chartXAxis) {
+            const labels = Array.isArray(data.labels) && data.labels.length ? data.labels : points.map((_, idx) => `#${idx + 1}`);
+            const maxLabels = window.innerWidth < 720 ? 6 : labels.length;
+            const stepLabel = Math.ceil(labels.length / maxLabels);
+            chartXAxis.innerHTML = labels.map((label, index) => `<span>${index % stepLabel === 0 ? label : ""}</span>`).join("");
+          }
+          if (chartAxisNote) {
+            chartAxisNote.innerHTML = axisNoteMap[key] || "";
+          }
+          if (window.BKCurrency && typeof window.BKCurrency.applyToDom === "function") {
+            window.BKCurrency.applyToDom(document);
+          }
+        };
+
+        let chartRangeState = "60p";
+        const rangeButtons = document.querySelectorAll("[data-range]");
+        rangeButtons.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const key = btn.getAttribute("data-range") || "60p";
+            chartRangeState = key;
+            rangeButtons.forEach((item) => item.classList.toggle("active", item === btn));
+            renderChart(key);
+          });
+        });
+
+        renderChart(chartRangeState);
+        window.addEventListener("resize", () => renderChart(chartRangeState));
+      });
+    </script>
+  </body>
+</html>
+
+
+
+
+
+
