@@ -3,7 +3,11 @@ export const MIN_PASSWORD_LENGTH = 6;
 const USERNAME_REGEX = /^[a-z0-9._-]{3,20}$/;
 
 export function jsonResponse(payload, status = 200) {
-  return new Response(JSON.stringify(payload), {
+  let body = payload;
+  if (payload && typeof payload === "object" && payload.ok === false && payload.status == null) {
+    body = { ...payload, status };
+  }
+  return new Response(JSON.stringify(body), {
     status,
     headers: { "content-type": "application/json" },
   });

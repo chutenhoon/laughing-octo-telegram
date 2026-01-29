@@ -2,9 +2,9 @@ import { jsonResponse, readJsonBody, generateId } from "../auth/_utils.js";
 import { requireSeller, toPlainText, toSafeHtml, PRODUCT_CATEGORIES } from "../_catalog.js";
 
 async function getSellerShops(db, userId) {
-  const rows = await db.prepare("SELECT id FROM shops WHERE user_id = ?").bind(userId).all();
+  const rows = await db.prepare("SELECT id, category FROM shops WHERE user_id = ?").bind(userId).all();
   const list = rows && Array.isArray(rows.results) ? rows.results : [];
-  return list.map((row) => String(row.id));
+  return list.map((row) => ({ id: String(row.id), category: row.category || "" }));
 }
 
 async function getProductColumns(db) {
@@ -129,40 +129,52 @@ export async function onRequestPost(context) {
   if (!Number.isFinite(price) || price < 0) return jsonResponse({ ok: false, error: "INVALID_PRICE" }, 400);
   const priceMaxRaw = body.priceMax != null ? Number(body.priceMax) : body.price_max != null ? Number(body.price_max) : null;
   const priceMax = Number.isFinite(priceMaxRaw) && priceMaxRaw >= price ? priceMaxRaw : null;
+  const hasPriceMax = body.priceMax != null || body.price_max != null;
   const descriptionShort = String(body.descriptionShort || body.description_short || "").trim();
   const descriptionRaw = String(body.description || body.descriptionHtml || body.description_html || "").trim();
   const descriptionHtml = descriptionRaw ? toSafeHtml(descriptionRaw) : "";
 
   const shopIdInput = String(body.shopId || body.shop_id || "").trim();
   const sellerShops = await getSellerShops(db, userId);
-  const shopId = shopIdInput && sellerShops.includes(shopIdInput) ? shopIdInput : sellerShops[0];
+  const shopMap = new Map(sellerShops.map((shop) => [shop.id, shop]));
+  const shopId = shopIdInput && shopMap.has(shopIdInput) ? shopIdInput : sellerShops[0]?.id || "";
   if (!shopId) return jsonResponse({ ok: false, error: "SHOP_REQUIRED" }, 400);
+  const shopMeta = shopMap.get(shopId) || {};
+  const resolvedCategory = category || shopMeta.category || "";
 
   const now = new Date().toISOString();
   const existingId = body.id ? String(body.id).trim() : "";
   const isAdmin = String(auth.user.role || "").toLowerCase() === "admin";
   const productColumns = await getProductColumns(db);
 
-  const categoryInfo = category ? findCategory(category) : null;
+  const categoryInfo = resolvedCategory ? findCategory(resolvedCategory) : null;
   const tags = normalizeTags(tagsInput, categoryInfo);
   const primaryTag = tags.length ? tags[0] : subcategoryInput || "";
 
   if (existingId) {
-    const row = await db.prepare("SELECT id, shop_id FROM products WHERE id = ? LIMIT 1").bind(existingId).first();
-    if (!row || !sellerShops.includes(String(row.shop_id))) {
+    const row = await db
+      .prepare("SELECT id, shop_id, category FROM products WHERE id = ? LIMIT 1")
+      .bind(existingId)
+      .first();
+    if (!row || !shopMap.has(String(row.shop_id))) {
       return jsonResponse({ ok: false, error: "FORBIDDEN" }, 403);
     }
+    const rowShop = shopMap.get(String(row.shop_id)) || {};
+    const nextCategory = resolvedCategory || row.category || rowShop.category || "";
+    const nextCategoryInfo = nextCategory ? findCategory(nextCategory) : null;
+    const nextTags = normalizeTags(tagsInput, nextCategoryInfo);
+    const nextPrimaryTag = nextTags.length ? nextTags[0] : subcategoryInput || "";
     const updates = [
       { col: "name", val: title },
       { col: "description", val: toPlainText(descriptionRaw) || "" },
       { col: "description_short", val: descriptionShort || "" },
       { col: "description_html", val: descriptionHtml || "" },
-      { col: "category", val: category || null },
-      { col: "subcategory", val: primaryTag || null },
-      { col: "tags_json", val: tags.length ? JSON.stringify(tags) : null },
+      { col: "category", val: nextCategory || null },
+      { col: "subcategory", val: nextPrimaryTag || null },
+      { col: "tags_json", val: nextTags.length ? JSON.stringify(nextTags) : null },
       { col: "price", val: price },
-      { col: "price_max", val: priceMax },
     ];
+    if (hasPriceMax) updates.push({ col: "price_max", val: priceMax });
     if (body.isActive != null) updates.push({ col: "is_active", val: body.isActive ? 1 : 0 });
     if (body.isPublished != null) updates.push({ col: "is_published", val: body.isPublished ? 1 : 0 });
     if (body.status) {
@@ -220,7 +232,7 @@ export async function onRequestPost(context) {
     toPlainText(descriptionRaw) || "",
     descriptionShort || "",
     descriptionHtml || "",
-    category || null,
+    resolvedCategory || null,
     primaryTag || null,
     tags.length ? JSON.stringify(tags) : null,
     price,

@@ -4498,6 +4498,12 @@ body.page-topups input[type="number"] {
   color: var(--muted);
 }
 
+.empty-state-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+}
+
 .empty-state strong {
   color: var(--accent-2);
 }

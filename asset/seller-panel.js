@@ -67,6 +67,13 @@
       toastTimer = window.setTimeout(() => toast.classList.remove("show"), 2400);
     };
     window.BKSellerToast = { show: showToast };
+    const resolveLoadError = (error, fallback) => {
+      const code = error && error.message ? error.message : "";
+      if (code === "AUTH_REQUIRED") return "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
+      if (code === "SELLER_REQUIRED") return "Tài khoản chưa được duyệt seller.";
+      if (code === "ACCOUNT_DISABLED") return "Tài khoản đang bị khóa.";
+      return fallback || "Không thể tải dữ liệu. Vui lòng thử lại.";
+    };
     const getLanguage = () => (typeof getCurrentLanguage === "function" ? getCurrentLanguage() : "vi");
     const t = (key, fallback) =>
       typeof formatI18n === "function" ? formatI18n(getLanguage(), key, fallback) : fallback || key;
@@ -165,7 +172,7 @@
       container.innerHTML = Array.from({ length: count }, () => card).join("");
     };
 
-    const loadList = (state, loader, render) => {
+    const loadList = (state, loader, render, options = {}) => {
       state.loading = true;
       render();
       loader()
@@ -175,10 +182,13 @@
           state.error = false;
           render();
         })
-        .catch(() => {
+        .catch((error) => {
           state.loading = false;
           state.error = true;
           render();
+          if (options && typeof options.onError === "function") {
+            options.onError(error);
+          }
         });
     };
 
@@ -228,6 +238,7 @@
     const storeGrid = document.getElementById("seller-shop-grid");
     const storeEmpty = document.getElementById("store-empty");
     const storeError = document.getElementById("store-error");
+    const storeRetryBtn = document.getElementById("store-retry");
     const storePagination = document.getElementById("store-pagination");
     const storeSearch = document.getElementById("store-search");
     const storeStatusFilter = document.getElementById("store-filter-status");
@@ -918,7 +929,7 @@
       }
     };
 
-    if (productCreateBtn) {
+    if (productCreateBtn && !useProductV2) {
       productCreateBtn.addEventListener("click", () => openProductEditor(null));
     }
     if (productCancelBtn) {
@@ -2175,20 +2186,28 @@
       });
     }
 
-    loadList(
-      storeState,
-      () =>
-        services.stores.list().then((data) => {
-          lastStoreRefresh = Date.now();
-          return data;
-        }),
-      () => {
-        renderStores();
-        updateStoreOptions();
-      }
-    );
+    const loadStores = () =>
+      loadList(
+        storeState,
+        () =>
+          services.stores.list().then((data) => {
+            lastStoreRefresh = Date.now();
+            return data;
+          }),
+        () => {
+          renderStores();
+          updateStoreOptions();
+        },
+        { onError: (error) => showToast(resolveLoadError(error, "Không thể tải danh sách gian hàng.")) }
+      );
+
+    if (storeRetryBtn) storeRetryBtn.addEventListener("click", loadStores);
+
+    loadStores();
     if (!useProductV2 && typeof renderProducts === "function") {
-      loadList(productState, services.products.list, renderProducts);
+      loadList(productState, services.products.list, renderProducts, {
+        onError: (error) => showToast(resolveLoadError(error, "Không thể tải danh sách sản phẩm.")),
+      });
       services.inventories.list().then((data) => {
         inventorySnapshot = data || [];
         renderProducts();

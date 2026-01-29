@@ -15,8 +15,6 @@
   const limitNote = document.getElementById("product-limit-note");
   const nameInput = document.getElementById("product-name");
   const priceInput = document.getElementById("product-price");
-  const priceMaxInput = document.getElementById("product-price-max");
-  const categorySelect = document.getElementById("product-category");
   const tagsWrap = document.getElementById("product-tags");
   const tagsHint = document.getElementById("product-tags-hint");
   const shortDescInput = document.getElementById("product-short-desc");
@@ -43,7 +41,19 @@
   const getRootPath = () =>
     window.location.protocol === "file:" && typeof getProjectRoot === "function" ? getProjectRoot() : "/";
 
-  const getPanelUrl = () => `${getRootPath()}seller/panel/${window.location.protocol === "file:" ? "index.html" : ""}`;
+  const getPanelUrl = (view) => {
+    const base = `${getRootPath()}seller/panel/${window.location.protocol === "file:" ? "index.html" : ""}`;
+    if (!view) return base;
+    return `${base}?view=${encodeURIComponent(view)}`;
+  };
+
+  const goBack = (fallbackView) => {
+    if (window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+    window.location.href = getPanelUrl(fallbackView);
+  };
 
   const getProductIdFromUrl = () => {
     const params = new URLSearchParams(window.location.search);
@@ -122,23 +132,6 @@
     return state.categories;
   };
 
-  const renderCategoryOptions = (categories) => {
-    if (!categorySelect) return;
-    categorySelect.innerHTML = "";
-    const placeholder = document.createElement("option");
-    placeholder.value = "";
-    placeholder.textContent = "Chọn danh mục";
-    categorySelect.appendChild(placeholder);
-    (categories.products || []).forEach((item) => {
-      const option = document.createElement("option");
-      option.value = item.id;
-      option.textContent = item.labelKey && typeof formatI18n === "function"
-        ? formatI18n(typeof getCurrentLanguage === "function" ? getCurrentLanguage() : "vi", item.labelKey, item.label || item.id)
-        : item.label || item.id;
-      categorySelect.appendChild(option);
-    });
-  };
-
   const renderTags = (categoryId, categories, selected = []) => {
     if (!tagsWrap) return;
     tagsWrap.innerHTML = "";
@@ -149,8 +142,8 @@
 
     if (!categoryId) {
       tagsWrap.classList.add("empty");
-      tagsWrap.innerHTML = `<span>${escapeHtml("Chọn danh mục trước")}</span>`;
-      if (tagsHint) tagsHint.textContent = "Chọn danh mục để hiển thị thẻ";
+      tagsWrap.innerHTML = `<span>${escapeHtml("Chọn gian hàng để hiển thị thẻ")}</span>`;
+      if (tagsHint) tagsHint.textContent = "Chọn gian hàng để hiển thị thẻ";
       return;
     }
 
@@ -199,7 +192,7 @@
     if (pageSub) {
       pageSub.textContent = editing
         ? "Cập nhật thông tin sản phẩm và lưu thay đổi."
-        : "Cập nhật thông tin, giá bán và danh mục hiển thị.";
+        : "Cập nhật thông tin và giá bán.";
     }
     if (editorTitle) editorTitle.textContent = editing ? "Chỉnh sửa sản phẩm" : "Tạo sản phẩm";
     if (editorSub) editorSub.textContent = editing ? "Cập nhật thông tin sản phẩm." : "Chọn gian hàng, nhập mô tả và giá bán.";
@@ -215,7 +208,6 @@
 
     if (nameInput) nameInput.value = product.name || "";
     if (priceInput) priceInput.value = product.price != null ? product.price : "";
-    if (priceMaxInput) priceMaxInput.value = product.priceMax != null ? product.priceMax : "";
     if (shortDescInput) shortDescInput.value = product.descriptionShort || "";
     if (longDescInput) longDescInput.value = htmlToText(product.descriptionHtml || "");
     if (activeCheckbox) activeCheckbox.checked = product.active !== false;
@@ -227,9 +219,9 @@
     }
 
     const categories = await loadCategories();
-    renderCategoryOptions(categories);
-    if (categorySelect) categorySelect.value = product.category || "";
-    renderTags(product.category || "", categories, product.tags || []);
+    const store = state.stores.find((item) => item.storeId === product.storeId);
+    const categoryId = product.category || (store && store.category ? store.category : "");
+    renderTags(categoryId, categories, product.tags || []);
     updateLimitNote();
   };
 
@@ -240,15 +232,16 @@
     }
     if (nameInput) nameInput.value = "";
     if (priceInput) priceInput.value = "";
-    if (priceMaxInput) priceMaxInput.value = "";
     if (shortDescInput) shortDescInput.value = "";
     if (longDescInput) longDescInput.value = "";
     if (activeCheckbox) activeCheckbox.checked = true;
     if (publishedCheckbox) publishedCheckbox.checked = true;
     const categories = await loadCategories();
-    renderCategoryOptions(categories);
-    if (categorySelect) categorySelect.value = "";
-    renderTags("", categories, []);
+    const selectedStore = storeSelect ? storeSelect.value : "";
+    const store = state.stores.find((item) => item.storeId === selectedStore);
+    const categoryId = store && store.category ? store.category : "";
+    const defaultTags = store && Array.isArray(store.tags) ? store.tags : [];
+    renderTags(categoryId, categories, defaultTags);
     updateLimitNote();
   };
 
@@ -258,17 +251,13 @@
 
     if (backBtn) {
       backBtn.addEventListener("click", () => {
-        window.location.href = getPanelUrl();
+        goBack("products");
       });
     }
 
-    document.querySelectorAll("[data-link]").forEach((btn) => {
+    document.querySelectorAll("[data-back]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        const link = btn.getAttribute("data-link");
-        if (!link) return;
-        const root = getRootPath();
-        const target = link.startsWith("http") ? link : `${root}${link}`.replace(/\/\.\//g, "/");
-        window.location.href = target;
+        goBack("products");
       });
     });
 
@@ -286,9 +275,6 @@
 
     state.stores = stores || [];
     state.products = products || [];
-
-    renderCategoryOptions(categories);
-    renderTags("", categories, []);
 
     if (storeSelect) {
       const placeholder = `<option value="">Chọn gian hàng</option>`;
@@ -308,6 +294,12 @@
       storeSelect.value = shopIdFromUrl;
     }
 
+    const initialStoreId = storeSelect ? storeSelect.value : "";
+    const initialStore = state.stores.find((item) => item.storeId === initialStoreId);
+    const initialCategory = initialStore && initialStore.category ? initialStore.category : "";
+    const initialTags = initialStore && Array.isArray(initialStore.tags) ? initialStore.tags : [];
+    renderTags(initialCategory, categories, initialTags);
+
     const productId = getProductIdFromUrl();
     if (productId) {
       const product = state.products.find((item) => item.productId === productId);
@@ -325,16 +317,9 @@
         updateLimitNote();
         if (state.editing) return;
         const store = state.stores.find((item) => item.storeId === storeSelect.value);
-        if (store && store.category && categorySelect && !categorySelect.value) {
-          categorySelect.value = store.category;
-          renderTags(store.category, categories, store.tags || []);
-        }
-      });
-    }
-
-    if (categorySelect) {
-      categorySelect.addEventListener("change", () => {
-        renderTags(categorySelect.value, categories, []);
+        const categoryId = store && store.category ? store.category : "";
+        const tagDefaults = store && Array.isArray(store.tags) ? store.tags : [];
+        renderTags(categoryId, categories, tagDefaults);
       });
     }
 
@@ -366,14 +351,10 @@
           showToast("Giá không hợp lệ.");
           return;
         }
-        const priceMax = priceMaxInput && priceMaxInput.value ? Number(priceMaxInput.value) : null;
-        const category = categorySelect ? categorySelect.value : "";
         const payload = {
           shopId: storeId,
           title,
           price,
-          priceMax: priceMax != null && Number.isFinite(priceMax) ? priceMax : null,
-          category,
           subcategory: state.tags.size ? Array.from(state.tags)[0] : "",
           tags: Array.from(state.tags),
           descriptionShort: shortDescInput ? shortDescInput.value.trim() : "",
@@ -395,7 +376,7 @@
             await services.products.create(payload);
             showToast("Đã tạo sản phẩm.");
           }
-          window.location.href = getPanelUrl();
+          window.location.href = getPanelUrl("products");
         } catch (error) {
           const code = error && error.message ? error.message : "";
           if (code === "PRODUCT_LIMIT") {

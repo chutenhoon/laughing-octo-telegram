@@ -17,27 +17,47 @@
     });
   };
 
+  const resolveAuthUser = () => {
+    if (!window.BKAuth || typeof window.BKAuth.read !== "function") return null;
+    const auth = window.BKAuth.read();
+    if (!auth || !auth.loggedIn) return null;
+    return auth.user || null;
+  };
+
+  const getUserRef = (user) => {
+    if (!user) return "";
+    if (user.id != null && String(user.id).trim()) return String(user.id).trim();
+    if (user.username && String(user.username).trim()) return String(user.username).trim();
+    if (user.email && String(user.email).trim()) return String(user.email).trim();
+    return "";
+  };
+
   const getAuthHeaders = (json = true) => {
     const headers = {};
     if (json) headers["content-type"] = "application/json";
-    if (window.BKAuth && typeof window.BKAuth.read === "function") {
-      const auth = window.BKAuth.read();
-      if (auth && auth.loggedIn) {
-        const user = auth.user || {};
-        if (user.id != null) headers["x-user-id"] = String(user.id);
-        if (user.email) headers["x-user-email"] = String(user.email);
-        if (user.username) headers["x-user-username"] = String(user.username);
-      }
+    const user = resolveAuthUser();
+    if (user) {
+      const userRef = getUserRef(user);
+      if (userRef) headers["x-user-id"] = userRef;
+      if (user.email) headers["x-user-email"] = String(user.email);
+      if (user.username) headers["x-user-username"] = String(user.username);
     }
     return headers;
   };
 
-  const fetchJson = async (url, options) => {
-    const response = await fetch(url, options);
+  const buildError = (response, data, fallback) => {
+    const errorCode = (data && data.error) || fallback || "REQUEST_FAILED";
+    const error = new Error(errorCode);
+    error.status = response ? response.status : 0;
+    error.payload = data;
+    return error;
+  };
+
+  const fetchJson = async (url, options = {}) => {
+    const response = await fetch(url, { credentials: "same-origin", ...options });
     const data = await response.json().catch(() => null);
     if (!response.ok || !data || data.ok === false) {
-      const error = (data && data.error) || "REQUEST_FAILED";
-      throw new Error(error);
+      throw buildError(response, data, "REQUEST_FAILED");
     }
     return data;
   };
@@ -91,12 +111,15 @@
       list: async () => {
         const headers = getAuthHeaders(false);
         if (storeEtag) headers["if-none-match"] = storeEtag;
-        const response = await fetch(`${API_ROOT}/seller/shops`, { headers, cache: "no-store" });
+        const response = await fetch(`${API_ROOT}/seller/shops`, {
+          headers,
+          cache: "no-store",
+          credentials: "same-origin",
+        });
         if (response.status === 304 && storeCache.length) return storeCache.slice();
         const data = await response.json().catch(() => null);
         if (!response.ok || !data || data.ok === false) {
-          const error = (data && data.error) || "REQUEST_FAILED";
-          throw new Error(error);
+          throw buildError(response, data, "REQUEST_FAILED");
         }
         const etag = response.headers.get("etag") || response.headers.get("ETag") || "";
         if (etag) storeEtag = etag;

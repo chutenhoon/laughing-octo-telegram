@@ -11,6 +11,7 @@
   const productCreateBtn = document.getElementById("product-create-btn");
   const productEmpty = document.getElementById("product-empty");
   const productError = document.getElementById("product-error");
+  const productRetryBtn = document.getElementById("product-retry");
 
   const inventoryCard = document.getElementById("inventory-card");
   const inventorySub = document.getElementById("inventory-sub");
@@ -108,6 +109,14 @@
       return;
     }
     window.alert(message);
+  };
+
+  const resolveLoadError = (error, fallback) => {
+    const code = error && error.message ? error.message : "";
+    if (code === "AUTH_REQUIRED") return "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
+    if (code === "SELLER_REQUIRED") return "Tài khoản chưa được duyệt seller.";
+    if (code === "ACCOUNT_DISABLED") return "Tài khoản đang bị khóa.";
+    return fallback || "Không thể tải dữ liệu. Vui lòng thử lại.";
   };
 
   const escapeHtml = (value) =>
@@ -290,7 +299,7 @@
       state.loading = false;
       state.error = true;
       renderGroups();
-      showToast("Không thể tải danh sách sản phẩm.");
+      showToast(resolveLoadError(error, "Không thể tải danh sách sản phẩm."));
     }
   };
 
@@ -762,6 +771,11 @@
     productCreateBtn.addEventListener("click", () => {
       const preferred = state.openGroups.values().next().value;
       window.location.href = buildCreateUrl(preferred || "");
+    });
+  }
+  if (productRetryBtn) {
+    productRetryBtn.addEventListener("click", () => {
+      loadData();
     });
   }
 

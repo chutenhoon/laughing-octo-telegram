@@ -278,7 +278,12 @@
             </div>
             <div class="seller-shop-grid" id="seller-shop-grid"></div>
             <div class="empty-state is-hidden" id="store-empty">Ch&#432;a c&#243; d&#7919; li&#7879;u</div>
-            <div class="empty-state is-hidden" id="store-error">Kh&#244;ng th&#7875; t&#7843;i d&#7919; li&#7879;u, vui l&#242;ng th&#7917; l&#7841;i</div>
+            <div class="empty-state is-hidden" id="store-error">
+              <div>Kh&#244;ng th&#7875; t&#7843;i d&#7919; li&#7879;u, vui l&#242;ng th&#7917; l&#7841;i</div>
+              <div class="empty-state-actions">
+                <button class="btn sm ghost" id="store-retry" type="button">Th&#7917; l&#7841;i</button>
+              </div>
+            </div>
             <div class="table-pagination" id="store-pagination"></div>
           </section>
 
@@ -299,7 +304,12 @@
               </div>
               <div class="seller-product-groups" id="seller-product-groups"></div>
               <div class="empty-state is-hidden" id="product-empty">Ch&#432;a c&#243; d&#7919; li&#7879;u</div>
-              <div class="empty-state is-hidden" id="product-error">Kh&#244;ng th&#7875; t&#7843;i d&#7919; li&#7879;u, vui l&#242;ng th&#7917; l&#7841;i</div>
+              <div class="empty-state is-hidden" id="product-error">
+                <div>Kh&#244;ng th&#7875; t&#7843;i d&#7919; li&#7879;u, vui l&#242;ng th&#7917; l&#7841;i</div>
+                <div class="empty-state-actions">
+                  <button class="btn sm ghost" id="product-retry" type="button">Th&#7917; l&#7841;i</button>
+                </div>
+              </div>
             </div>
             <div class="seller-card is-hidden" id="inventory-card">
               <div class="chart-head">
@@ -1042,17 +1052,30 @@
         const pageTitle = document.getElementById("seller-page-title");
         const pageSub = document.getElementById("seller-page-sub");
 
+        const setView = (view) => {
+          if (!view) return;
+          let activeBtn = null;
+          navButtons.forEach((item) => {
+            if (item.getAttribute("data-view") === view) activeBtn = item;
+          });
+          if (!activeBtn) return;
+          navButtons.forEach((item) => item.classList.toggle("active", item === activeBtn));
+          sections.forEach((section) => {
+            section.classList.toggle("active", section.getAttribute("data-view") === view);
+          });
+          if (pageTitle && activeBtn.dataset.title) pageTitle.innerHTML = activeBtn.dataset.title;
+          if (pageSub && activeBtn.dataset.sub) pageSub.innerHTML = activeBtn.dataset.sub;
+        };
+
         navButtons.forEach((btn) => {
           btn.addEventListener("click", () => {
             const view = btn.getAttribute("data-view");
-            navButtons.forEach((item) => item.classList.toggle("active", item === btn));
-            sections.forEach((section) => {
-              section.classList.toggle("active", section.getAttribute("data-view") === view);
-            });
-            if (pageTitle && btn.dataset.title) pageTitle.innerHTML = btn.dataset.title;
-            if (pageSub && btn.dataset.sub) pageSub.innerHTML = btn.dataset.sub;
+            setView(view);
           });
         });
+
+        const initialView = new URL(window.location.href).searchParams.get("view");
+        if (initialView) setView(initialView);
 
         const chartData = {
           "60p": {

@@ -36,8 +36,13 @@
   let currentStoreId = "";
   let originalStore = null;
 
-  const getRootPath = () => (window.location.protocol === "file:" && typeof getProjectRoot === "function" ? getProjectRoot() : "/");
-  const getPanelUrl = () => `${getRootPath()}seller/panel/${window.location.protocol === "file:" ? "index.html" : ""}`;
+  const getRootPath = () =>
+    window.location.protocol === "file:" && typeof getProjectRoot === "function" ? getProjectRoot() : "/";
+  const getPanelUrl = (view) => {
+    const base = `${getRootPath()}seller/panel/${window.location.protocol === "file:" ? "index.html" : ""}`;
+    if (!view) return base;
+    return `${base}?view=${encodeURIComponent(view)}`;
+  };
 
   const showToast = (message) => {
     if (!message) return;
@@ -126,12 +131,28 @@
       const auth = window.BKAuth.read();
       if (auth && auth.loggedIn) {
         const user = auth.user || {};
-        if (user.id != null) headers["x-user-id"] = String(user.id);
+        const userRef =
+          user.id != null && String(user.id).trim()
+            ? String(user.id).trim()
+            : user.username && String(user.username).trim()
+              ? String(user.username).trim()
+              : user.email && String(user.email).trim()
+                ? String(user.email).trim()
+                : "";
+        if (userRef) headers["x-user-id"] = userRef;
         if (user.email) headers["x-user-email"] = String(user.email);
         if (user.username) headers["x-user-username"] = String(user.username);
       }
     }
     return headers;
+  };
+
+  const goBack = (fallbackView) => {
+    if (window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+    window.location.href = getPanelUrl(fallbackView);
   };
 
   const uploadShopImages = async (shopId) => {
@@ -143,6 +164,7 @@
       method: "POST",
       headers: buildAuthHeaders(),
       body: form,
+      credentials: "same-origin",
     });
     const data = await response.json().catch(() => null);
     if (!response.ok || !data || data.ok === false) {
@@ -259,17 +281,13 @@
 
     if (backBtn) {
       backBtn.addEventListener("click", () => {
-        window.location.href = getPanelUrl();
+        goBack("shops");
       });
     }
 
-    document.querySelectorAll("[data-link]").forEach((btn) => {
+    document.querySelectorAll("[data-back]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        const link = btn.getAttribute("data-link");
-        if (!link) return;
-        const root = getRootPath();
-        const target = link.startsWith("http") ? link : `${root}${link}`.replace(/\/\.\//g, "/");
-        window.location.href = target;
+        goBack("shops");
       });
     });
 
@@ -383,7 +401,7 @@
             }
           }
           showToast(editing ? "Đã gửi yêu cầu cập nhật gian hàng." : "Đã gửi yêu cầu tạo gian hàng.");
-          window.location.href = getPanelUrl();
+          window.location.href = getPanelUrl("shops");
         } catch (error) {
           showToast(editing ? "Không thể cập nhật gian hàng." : "Không thể tạo gian hàng. Vui lòng thử lại.");
         } finally {

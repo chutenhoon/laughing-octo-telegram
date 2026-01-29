@@ -123,11 +123,24 @@ export function toPlainText(value) {
 export function getSessionUser(request) {
   if (!request) return null;
   const headers = request.headers;
-  const id = String(headers.get("x-user-id") || headers.get("x-user") || "").trim();
-  if (!id) return null;
+  const headerRef = headers.get("x-user-id") || headers.get("x-user") || headers.get("x-user-ref");
   const email = headers.get("x-user-email") || "";
   const username = headers.get("x-user-username") || "";
+  const id = String(headerRef || email || username || "").trim();
+  if (!id) return null;
   return { id, email, username };
+}
+
+function authError(code, status) {
+  return jsonResponse({ ok: false, error: code, status }, status);
+}
+
+function isTruthy(value) {
+  if (value === true) return true;
+  if (value === 1) return true;
+  const raw = String(value || "").trim().toLowerCase();
+  if (!raw) return false;
+  return raw === "1" || raw === "true" || raw === "yes";
 }
 
 export async function getUserColumns(db) {
@@ -180,14 +193,17 @@ export async function findUserByRef(db, userRef) {
 
 export async function requireUser(context) {
   const db = context?.env?.DB;
-  if (!db) return { ok: false, response: jsonResponse({ ok: false, error: "DB_NOT_CONFIGURED" }, 500) };
+  if (!db) return { ok: false, response: authError("DB_NOT_CONFIGURED", 500) };
   const session = getSessionUser(context.request);
   if (!session || !session.id) {
-    return { ok: false, response: jsonResponse({ ok: false, error: "AUTH_REQUIRED" }, 401) };
+    return { ok: false, response: authError("AUTH_REQUIRED", 401) };
   }
   const user = await findUserByRef(db, session.id);
-  if (!user || String(user.status || "active").toLowerCase() !== "active") {
-    return { ok: false, response: jsonResponse({ ok: false, error: "ACCOUNT_DISABLED" }, 403) };
+  if (!user) {
+    return { ok: false, response: authError("AUTH_REQUIRED", 401) };
+  }
+  if (String(user.status || "active").toLowerCase() !== "active") {
+    return { ok: false, response: authError("ACCOUNT_DISABLED", 403) };
   }
   return { ok: true, db, user };
 }
@@ -197,9 +213,9 @@ export async function requireSeller(context) {
   if (!base.ok) return base;
   const user = base.user;
   const role = String(user.role || "").toLowerCase();
-  const sellerApproved = Number(user.seller_approved || 0) === 1;
+  const sellerApproved = isTruthy(user.seller_approved);
   if (!(role === "admin" || role === "seller" || sellerApproved)) {
-    return { ok: false, response: jsonResponse({ ok: false, error: "SELLER_REQUIRED" }, 403) };
+    return { ok: false, response: authError("SELLER_REQUIRED", 403) };
   }
   return base;
 }
@@ -236,7 +252,7 @@ function getAdminPanelKeys(env) {
 
 export async function requireAdmin(context) {
   const db = context?.env?.DB;
-  if (!db) return { ok: false, response: jsonResponse({ ok: false, error: "DB_NOT_CONFIGURED" }, 500) };
+  if (!db) return { ok: false, response: authError("DB_NOT_CONFIGURED", 500) };
   const keys = getAdminPanelKeys(context?.env);
   const headerUser = context?.request?.headers?.get("x-admin-user") || "";
   const headerPass = context?.request?.headers?.get("x-admin-pass") || "";
@@ -245,14 +261,14 @@ export async function requireAdmin(context) {
   }
   const session = getSessionUser(context.request);
   if (!session || !session.id) {
-    return { ok: false, response: jsonResponse({ ok: false, error: "UNAUTHORIZED" }, 401) };
+    return { ok: false, response: authError("UNAUTHORIZED", 401) };
   }
   const user = await findUserByRef(db, session.id);
   const role = user && user.role ? String(user.role).toLowerCase() : "";
   if (role === "admin") {
     return { ok: true, db, admin: true, user };
   }
-  return { ok: false, response: jsonResponse({ ok: false, error: "UNAUTHORIZED" }, 401) };
+  return { ok: false, response: authError("UNAUTHORIZED", 401) };
 }
 
 export function buildSlug(input) {
