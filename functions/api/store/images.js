@@ -173,7 +173,7 @@ export async function onRequestPost(context) {
   const userId = auth.user ? auth.user.resolvedId || auth.user.id : "";
   const isAdmin = auth.isAdmin || (auth.user && String(auth.user.role || "").toLowerCase() === "admin");
 
-  const bucket = context?.env?.R2_STORE_AVATARS || context?.env?.R2_BUCKET;
+  const bucket = context?.env?.R2_STORE_IMAGES || context?.env?.R2_STORE_AVATARS || context?.env?.R2_BUCKET;
   if (!bucket) return jsonResponse({ ok: false, error: "R2_NOT_CONFIGURED" }, 500);
 
   const secret = context?.env && typeof context.env.MEDIA_SIGNING_SECRET === "string" ? context.env.MEDIA_SIGNING_SECRET.trim() : "";

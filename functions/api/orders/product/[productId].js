@@ -106,7 +106,7 @@ export async function onRequestPost(context) {
     const reservation = await reserveInventoryLine(db, productId);
     if (!reservation) return jsonResponse({ ok: false, error: "OUT_OF_STOCK" }, 409);
 
-    const bucket = context?.env?.R2_INVENTORY || context?.env?.R2_BUCKET;
+    const bucket = context?.env?.R2_ORDER_CONTENT || context?.env?.R2_INVENTORY || context?.env?.R2_BUCKET;
     if (!bucket) return jsonResponse({ ok: false, error: "R2_NOT_CONFIGURED" }, 500);
     const object = await bucket.get(reservation.r2Key);
     if (!object) return jsonResponse({ ok: false, error: "INVENTORY_MISSING" }, 500);

@@ -9,6 +9,10 @@
   const guardText = document.getElementById("seller-create-guard-text");
   const panel = document.getElementById("seller-create-panel");
   const backBtn = document.getElementById("seller-create-back");
+  const pageTitle = document.getElementById("seller-create-title");
+  const pageSub = document.getElementById("seller-create-sub");
+  const editorTitle = document.getElementById("seller-editor-title");
+  const editorSub = document.getElementById("seller-editor-sub");
 
   const storeNameInput = document.getElementById("store-name");
   const storeShortDesc = document.getElementById("store-short-desc");
@@ -22,10 +26,15 @@
   const imageUpload = document.getElementById("create-store-image-upload");
   const imageList = document.getElementById("create-store-image-list");
   const imageCount = document.getElementById("create-store-image-count");
+  const createImageManager = document.getElementById("create-store-image-manager");
+  const editImageManager = document.getElementById("store-image-manager");
 
   const loadingModal = document.getElementById("seller-create-loading");
 
   const selectedImages = [];
+  let editing = false;
+  let currentStoreId = "";
+  let originalStore = null;
 
   const getRootPath = () => (window.location.protocol === "file:" && typeof getProjectRoot === "function" ? getProjectRoot() : "/");
   const getPanelUrl = () => `${getRootPath()}seller/panel/${window.location.protocol === "file:" ? "index.html" : ""}`;
@@ -143,6 +152,10 @@
   };
 
   const resetForm = () => {
+    if (editing && originalStore) {
+      applyStore(originalStore);
+      return;
+    }
     if (storeNameInput) storeNameInput.value = "";
     if (storeShortDesc) storeShortDesc.value = "";
     if (storeLongDesc) storeLongDesc.value = "";
@@ -152,7 +165,49 @@
     renderImageList();
     if (window.BKStoreEditor && typeof window.BKStoreEditor.open === "function") {
       window.BKStoreEditor.open(null);
+      if (typeof window.BKStoreEditor.setDisabled === "function") {
+        window.BKStoreEditor.setDisabled(false);
+      }
     }
+  };
+
+  const getStoreIdFromUrl = () => {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
+    return id ? String(id).trim() : "";
+  };
+
+  const applyStore = (store) => {
+    if (!store) return;
+    if (storeNameInput) storeNameInput.value = store.name || "";
+    if (storeShortDesc) storeShortDesc.value = store.shortDesc || "";
+    if (storeLongDesc) storeLongDesc.value = store.longDesc || "";
+    setAvatarPreview(store.avatarUrl || "");
+    if (window.BKStoreEditor && typeof window.BKStoreEditor.open === "function") {
+      window.BKStoreEditor.open(store);
+      if (typeof window.BKStoreEditor.setDisabled === "function") {
+        window.BKStoreEditor.setDisabled(false);
+      }
+    }
+  };
+
+  const setEditMode = (store) => {
+    editing = true;
+    currentStoreId = store ? store.storeId || store.id || "" : "";
+    originalStore = store;
+    if (pageTitle) pageTitle.textContent = "Chỉnh sửa gian hàng";
+    if (pageSub) pageSub.textContent = "Cập nhật thông tin và gửi yêu cầu xét duyệt lại.";
+    if (editorTitle) editorTitle.textContent = "Chỉnh sửa gian hàng";
+    if (editorSub) editorSub.textContent = "Cập nhật thông tin gian hàng, ảnh đại diện và mô tả hiển thị.";
+    if (storeSaveBtn) storeSaveBtn.textContent = "Cập nhật";
+    if (createImageManager) createImageManager.classList.add("is-hidden");
+    if (editImageManager) editImageManager.classList.remove("is-hidden");
+    if (editImageManager) {
+      try {
+        document.dispatchEvent(new CustomEvent("store-images:open", { detail: { shopId: currentStoreId, isAdmin: false } }));
+      } catch (error) {}
+    }
+    applyStore(store);
   };
 
   const initGuard = () => {
@@ -173,8 +228,34 @@
     if (panel) panel.style.display = "grid";
   };
 
+  const loadEditStore = async () => {
+    const storeId = getStoreIdFromUrl();
+    if (!storeId) {
+      if (createImageManager) createImageManager.classList.remove("is-hidden");
+      if (editImageManager) editImageManager.classList.add("is-hidden");
+      return;
+    }
+    const services = window.BKPanelData && window.BKPanelData.services ? window.BKPanelData.services : null;
+    if (!services || !services.stores || typeof services.stores.list !== "function") {
+      showToast("Không thể tải gian hàng.");
+      return;
+    }
+    try {
+      const stores = await services.stores.list();
+      const store = (stores || []).find((item) => String(item.storeId) === String(storeId));
+      if (!store) {
+        showToast("Không tìm thấy gian hàng.");
+        return;
+      }
+      setEditMode(store);
+    } catch (error) {
+      showToast("Không thể tải gian hàng.");
+    }
+  };
+
   document.addEventListener("DOMContentLoaded", () => {
     initGuard();
+    loadEditStore();
 
     if (backBtn) {
       backBtn.addEventListener("click", () => {
@@ -260,16 +341,23 @@
         };
         const services = window.BKPanelData && window.BKPanelData.services ? window.BKPanelData.services : null;
         if (!services || !services.stores || typeof services.stores.create !== "function") {
-          showToast("Không thể tạo gian hàng.");
+          showToast("Không thể xử lý gian hàng.");
           return;
         }
         showLoading(true);
         storeSaveBtn.disabled = true;
         storeSaveBtn.setAttribute("aria-busy", "true");
         try {
-          const created = await services.stores.create(payload);
-          const storeId = created && created.storeId ? created.storeId : "";
+          let storeId = currentStoreId;
+          if (editing) {
+            const updated = await services.stores.requestUpdate(currentStoreId, payload);
+            storeId = updated && updated.storeId ? updated.storeId : currentStoreId;
+          } else {
+            const created = await services.stores.create(payload);
+            storeId = created && created.storeId ? created.storeId : "";
+          }
           if (!storeId) throw new Error("CREATE_FAILED");
+
           const avatarFile = storeAvatar && storeAvatar.files ? storeAvatar.files[0] : null;
           if (avatarFile) {
             try {
@@ -278,7 +366,7 @@
               showToast("Không thể tải ảnh đại diện. Vui lòng thử lại.");
             }
           }
-          if (selectedImages.length) {
+          if (!editing && selectedImages.length) {
             try {
               await uploadShopImages(storeId);
             } catch (error) {
@@ -294,10 +382,10 @@
               }
             }
           }
-          showToast("Đã gửi yêu cầu tạo gian hàng.");
+          showToast(editing ? "Đã gửi yêu cầu cập nhật gian hàng." : "Đã gửi yêu cầu tạo gian hàng.");
           window.location.href = getPanelUrl();
         } catch (error) {
-          showToast("Không thể tạo gian hàng. Vui lòng thử lại.");
+          showToast(editing ? "Không thể cập nhật gian hàng." : "Không thể tạo gian hàng. Vui lòng thử lại.");
         } finally {
           showLoading(false);
           storeSaveBtn.disabled = false;

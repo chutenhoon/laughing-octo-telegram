@@ -3,6 +3,7 @@
 
   const PAGE_SIZE = 12;
   const PAGE_WINDOW = 5;
+  const ADMIN_CRED_KEY = "bk_admin_creds";
 
   const getLanguage = () => (typeof getCurrentLanguage === "function" ? getCurrentLanguage() : "vi");
   const translate = (key, fallback, vars) =>
@@ -84,6 +85,7 @@
     categories: null,
     page: 1,
     totalPages: 1,
+    preview: false,
   };
 
   const getStoreRef = () => {
@@ -95,6 +97,24 @@
       if (last && last !== "[id]") id = last;
     }
     return id ? String(id).trim() : "";
+  };
+
+  const isPreviewMode = () => {
+    const params = new URLSearchParams(window.location.search);
+    const preview = params.get("preview");
+    return preview === "1" || preview === "true";
+  };
+
+  const getAdminHeaders = () => {
+    try {
+      const raw = sessionStorage.getItem(ADMIN_CRED_KEY) || localStorage.getItem(ADMIN_CRED_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || !parsed.authKey || !parsed.panelKey) return null;
+      return { "x-admin-user": parsed.authKey, "x-admin-pass": parsed.panelKey };
+    } catch (error) {
+      return null;
+    }
   };
 
   const loadCategories = async () => {
@@ -312,9 +332,12 @@
     params.set("shopId", state.shop.id);
     params.set("page", String(state.page));
     params.set("perPage", String(PAGE_SIZE));
+    params.set("sort", "custom");
+    if (state.preview) params.set("preview", "1");
     const endpoint = state.shop.storeType === "service" ? "/api/services" : "/api/products";
     try {
-      const response = await fetch(`${endpoint}?${params.toString()}`);
+      const headers = state.preview ? getAdminHeaders() : null;
+      const response = await fetch(`${endpoint}?${params.toString()}`, headers ? { headers } : undefined);
       const data = await response.json();
       if (!response.ok || !data || data.ok === false) {
         renderItems([], state.shop.storeType);
@@ -334,7 +357,9 @@
       return;
     }
     try {
-      const response = await fetch(`/api/shops/${encodeURIComponent(storeId)}`);
+      state.preview = isPreviewMode();
+      const headers = state.preview ? getAdminHeaders() : null;
+      const response = await fetch(`/api/shops/${encodeURIComponent(storeId)}`, headers ? { headers } : undefined);
       const data = await response.json();
       if (!response.ok || !data || data.ok === false || !data.shop) {
         if (storeName) storeName.textContent = translate("store.notFound", "Gian h\u00e0ng kh\u00f4ng t\u1ed3n t\u1ea1i");

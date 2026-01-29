@@ -85,13 +85,21 @@ export async function onRequestPost(context) {
     return jsonResponse({ ok: false, error: "DELETE_FAILED" }, 500);
   }
 
-  const bucket = context?.env?.R2_STORE_AVATARS || context?.env?.R2_BUCKET;
+  const avatarBucket = context?.env?.R2_STORE_AVATARS || context?.env?.R2_BUCKET || context?.env?.R2_STORE_IMAGES;
+  const imageBucket = context?.env?.R2_STORE_IMAGES || context?.env?.R2_BUCKET || context?.env?.R2_STORE_AVATARS;
   let cleanupFailed = false;
-  if (bucket) {
-    const keys = [avatarKey, ...imageKeys].filter(Boolean);
-    for (const key of keys) {
+  if (avatarBucket && avatarKey) {
+    try {
+      await avatarBucket.delete(avatarKey);
+    } catch (error) {
+      cleanupFailed = true;
+    }
+  }
+  if (imageBucket) {
+    for (const key of imageKeys) {
+      if (!key) continue;
       try {
-        await bucket.delete(key);
+        await imageBucket.delete(key);
       } catch (error) {
         cleanupFailed = true;
       }

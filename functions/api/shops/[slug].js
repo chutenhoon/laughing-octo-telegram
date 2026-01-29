@@ -1,4 +1,11 @@
-import { jsonCachedResponse, getSessionUser, findUserByRef, createSignedMediaToken, buildMediaUrl } from "../_catalog.js";
+import {
+  jsonCachedResponse,
+  getSessionUser,
+  findUserByRef,
+  createSignedMediaToken,
+  buildMediaUrl,
+  requireAdmin,
+} from "../_catalog.js";
 import { jsonResponse } from "../auth/_utils.js";
 
 async function getShopBySlug(db, slug) {
@@ -106,11 +113,18 @@ export async function onRequestGet(context) {
   if (!shop) shop = await getShopById(db, slug);
   if (!shop) return jsonResponse({ ok: false, error: "NOT_FOUND" }, 404);
 
+  let isAdmin = false;
+  const adminAuth = await requireAdmin(context);
+  if (adminAuth.ok) {
+    isAdmin = true;
+  }
   const session = getSessionUser(context.request);
   let viewer = null;
   if (session && session.id) viewer = await findUserByRef(db, session.id);
   const isOwner = viewer && String(viewer.resolvedId || viewer.id) === String(shop.user_id || "");
-  const isAdmin = viewer && String(viewer.role || "").toLowerCase() === "admin";
+  if (viewer && String(viewer.role || "").toLowerCase() === "admin") {
+    isAdmin = true;
+  }
 
   if (!isApproved(shop) && !isOwner && !isAdmin) {
     return jsonResponse({ ok: false, error: "NOT_FOUND" }, 404);

@@ -23,8 +23,8 @@
     <meta name="twitter:description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
     <meta name="twitter:image" content="../../asset/logo-preview.png" />
     <link rel="stylesheet" href="../../asset/base.css" />
-    <link rel="stylesheet" href="../../asset/store-editor.css" />
-    <link rel="stylesheet" href="../../asset/store-images.css" />
+    <link rel="stylesheet" href="../../asset/seller-shops.css" />
+    <link rel="stylesheet" href="../../asset/seller-products.css" />
     <link rel="stylesheet" href="../../asset/seller-shop-delete.css" />
   </head>
   <body class="seller-shell">
@@ -280,83 +280,6 @@
             <div class="empty-state is-hidden" id="store-empty">Ch&#432;a c&#243; d&#7919; li&#7879;u</div>
             <div class="empty-state is-hidden" id="store-error">Kh&#244;ng th&#7875; t&#7843;i d&#7919; li&#7879;u, vui l&#242;ng th&#7917; l&#7841;i</div>
             <div class="table-pagination" id="store-pagination"></div>
-            <div class="seller-card seller-editor-card is-hidden" id="store-editor-card">
-              <div class="seller-editor-head">
-                <h3 id="store-editor-title">T&#7841;o gian h&#224;ng</h3>
-                <p class="hero-sub" id="store-editor-sub">C&#7853;p nh&#7853;t th&#244;ng tin gian h&#224;ng, &#7843;nh &#273;&#7841;i di&#7879;n v&#224; m&#244; t&#7843; hi&#7875;n th&#7883;.</p>
-              </div>
-              <div class="seller-editor-grid">
-                <div class="seller-editor-main">
-                  <form class="form-grid" id="store-editor-form">
-                    <input type="hidden" id="store-editor-id" />
-                    <div class="form-field">
-                      <label>T&#234;n gian h&#224;ng</label>
-                      <input id="store-name" placeholder="VD: Gmail Trust 2012 - 2025" />
-                    </div>
-                    <div class="form-field">
-                      <label>Lo&#7841;i gian h&#224;ng</label>
-                      <div class="store-type-options" id="store-type-options">
-                        <button class="store-type-pill" type="button" data-type="product">S&#7843;n ph&#7849;m</button>
-                        <button class="store-type-pill" type="button" data-type="service">D&#7883;ch v&#7909;</button>
-                      </div>
-                      <input type="hidden" id="store-type" />
-                      <div class="form-hint">Ch&#7885;n lo&#7841;i gian h&#224;ng tr&#432;&#7899;c khi ch&#7885;n danh m&#7909;c.</div>
-                    </div>
-                    <div class="form-field">
-                      <label>Danh m&#7909;c</label>
-                      <select id="store-category" disabled>
-                        <option value="">Ch&#7885;n danh m&#7909;c</option>
-                      </select>
-                      <div class="form-hint">Danh m&#7909;c ch&#7881; thay &#273;&#7893;i khi t&#7841;o m&#7899;i.</div>
-                    </div>
-                    <div class="form-field" style="grid-column: 1 / -1;">
-                      <label>Th&#7867; l&#7885;c</label>
-                      <div class="store-tags" id="store-tags"></div>
-                      <div class="form-hint" id="store-tags-hint">Ch&#7885;n th&#7867; ph&#249; h&#7907;p v&#7899;i gian h&#224;ng.</div>
-                    </div>
-                    <div class="form-field" style="grid-column: 1 / -1;">
-                      <label>M&#244; t&#7843; ng&#7855;n</label>
-                      <textarea
-                        rows="3"
-                        id="store-short-desc"
-                        placeholder="- B&#7843;o h&#224;nh 7 ng&#224;y&#10;- Full quy&#7873;n truy c&#7853;p&#10;- &#272;&#7893;i pass n&#234;n sau 3-7 ng&#224;y"
-                      ></textarea>
-                    </div>
-                    <div class="form-field" style="grid-column: 1 / -1;">
-                      <label>M&#244; t&#7843; chi ti&#7871;t</label>
-                      <textarea rows="6" id="store-long-desc" placeholder="Nh&#7853;p m&#244; t&#7843; chi ti&#7871;t gian h&#224;ng..."></textarea>
-                    </div>
-                    <div class="seller-approval" id="store-approval-note" style="grid-column: 1 / -1; display: none;"></div>
-                    <div class="seller-form-actions" style="grid-column: 1 / -1;">
-                      <button class="btn warning" id="store-save-btn" type="button">L&#432;u thay &#273;&#7893;i</button>
-                      <button class="btn ghost" id="store-cancel-btn" type="button">H&#7911;y</button>
-                    </div>
-                  </form>
-                </div>
-                <div class="seller-editor-aside">
-                  <div class="panel-media">
-                    <label>&#7842;nh &#273;&#7841;i di&#7879;n</label>
-                    <div class="media-preview is-empty" id="store-avatar-preview-wrap">
-                      <span class="media-placeholder">Ch&#432;a c&#243; &#7843;nh</span>
-                      <img alt="Preview" loading="lazy" id="store-avatar-preview" />
-                    </div>
-                    <div class="panel-file">
-                      <input type="file" accept="image/*" id="store-avatar" />
-                    </div>
-                    <div class="form-hint">K&#237;ch th&#432;&#7899;c g&#7907;i &#253;: 800 x 800px.</div>
-                  </div>
-                  <div class="panel-media store-image-manager" id="store-image-manager">
-                    <label>&#7842;nh gian h&#224;ng</label>
-                    <div class="form-hint">T&#7889;i &#273;a 5 &#7843;nh (seller).</div>
-                    <div class="store-image-toolbar">
-                      <input type="file" id="store-image-upload" accept="image/jpeg,image/png,image/webp" multiple />
-                      <span class="store-image-count" id="store-image-count">0/5</span>
-                    </div>
-                    <div class="store-image-list" id="store-image-list"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </section>
 
           <section class="seller-section" data-view="products">
@@ -364,7 +287,7 @@
               <div class="chart-head">
                 <div>
                   <h3>S&#7843;n ph&#7849;m</h3>
-                  <p class="hero-sub">S&#7855;p x&#7871;p v&#224; qu&#7843;n l&#253; danh m&#7909;c s&#7843;n ph&#7849;m.</p>
+                  <p class="hero-sub">Qu&#7843;n l&#253; v&#224; s&#7855;p x&#7871;p s&#7843;n ph&#7849;m theo t&#7915;ng gian h&#224;ng.</p>
                 </div>
                 <button class="btn primary" id="product-create-btn" type="button">+ T&#7841;o s&#7843;n ph&#7849;m</button>
               </div>
@@ -373,96 +296,10 @@
                   <label>T&#236;m s&#7843;n ph&#7849;m</label>
                   <input id="product-search" placeholder="Nh&#7853;p t&#234;n s&#7843;n ph&#7849;m" />
                 </div>
-                <div class="form-field">
-                  <label>L&#7885;c theo gian h&#224;ng</label>
-                  <select id="product-store-filter">
-                    <option value="all">T&#7845;t c&#7843; gian h&#224;ng</option>
-                  </select>
-                </div>
-                <div class="form-field">
-                  <label>S&#7855;p x&#7871;p</label>
-                  <select id="product-sort">
-                    <option value="recent">M&#7899;i nh&#7845;t</option>
-                    <option value="price_high">Gi&#225; cao nh&#7845;t</option>
-                    <option value="price_low">Gi&#225; th&#7845;p nh&#7845;t</option>
-                    <option value="stock_high">T&#7891;n kho nhi&#7873;u</option>
-                  </select>
-                </div>
               </div>
-              <div class="seller-table-wrap" style="margin-top: 12px;">
-                <table class="seller-table">
-                  <thead>
-                    <tr>
-                      <th>S&#7843;n ph&#7849;m</th>
-                      <th>Gi&#225;</th>
-                      <th>T&#7891;n kho</th>
-                      <th>Lo&#7841;i</th>
-                      <th>Ho&#7841;t &#273;&#7897;ng</th>
-                      <th>Published</th>
-                      <th>Tr&#7841;ng th&#225;i duy&#7879;t</th>
-                      <th>Thao t&#225;c</th>
-                    </tr>
-                  </thead>
-                  <tbody id="product-table-body"></tbody>
-                </table>
-              </div>
+              <div class="seller-product-groups" id="seller-product-groups"></div>
               <div class="empty-state is-hidden" id="product-empty">Ch&#432;a c&#243; d&#7919; li&#7879;u</div>
               <div class="empty-state is-hidden" id="product-error">Kh&#244;ng th&#7875; t&#7843;i d&#7919; li&#7879;u, vui l&#242;ng th&#7917; l&#7841;i</div>
-              <div class="table-pagination" id="product-pagination"></div>
-            </div>
-            <div class="seller-card seller-editor-card is-hidden" id="product-editor-card">
-              <div class="seller-editor-head">
-                <h3 id="product-editor-title">T&#7841;o s&#7843;n ph&#7849;m</h3>
-                <p class="hero-sub" id="product-editor-sub">C&#7853;p nh&#7853;t th&#244;ng tin, gi&#225; b&#225;n v&#224; tr&#7841;ng th&#225;i hi&#7875;n th&#7883;.</p>
-              </div>
-              <form class="form-grid" id="product-editor-form">
-                <input type="hidden" id="product-editor-id" />
-                <div class="form-field">
-                  <label>Gian h&#224;ng</label>
-                  <select id="product-store"></select>
-                </div>
-                <div class="form-field">
-                  <label>T&#234;n s&#7843;n ph&#7849;m</label>
-                  <input id="product-name" placeholder="Gmail (2012 - 2025) 2FA" />
-                </div>
-                <div class="form-field">
-                  <label>Gi&#225; (VND)</label>
-                  <input id="product-price" type="number" min="0" step="1000" placeholder="79000" />
-                </div>
-                <div class="form-field" style="grid-column: 1 / -1;">
-                  <label>H&#236;nh th&#7913;c mua h&#224;ng</label>
-                  <select id="product-type">
-                    <option value="instant">T&#7921; &#273;&#7897;ng tr&#7843; h&#224;ng trong kho</option>
-                    <option value="preorder">&#272;&#7863;t tr&#432;&#7899;c (d&#7883;ch v&#7909;)</option>
-                  </select>
-                  <div class="form-hint">Ph&#249; h&#7907;p v&#7899;i h&#224;ng h&#243;a s&#7861;n c&#243;. Upload stock &#8594; &#272;&#417;n h&#224;ng &#273;&#432;&#7907;c giao t&#7921; &#273;&#7897;ng.</div>
-                </div>
-                <div class="form-field">
-                  <label>&#272;&#7883;nh d&#7841;ng Stock</label>
-                  <select id="product-stock-format">
-                    <option>Text (email|password|data)</option>
-                    <option>Text (username|password|data)</option>
-                  </select>
-                  <div class="form-hint">T&#7843;i l&#234;n stock d&#7841;ng text (m&#7895;i d&#242;ng m&#7897;t t&#224;i kho&#7843;n: email|password|data). Ch&#7881; cho ph&#233;p upload text.</div>
-                </div>
-                <div class="form-field inline">
-                  <label>
-                    <input type="checkbox" id="product-active" checked />
-                    Hi&#7875;n th&#7883; s&#7843;n ph&#7849;m (Active)
-                  </label>
-                </div>
-                <div class="form-field inline">
-                  <label>
-                    <input type="checkbox" id="product-published" checked />
-                    Published
-                  </label>
-                </div>
-                <div class="seller-approval" id="product-approval-note" style="grid-column: 1 / -1; display: none;"></div>
-                <div class="seller-form-actions" style="grid-column: 1 / -1;">
-                  <button class="btn warning" id="product-save-btn" type="button">L&#432;u thay &#273;&#7893;i</button>
-                  <button class="btn ghost" id="product-cancel-btn" type="button">Quay l&#7841;i</button>
-                </div>
-              </form>
             </div>
             <div class="seller-card is-hidden" id="inventory-card">
               <div class="chart-head">
@@ -512,15 +349,15 @@
                 <div class="stock-tab is-hidden" data-tab="upload">
                   <div class="stock-mode">
                     <label>
-                      <input type="radio" name="stock-mode" checked />
+                      <input type="radio" name="stock-mode" value="paste" checked />
                       D&#225;n v&#259;n b&#7843;n
                     </label>
                     <label>
-                      <input type="radio" name="stock-mode" />
+                      <input type="radio" name="stock-mode" value="file" />
                       Upload file
                     </label>
                   </div>
-                  <div class="form-field">
+                  <div class="form-field" id="inventory-input-wrap">
                     <label>Nh&#7853;p items kho</label>
                     <textarea
                       rows="6"
@@ -530,6 +367,11 @@
                     <div class="stock-note">
                       Format: email|password|other_data ho&#7863;c username|password|data. M&#7895;i d&#242;ng l&#224; m&#7897;t item. Ph&#7847;n &#273;&#7847;u ti&#234;n (email/username) s&#7869; &#273;&#432;&#7907;c d&#249;ng l&#224;m key &#273;&#7875; ki&#7875;m tra tr&#249;ng l&#7863;p.
                     </div>
+                  </div>
+                  <div class="form-field is-hidden" id="inventory-file-wrap">
+                    <label>Upload file</label>
+                    <input id="inventory-file" type="file" accept=".txt,.csv,text/plain,text/csv" />
+                    <div class="form-hint">Dung l&#432;&#7907;ng t&#7889;i &#273;a 2MB, &#273;&#7883;nh d&#7841;ng TXT/CSV.</div>
                   </div>
                   <div class="stock-actions">
                     <button class="btn warning" id="inventory-upload-btn" type="button">Upload</button>
@@ -544,6 +386,12 @@
                       <option value="csv">CSV</option>
                     </select>
                   </div>
+                  <div class="form-field inline">
+                    <label>
+                      <input type="checkbox" id="inventory-download-available" checked />
+                      Ch&#7881; t&#7843;i m&#7909;c c&#242;n s&#7861;n
+                    </label>
+                  </div>
                   <div class="stock-actions">
                     <button class="btn warning" id="inventory-download-btn" type="button">T&#7843;i xu&#7889;ng</button>
                     <button class="btn ghost" id="inventory-export-btn" type="button">Xu&#7845;t danh s&#225;ch</button>
@@ -551,7 +399,16 @@
                 </div>
                 <div class="stock-tab is-hidden" data-tab="delete">
                   <div class="form-field">
-                    <label>S&#7889; l&#432;&#7907;ng c&#7847;n x&#243;a</label>
+                    <label>Nh&#7853;p keys c&#7847;n x&#243;a</label>
+                    <textarea
+                      rows="5"
+                      id="inventory-delete-input"
+                      placeholder="email@example.com&#10;username&#10;email@example.com|password|data"
+                    ></textarea>
+                    <div class="form-hint">M&#7895;i d&#242;ng l&#224; m&#7897;t key ho&#7863;c m&#7897;t item &#273;&#7847;y &#273;&#7911;.</div>
+                  </div>
+                  <div class="form-field">
+                    <label>S&#7889; l&#432;&#7907;ng c&#7847;n x&#243;a (n&#7871;u kh&#244;ng nh&#7853;p key)</label>
                     <input id="inventory-delete-count" type="number" min="1" placeholder="0" />
                   </div>
                   <div class="stock-actions">
@@ -1134,10 +991,9 @@
     <script src="../../asset/render.js"></script>
     <script src="../../asset/panel-data.js"></script>
     <script src="../../asset/seller/panel-services.js"></script>
-    <script src="../../asset/store-editor.js"></script>
-    <script src="../../asset/store-images.js"></script>
     <script src="../../asset/seller-shop-delete.js"></script>
     <script src="../../asset/seller-panel.js"></script>
+    <script src="../../asset/seller-products.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
         const guard = document.getElementById("seller-guard");

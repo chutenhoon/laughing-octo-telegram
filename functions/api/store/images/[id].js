@@ -72,7 +72,7 @@ async function handleDelete(context) {
 
   await db.prepare("DELETE FROM shop_images WHERE id = ?").bind(imageId).run();
 
-  const bucket = context?.env?.R2_STORE_AVATARS || context?.env?.R2_BUCKET;
+  const bucket = context?.env?.R2_STORE_IMAGES || context?.env?.R2_STORE_AVATARS || context?.env?.R2_BUCKET;
   if (bucket && row.r2_object_key) {
     try {
       await bucket.delete(row.r2_object_key);

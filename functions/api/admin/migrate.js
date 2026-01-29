@@ -224,6 +224,7 @@ const TABLE_DEFS = {
       price INTEGER NOT NULL,
       price_max INTEGER,
       stock_count INTEGER NOT NULL DEFAULT 0,
+      sort_order INTEGER NOT NULL DEFAULT 0,
       currency TEXT NOT NULL DEFAULT 'VND',
       status TEXT NOT NULL DEFAULT 'draft',
       kind TEXT NOT NULL DEFAULT 'product',
@@ -254,6 +255,19 @@ const TABLE_DEFS = {
       created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
       updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
       FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    );
+  `,
+  inventory_events: `
+    CREATE TABLE IF NOT EXISTS inventory_events (
+      id TEXT PRIMARY KEY,
+      product_id TEXT NOT NULL,
+      shop_id TEXT NOT NULL,
+      action TEXT NOT NULL,
+      count INTEGER NOT NULL DEFAULT 0,
+      note TEXT,
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+      FOREIGN KEY (shop_id) REFERENCES shops(id) ON DELETE CASCADE
     );
   `,
   orders: `
@@ -514,6 +528,7 @@ const COLUMN_DEFS = {
     { name: "tags_json", def: "TEXT" },
     { name: "price_max", def: "INTEGER" },
     { name: "stock_count", def: "INTEGER DEFAULT 0" },
+    { name: "sort_order", def: "INTEGER DEFAULT 0" },
     { name: "kind", def: "TEXT DEFAULT 'product'" },
     { name: "is_active", def: "INTEGER DEFAULT 1" },
     { name: "is_published", def: "INTEGER DEFAULT 1" },
@@ -525,6 +540,14 @@ const COLUMN_DEFS = {
     { name: "content_text", def: "TEXT" },
     { name: "line_count", def: "INTEGER DEFAULT 0" },
     { name: "consumed_count", def: "INTEGER DEFAULT 0" },
+  ],
+  inventory_events: [
+    { name: "product_id", def: "TEXT" },
+    { name: "shop_id", def: "TEXT" },
+    { name: "action", def: "TEXT" },
+    { name: "count", def: "INTEGER DEFAULT 0" },
+    { name: "note", def: "TEXT" },
+    { name: "created_at", def: "TEXT" },
   ],
   order_items: [
     { name: "shop_id", def: "TEXT" },
@@ -1393,8 +1416,11 @@ export async function runMigrations(db, options = {}) {
   await ensureUniqueIndexIfColumns(db, report, "users", "idx_users_id", ["id"]);
   await ensureIndexIfColumns(db, report, "products", "idx_products_shop", ["shop_id"]);
   await ensureIndexIfColumns(db, report, "products", "idx_products_kind", ["kind"]);
+  await ensureIndexIfColumns(db, report, "products", "idx_products_shop_sort", ["shop_id", "sort_order", "created_at"]);
   await ensureIndexIfColumns(db, report, "shops", "idx_shops_status_created_at", ["status", "created_at"]);
   await ensureIndexIfColumns(db, report, "shop_images", "idx_shop_images_shop_pos", ["shop_id", "position"]);
+  await ensureIndexIfColumns(db, report, "inventory_events", "idx_inventory_events_product", ["product_id", "created_at"]);
+  await ensureIndexIfColumns(db, report, "inventory_events", "idx_inventory_events_shop", ["shop_id", "created_at"]);
   await ensureIndexIfColumns(db, report, "approval_requests", "idx_approval_requests_user", ["user_id"]);
   await ensureIndexIfColumns(db, report, "approval_requests", "idx_approval_requests_status", ["status"]);
   await ensureIndexIfColumns(db, report, "approval_requests", "idx_approval_requests_type_status", ["type", "status"]);

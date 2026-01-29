@@ -1,4 +1,4 @@
-﻿import { jsonResponse, readJsonBody } from "../../../auth/_utils.js";
+﻿import { jsonResponse, readJsonBody, generateId } from "../../../auth/_utils.js";
 import { requireAdmin } from "../../../_catalog.js";
 
 const DEFAULT_REASON = "Gian hàng chưa đạt yêu cầu";
@@ -19,6 +19,12 @@ export async function onRequestPost(context) {
   } catch (error) {}
 
   const now = new Date().toISOString();
+  const shop = await db
+    .prepare("SELECT id, user_id, store_name FROM shops WHERE id = ? LIMIT 1")
+    .bind(storeId)
+    .first();
+  if (!shop || !shop.id) return jsonResponse({ ok: false, error: "NOT_FOUND" }, 404);
+
   await db
     .prepare(
       `UPDATE shops
@@ -28,7 +34,25 @@ export async function onRequestPost(context) {
     .bind("rejected", reason, now, null, now, storeId)
     .run();
 
+  try {
+    const title = "Gian hàng bị từ chối";
+    const body = reason ? `Lý do: ${reason}` : "Gian hàng của bạn chưa được chấp nhận.";
+    await db
+      .prepare(
+        `INSERT INTO notifications (id, user_id, type, title, body, data_json, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
+      )
+      .bind(
+        generateId(),
+        shop.user_id,
+        "shop_approval",
+        title,
+        body,
+        JSON.stringify({ shopId: shop.id, status: "rejected" }),
+        now
+      )
+      .run();
+  } catch (error) {}
+
   return jsonResponse({ ok: true, storeId, reason });
 }
-
-

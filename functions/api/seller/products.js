@@ -7,6 +7,32 @@ async function getSellerShops(db, userId) {
   return list.map((row) => String(row.id));
 }
 
+async function getProductColumns(db) {
+  const result = await db.prepare("PRAGMA table_info(products)").all();
+  const rows = result && Array.isArray(result.results) ? result.results : [];
+  const cols = new Set();
+  rows.forEach((row) => {
+    if (row && row.name) cols.add(String(row.name));
+  });
+  return cols;
+}
+
+async function getShopProductCount(db, shopId) {
+  const row = await db
+    .prepare("SELECT COUNT(1) AS count FROM products WHERE shop_id = ? AND kind = 'product'")
+    .bind(shopId)
+    .first();
+  return Number(row && row.count ? row.count : 0);
+}
+
+async function getNextSortOrder(db, shopId) {
+  const row = await db
+    .prepare("SELECT COALESCE(MAX(sort_order), 0) AS max_order FROM products WHERE shop_id = ? AND kind = 'product'")
+    .bind(shopId)
+    .first();
+  return Number(row && row.max_order ? row.max_order : 0) + 1;
+}
+
 function mapProduct(row) {
   let tags = [];
   if (row.tags_json) {
@@ -28,6 +54,7 @@ function mapProduct(row) {
     price: Number(row.price || 0),
     priceMax: row.price_max != null ? Number(row.price_max || 0) : null,
     stockCount: Number(row.stock_count || 0),
+    sortOrder: row.sort_order != null ? Number(row.sort_order || 0) : 0,
     status: row.status || "draft",
     isActive: Number(row.is_active || 0) === 1,
     isPublished: Number(row.is_published || 0) === 1,
@@ -71,12 +98,14 @@ export async function onRequestGet(context) {
   const sql = `
     SELECT p.id, p.shop_id, p.name, p.description_short, p.description_html,
            p.category, p.subcategory, p.tags_json, p.price, p.price_max, p.stock_count,
-           p.status, p.is_active, p.is_published, p.created_at, p.updated_at
+           p.sort_order, p.status, p.is_active, p.is_published, p.created_at, p.updated_at
       FROM products p
       JOIN shops s ON s.id = p.shop_id
      WHERE s.user_id = ?
        AND p.kind = 'product'
-     ORDER BY p.created_at DESC
+     ORDER BY CASE WHEN p.sort_order IS NULL OR p.sort_order = 0 THEN 1 ELSE 0 END,
+              p.sort_order ASC,
+              p.created_at DESC
   `;
   const rows = await db.prepare(sql).bind(userId).all();
   const items = (rows && Array.isArray(rows.results) ? rows.results : []).map(mapProduct);
@@ -112,6 +141,7 @@ export async function onRequestPost(context) {
   const now = new Date().toISOString();
   const existingId = body.id ? String(body.id).trim() : "";
   const isAdmin = String(auth.user.role || "").toLowerCase() === "admin";
+  const productColumns = await getProductColumns(db);
 
   const categoryInfo = category ? findCategory(category) : null;
   const tags = normalizeTags(tagsInput, categoryInfo);
@@ -148,21 +178,42 @@ export async function onRequestPost(context) {
       .run();
     const updated = await db.prepare(
       `SELECT id, shop_id, name, description_short, description_html, category, subcategory, tags_json, price, price_max, stock_count,
-              status, is_active, is_published, created_at, updated_at
+              sort_order, status, is_active, is_published, created_at, updated_at
          FROM products WHERE id = ? LIMIT 1`
     ).bind(existingId).first();
     return jsonResponse({ ok: true, product: mapProduct(updated || {}) });
   }
 
+  const currentCount = await getShopProductCount(db, shopId);
+  if (currentCount >= 6) {
+    return jsonResponse({ ok: false, error: "PRODUCT_LIMIT", limit: 6 }, 409);
+  }
+
   const productId = generateId();
-  const insertSql = `
-    INSERT INTO products
-      (id, shop_id, name, description, description_short, description_html, category, subcategory, tags_json,
-       price, price_max, currency, status, kind, type, stock_type, is_active, is_published, created_at, updated_at)
-    VALUES
-      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'VND', ?, 'product', 'digital', 'inventory', 1, 1, ?, ?)
-  `;
-  await db.prepare(insertSql).bind(
+  const sortOrder = productColumns.has("sort_order") ? await getNextSortOrder(db, shopId) : null;
+  const columns = [
+    "id",
+    "shop_id",
+    "name",
+    "description",
+    "description_short",
+    "description_html",
+    "category",
+    "subcategory",
+    "tags_json",
+    "price",
+    "price_max",
+    "currency",
+    "status",
+    "kind",
+    "type",
+    "stock_type",
+    "is_active",
+    "is_published",
+    "created_at",
+    "updated_at",
+  ];
+  const values = [
     productId,
     shopId,
     title,
@@ -174,14 +225,27 @@ export async function onRequestPost(context) {
     tags.length ? JSON.stringify(tags) : null,
     price,
     priceMax,
+    "VND",
     "draft",
+    "product",
+    "digital",
+    "inventory",
+    1,
+    1,
     now,
-    now
-  ).run();
+    now,
+  ];
+  if (productColumns.has("sort_order")) {
+    columns.splice(11, 0, "sort_order");
+    values.splice(11, 0, sortOrder);
+  }
+
+  const placeholders = columns.map(() => "?").join(", ");
+  await db.prepare(`INSERT INTO products (${columns.join(", ")}) VALUES (${placeholders})`).bind(...values).run();
 
   const created = await db.prepare(
     `SELECT id, shop_id, name, description_short, description_html, category, subcategory, tags_json, price, price_max, stock_count,
-            status, is_active, is_published, created_at, updated_at
+            sort_order, status, is_active, is_published, created_at, updated_at
        FROM products WHERE id = ? LIMIT 1`
   ).bind(productId).first();
   return jsonResponse({ ok: true, product: mapProduct(created || {}) });

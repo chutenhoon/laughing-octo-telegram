@@ -68,9 +68,16 @@
   const mapProduct = (item) => ({
     productId: item.id,
     storeId: item.shopId,
-    name: item.title || "",
+    name: item.title || item.name || "",
+    descriptionShort: item.descriptionShort || "",
+    descriptionHtml: item.descriptionHtml || "",
+    category: item.category || "",
+    subcategory: item.subcategory || "",
+    tags: Array.isArray(item.tags) ? item.tags : [],
     price: Number(item.price || 0),
+    priceMax: item.priceMax != null ? Number(item.priceMax || 0) : null,
     stock: Number(item.stockCount || 0),
+    sortOrder: item.sortOrder != null ? Number(item.sortOrder || 0) : 0,
     type: "instant",
     active: item.isActive !== false,
     published: item.isPublished !== false,
@@ -174,51 +181,105 @@
       update: async (productId, updates) => {
         return services.products.create({ ...(updates || {}), id: productId });
       },
+      reorder: async (shopId, order) => {
+        if (!shopId || !Array.isArray(order)) return null;
+        const payload = { shopId, order };
+        const data = await fetchJson(`${API_ROOT}/seller/products/reorder`, {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: JSON.stringify(payload),
+        });
+        const orderMap = new Map();
+        order.forEach((id, index) => {
+          orderMap.set(String(id), index + 1);
+        });
+        productCache = productCache.map((product) => {
+          const nextOrder = orderMap.get(String(product.productId));
+          if (nextOrder != null) {
+            return { ...product, sortOrder: nextOrder };
+          }
+          return product;
+        });
+        notify();
+        return data;
+      },
     },
     inventories: {
-      list: async () => {
-        if (!productCache.length) {
-          await services.products.list();
-        }
-        return productCache.map((product) => ({
-          productId: product.productId,
-          items: new Array(Number(product.stock || 0)),
-          history: [],
-        }));
+      list: async (productId, options = {}) => {
+        if (!productId) return { items: [], page: 1, perPage: 50, totalPages: 1, totalAvailable: 0 };
+        const params = new URLSearchParams();
+        if (options.page) params.set("page", String(options.page));
+        if (options.perPage) params.set("perPage", String(options.perPage));
+        if (options.sort) params.set("sort", String(options.sort));
+        if (options.scope) params.set("scope", String(options.scope));
+        const fetchOptions = { headers: getAuthHeaders(false) };
+        if (options.signal) fetchOptions.signal = options.signal;
+        const data = await fetchJson(
+          `${API_ROOT}/seller/products/${encodeURIComponent(productId)}/inventory?${params.toString()}`,
+          fetchOptions
+        );
+        return data;
       },
-      get: async (productId) => {
-        const data = await fetchJson(`${API_ROOT}/seller/products/${encodeURIComponent(productId)}/inventory`, {
-          headers: getAuthHeaders(false),
-        });
-        const items = (data.items || []).map((entry, index) => {
-          const available = Number(entry.availableCount || 0);
-          const total = Number(entry.lineCount || 0);
-          return `Batch ${index + 1} • ${available}/${total}`;
-        });
-        const history = (data.items || []).map((entry) => ({
-          action: "upload",
-          count: Number(entry.lineCount || 0),
-          note: entry.id || "",
-          createdAt: entry.createdAt || "",
-        }));
-        return { items, history };
+      history: async (productId, options = {}) => {
+        if (!productId) return { items: [], page: 1, perPage: 20, totalPages: 1, total: 0 };
+        const params = new URLSearchParams();
+        if (options.page) params.set("page", String(options.page));
+        if (options.perPage) params.set("perPage", String(options.perPage));
+        const fetchOptions = { headers: getAuthHeaders(false) };
+        if (options.signal) fetchOptions.signal = options.signal;
+        const data = await fetchJson(
+          `${API_ROOT}/seller/products/${encodeURIComponent(productId)}/inventory/history?${params.toString()}`,
+          fetchOptions
+        );
+        return data;
       },
-      addItems: async (productId, items, note) => {
-        const list = Array.isArray(items) ? items : [];
-        const text = list.join("\n");
-        const blob = new Blob([text], { type: "text/plain" });
+      upload: async (productId, file, note) => {
+        if (!productId || !file) return null;
         const form = new FormData();
-        form.append("file", blob, "inventory.txt");
+        form.append("file", file, file.name || "inventory.txt");
         if (note) form.append("note", String(note));
-        await fetchJson(`${API_ROOT}/seller/products/${encodeURIComponent(productId)}/inventory`, {
+        const data = await fetchJson(`${API_ROOT}/seller/products/${encodeURIComponent(productId)}/inventory`, {
           method: "POST",
           headers: getAuthHeaders(false),
           body: form,
         });
         notify();
-        return true;
+        return data;
       },
-      removeItems: async () => true,
+      remove: async (productId, payload) => {
+        if (!productId) return null;
+        const data = await fetchJson(`${API_ROOT}/seller/products/${encodeURIComponent(productId)}/inventory/delete`, {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: JSON.stringify(payload || {}),
+        });
+        notify();
+        return data;
+      },
+      downloadUrl: (productId, options = {}) => {
+        if (!productId) return "";
+        const params = new URLSearchParams();
+        if (options.scope) params.set("scope", String(options.scope));
+        if (options.format) params.set("format", String(options.format));
+        if (options.mode) params.set("mode", String(options.mode));
+        return `${API_ROOT}/seller/products/${encodeURIComponent(productId)}/inventory/download?${params.toString()}`;
+      },
+      get: async (productId) => {
+        const list = await services.inventories.list(productId, { page: 1, perPage: 50, scope: "available" });
+        const history = await services.inventories.history(productId, { page: 1, perPage: 20 });
+        return { items: list.items || [], history: history.items || [] };
+      },
+      addItems: async (productId, items, note) => {
+        const list = Array.isArray(items) ? items : [];
+        const text = list.join("\n");
+        const blob = new Blob([text], { type: "text/plain" });
+        const file = new File([blob], "inventory.txt", { type: "text/plain" });
+        return services.inventories.upload(productId, file, note);
+      },
+      removeItems: async (productId, count, note) => {
+        if (!productId || !count) return null;
+        return services.inventories.remove(productId, { count, note });
+      },
       log: async () => true,
     },
     variants: {

@@ -383,7 +383,7 @@
             <td>${escapeHtml(categoryText)}${tagsText}</td>
             <td><span class="seller-tag warn">pending</span></td>
             <td class="admin-store-actions">
-              <button class="btn sm ghost" type="button" data-action="preview">Xem</button>
+              <button class="btn sm ghost" type="button" data-action="preview">Preview</button>
               <button class="btn sm" type="button" data-action="approve">Duy\u1ec7t</button>
               <button class="btn sm ghost" type="button" data-action="reject">T\u1eeb ch\u1ed1i</button>
             </td>
@@ -452,7 +452,7 @@
             <td>${escapeHtml(categoryText)}${tagsText}</td>
             <td>${escapeHtml(formatDateLabel(submittedAt))}</td>
             <td class="admin-store-actions">
-              <button class="btn sm ghost" type="button" data-action="preview">Xem</button>
+              <button class="btn sm ghost" type="button" data-action="preview">Preview</button>
               <button class="btn sm ghost" type="button" data-action="diff">So sánh</button>
               <button class="btn sm" type="button" data-action="approve">Duy\u1ec7t</button>
               <button class="btn sm ghost" type="button" data-action="reject">T\u1eeb ch\u1ed1i</button>
@@ -576,6 +576,22 @@
         })
       );
     } catch (error) {}
+  };
+
+  const buildPreviewUrl = (store) => {
+    if (!store) return "";
+    const root = window.location.protocol === "file:" && typeof getProjectRoot === "function" ? getProjectRoot() : "/";
+    const base = window.location.protocol === "file:" ? "seller/[id]/index.html" : "seller/[id]/";
+    const ref = store.slug || store.id || "";
+    if (!ref) return "";
+    return `${root}${base}?id=${encodeURIComponent(ref)}&preview=1`;
+  };
+
+  const openPreviewPage = (store) => {
+    const url = buildPreviewUrl(store);
+    if (!url) return;
+    const opened = window.open(url, "_blank", "noopener");
+    if (!opened) window.location.href = url;
   };
 
   const removeFromState = (storeId, targetState) => {
@@ -748,7 +764,7 @@
     const action = button.getAttribute("data-action");
     const store = state.approve.data.find((item) => String(item.id) === String(storeId));
     if (action === "approve") approveStore(storeId, "approve");
-    if (action === "preview" && store) setPreviewCard(store);
+    if (action === "preview" && store) openPreviewPage(store);
     if (action === "reject") rejectStore(storeId, "approve");
   });
 
@@ -762,7 +778,7 @@
     const action = button.getAttribute("data-action");
     const store = state.update.data.find((item) => String(item.id) === String(storeId));
     if (!store) return;
-    if (action === "preview") setPreviewCard(store);
+    if (action === "preview") openPreviewPage(store);
     if (action === "diff") {
       hidePreview();
       setDiffCard(store);

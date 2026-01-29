@@ -67,8 +67,8 @@
       <section class="seller-main">
         <div class="seller-topbar glass">
           <div>
-            <h1>Tạo gian hàng</h1>
-            <p class="hero-sub">Điền thông tin và gửi yêu cầu xét duyệt gian hàng mới.</p>
+            <h1 id="seller-create-title">Tạo gian hàng</h1>
+            <p class="hero-sub" id="seller-create-sub">Điền thông tin và gửi yêu cầu xét duyệt gian hàng mới.</p>
           </div>
           <div class="seller-topbar-actions">
             <button class="btn ghost" id="seller-create-back" type="button">Quay lại</button>
@@ -79,8 +79,8 @@
           <section class="seller-section active">
             <div class="seller-card seller-editor-card">
               <div class="seller-editor-head">
-                <h3>Tạo gian hàng</h3>
-                <p class="hero-sub">Cập nhật thông tin gian hàng, ảnh đại diện và mô tả hiển thị.</p>
+                <h3 id="seller-editor-title">Tạo gian hàng</h3>
+                <p class="hero-sub" id="seller-editor-sub">Cập nhật thông tin gian hàng, ảnh đại diện và mô tả hiển thị.</p>
               </div>
               <div class="seller-editor-grid">
                 <div class="seller-editor-main">
@@ -150,6 +150,17 @@
                       <div class="store-image-empty">Chưa có ảnh</div>
                     </div>
                   </div>
+                  <div class="panel-media store-image-manager is-hidden" id="store-image-manager">
+                    <label>Ảnh gian hàng</label>
+                    <div class="form-hint">Tối đa 5 ảnh.</div>
+                    <div class="store-image-toolbar">
+                      <input type="file" id="store-image-upload" accept="image/jpeg,image/png,image/webp" multiple />
+                      <span class="store-image-count" id="store-image-count">0/5</span>
+                    </div>
+                    <div class="store-image-list" id="store-image-list">
+                      <div class="store-image-empty">Chưa có ảnh</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -169,6 +180,7 @@
     <script src="../../../asset/panel-data.js"></script>
     <script src="../../../asset/seller/panel-services.js"></script>
     <script src="../../../asset/store-editor.js"></script>
+    <script src="../../../asset/store-images.js"></script>
     <script src="../../../asset/seller-create.js"></script>
   </body>
 </html>

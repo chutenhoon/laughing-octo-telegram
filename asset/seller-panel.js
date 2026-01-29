@@ -266,6 +266,9 @@
     const productActiveCheckbox = document.getElementById("product-active");
     const productPublishedCheckbox = document.getElementById("product-published");
     const productApprovalNote = document.getElementById("product-approval-note");
+
+    const useProductV2 = Boolean(document.getElementById("seller-product-groups"));
+    let renderProducts = null;
     const productSaveBtn = document.getElementById("product-save-btn");
     const productCancelBtn = document.getElementById("product-cancel-btn");
 
@@ -548,6 +551,7 @@
           storeState.loading = false;
           storeState.error = true;
           renderStores();
+          showToast("Không thể tải danh sách gian hàng.");
         })
         .finally(() => {
           storeRefreshInFlight = false;
@@ -660,6 +664,10 @@
       const suffix = window.location.protocol === "file:" ? "index.html" : "";
       return `${root}seller/panel/create/${suffix}`;
     };
+    const getEditUrl = (storeId) => {
+      const base = getCreateUrl();
+      return storeId ? `${base}?id=${encodeURIComponent(storeId)}` : base;
+    };
     if (storeCreateBtn) {
       storeCreateBtn.addEventListener("click", () => {
         window.location.href = getCreateUrl();
@@ -770,18 +778,15 @@
         const store = storeState.data.find((item) => item.storeId === storeId);
         const action = btn.getAttribute("data-action");
         if (action === "edit-store") {
-          openStoreEditor(store);
+          window.location.href = getEditUrl(storeId);
           return;
         }
         if (action === "view-products") {
-          if (productStoreFilter && storeId) {
-            productStoreFilter.value = storeId;
-            productState.store = storeId;
-            productState.page = 1;
-            renderProducts();
-          }
           const productNav = document.querySelector(".seller-nav button[data-view=\"products\"]");
           if (productNav) productNav.click();
+          if (window.BKSellerProducts && typeof window.BKSellerProducts.openShop === "function" && storeId) {
+            window.BKSellerProducts.openShop(storeId);
+          }
           return;
         }
         if (action === "delete-store") {
@@ -811,7 +816,8 @@
       });
     }
 
-    const renderProducts = () => {
+    if (!useProductV2) {
+    renderProducts = () => {
       if (!productTableBody) return;
       if (productState.loading) {
         renderTableSkeleton(productTableBody, 8, 4);
@@ -1314,6 +1320,8 @@
       });
     }
 
+    }
+
     const renderOrders = () => {
       if (!orderTableBody) return;
       if (orderState.loading) {
@@ -1795,9 +1803,10 @@
     };
 
     const refreshInventorySnapshot = () => {
+      if (useProductV2 || !services || !services.inventories || typeof services.inventories.list !== "function") return;
       services.inventories.list().then((data) => {
         inventorySnapshot = data || [];
-        renderProducts();
+        if (typeof renderProducts === "function") renderProducts();
       });
     };
 
@@ -2178,11 +2187,13 @@
         updateStoreOptions();
       }
     );
-    loadList(productState, services.products.list, renderProducts);
-    services.inventories.list().then((data) => {
-      inventorySnapshot = data || [];
-      renderProducts();
-    });
+    if (!useProductV2 && typeof renderProducts === "function") {
+      loadList(productState, services.products.list, renderProducts);
+      services.inventories.list().then((data) => {
+        inventorySnapshot = data || [];
+        renderProducts();
+      });
+    }
     loadList(orderState, services.orders.list, renderOrders);
     loadList(refundState, services.refunds.list, renderRefunds);
     loadList(preorderState, services.preorders.list, renderPreorders);
@@ -2196,8 +2207,10 @@
     if (window.BKPanelData && typeof window.BKPanelData.subscribe === "function") {
       window.BKPanelData.subscribe(() => {
         syncList(storeState, services.stores.list, renderStores, () => updateStoreOptions());
-        syncList(productState, services.products.list, renderProducts);
-        refreshInventorySnapshot();
+        if (!useProductV2 && typeof renderProducts === "function") {
+          syncList(productState, services.products.list, renderProducts);
+          refreshInventorySnapshot();
+        }
         syncList(orderState, services.orders.list, renderOrders);
         syncList(refundState, services.refunds.list, renderRefunds);
         syncList(preorderState, services.preorders.list, renderPreorders);

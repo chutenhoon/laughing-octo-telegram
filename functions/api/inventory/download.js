@@ -52,7 +52,7 @@ export async function onRequestGet(context) {
   headers.set("content-disposition", "inline");
 
   if (row.content_r2_key) {
-    const bucket = context?.env?.R2_INVENTORY || context?.env?.R2_BUCKET;
+    const bucket = context?.env?.R2_ORDER_CONTENT || context?.env?.R2_INVENTORY || context?.env?.R2_BUCKET;
     if (!bucket) return jsonResponse({ ok: false, error: "R2_NOT_CONFIGURED" }, 500);
     const object = await bucket.get(row.content_r2_key);
     if (!object) return jsonResponse({ ok: false, error: "NOT_FOUND" }, 404);

@@ -1,5 +1,5 @@
 import { jsonResponse } from "./auth/_utils.js";
-import { toPlainText } from "./_catalog.js";
+import { toPlainText, requireAdmin } from "./_catalog.js";
 
 function normalizeNumber(value, fallback) {
   const num = Number(value);
@@ -21,14 +21,16 @@ function parseList(value) {
   return Array.from(new Set(raw));
 }
 
-function buildWhere(params, binds) {
+function buildWhere(params, binds, options = {}) {
   const clauses = [
     "p.kind = 'service'",
     "p.is_active = 1",
     "p.is_published = 1",
     "s.is_active = 1",
-    "s.status IN ('approved','active','published')",
   ];
+  if (!options.includeUnapproved) {
+    clauses.push("s.status IN ('approved','active','published')");
+  }
 
   if (params.category) {
     clauses.push("COALESCE(p.category, s.category) = ?");
@@ -55,6 +57,9 @@ function buildWhere(params, binds) {
 }
 
 function buildOrder(sort) {
+  if (sort === "custom" || sort === "order") {
+    return "ORDER BY CASE WHEN p.sort_order IS NULL OR p.sort_order = 0 THEN 1 ELSE 0 END, p.sort_order ASC, p.created_at DESC";
+  }
   if (sort === "rating") return "ORDER BY shop_rating DESC, request_count DESC, p.created_at DESC";
   if (sort === "newest") return "ORDER BY p.created_at DESC";
   return "ORDER BY request_count DESC, p.created_at DESC";
@@ -66,12 +71,20 @@ export async function onRequestGet(context) {
     if (!db) return jsonResponse({ ok: false, error: "DB_NOT_CONFIGURED" }, 500);
 
     const url = new URL(context.request.url);
+    const preview = String(url.searchParams.get("preview") || "").toLowerCase();
+    let includeUnapproved = false;
+    if (preview === "1" || preview === "true") {
+      const adminAuth = await requireAdmin(context);
+      includeUnapproved = adminAuth && adminAuth.ok;
+    }
+    const shopId = String(url.searchParams.get("shop") || url.searchParams.get("shopId") || "").trim();
+    const sortParam = url.searchParams.get("sort");
     const params = {
       category: String(url.searchParams.get("category") || "").trim() || "",
       subcategories: parseList(url.searchParams.get("subcategory") || url.searchParams.get("subcategories") || ""),
       search: buildSearch(url.searchParams.get("search") || url.searchParams.get("q") || ""),
-      sort: String(url.searchParams.get("sort") || "popular").trim(),
-      shopId: String(url.searchParams.get("shop") || url.searchParams.get("shopId") || "").trim(),
+      sort: String(sortParam || (shopId ? "custom" : "popular")).trim(),
+      shopId,
       page: normalizeNumber(url.searchParams.get("page"), 1),
       perPage: normalizeNumber(url.searchParams.get("perPage") || url.searchParams.get("limit"), 10),
     };
@@ -79,7 +92,7 @@ export async function onRequestGet(context) {
     params.perPage = Math.min(40, Math.max(1, Math.floor(params.perPage)));
 
     const binds = [];
-    const whereClause = buildWhere(params, binds);
+    const whereClause = buildWhere(params, binds, { includeUnapproved });
     const orderClause = buildOrder(params.sort);
     const offset = (params.page - 1) * params.perPage;
 
