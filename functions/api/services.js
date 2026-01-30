@@ -13,6 +13,7 @@ const APPROVED_SHOP_STATUSES = [
 ];
 
 function normalizeNumber(value, fallback) {
+  if (value === null || value === undefined || value === "") return fallback;
   const num = Number(value);
   if (!Number.isFinite(num)) return fallback;
   return num;

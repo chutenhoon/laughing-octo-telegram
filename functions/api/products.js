@@ -14,6 +14,7 @@ const APPROVED_SHOP_STATUSES = [
 ];
 
 function normalizeNumber(value, fallback) {
+  if (value === null || value === undefined || value === "") return fallback;
   const num = Number(value);
   if (!Number.isFinite(num)) return fallback;
   return num;
@@ -124,7 +125,7 @@ export async function onRequestGet(context) {
     const total = Number(countRow && countRow.total ? countRow.total : 0);
 
     const soldCondition = SOLD_STATUSES.map(() => "?").join(", ");
-    const soldBinds = [...binds, ...SOLD_STATUSES, params.perPage, offset];
+    const soldBinds = [...SOLD_STATUSES, ...binds, params.perPage, offset];
     const listSql = `
       SELECT p.id, p.shop_id, p.name, p.description_short, p.description, p.category, p.subcategory, p.tags_json,
              p.price, p.price_max, p.stock_count, p.thumbnail_media_id, p.status, p.created_at,
