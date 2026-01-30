@@ -221,7 +221,7 @@ export async function requireSeller(context) {
     try {
       const row = await db
         .prepare(
-          "SELECT 1 FROM shops WHERE user_id = ? AND (is_active = 1 OR lower(is_active) IN ('true','yes')) AND lower(trim(coalesce(status,''))) IN ('approved','active','published','pending_update') LIMIT 1"
+          "SELECT 1 FROM shops WHERE user_id = ? AND (is_active = 1 OR lower(is_active) IN ('true','yes')) AND lower(trim(coalesce(status,''))) IN ('approved','active','published','pending_update','da duyet','đã duyệt','cho cap nhat','chờ cập nhật') LIMIT 1"
         )
         .bind(userId)
         .first();

@@ -5,7 +5,16 @@ const SOLD_STATUSES = ["delivered", "completed", "success"];
 
 function isApprovedStatus(status) {
   const value = String(status || "").trim().toLowerCase();
-  return value === "approved" || value === "active" || value === "published" || value === "pending_update";
+  return (
+    value === "approved" ||
+    value === "active" ||
+    value === "published" ||
+    value === "pending_update" ||
+    value === "da duyet" ||
+    value === "đã duyệt" ||
+    value === "cho cap nhat" ||
+    value === "chờ cập nhật"
+  );
 }
 
 function isTruthyFlag(value) {

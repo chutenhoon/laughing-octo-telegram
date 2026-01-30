@@ -1,6 +1,17 @@
 import { jsonResponse } from "./auth/_utils.js";
 import { toPlainText, requireAdmin } from "./_catalog.js";
 
+const APPROVED_SHOP_STATUSES = [
+  "approved",
+  "active",
+  "published",
+  "pending_update",
+  "da duyet",
+  "đã duyệt",
+  "cho cap nhat",
+  "chờ cập nhật",
+];
+
 function normalizeNumber(value, fallback) {
   const num = Number(value);
   if (!Number.isFinite(num)) return fallback;
@@ -33,7 +44,9 @@ function buildWhere(params, binds, options = {}) {
     flagTrue("s.is_active"),
   ];
   if (!options.includeUnapproved) {
-    clauses.push("lower(trim(coalesce(s.status,''))) IN ('approved','active','published','pending_update')");
+    clauses.push(
+      `lower(trim(coalesce(s.status,''))) IN (${APPROVED_SHOP_STATUSES.map((status) => `'${status}'`).join(",")})`
+    );
   }
 
   if (params.category) {
