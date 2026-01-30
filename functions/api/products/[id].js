@@ -4,7 +4,7 @@ import { getSessionUser, findUserByRef, toSafeHtml, toPlainText, jsonCachedRespo
 const SOLD_STATUSES = ["delivered", "completed", "success"];
 
 function isApprovedStatus(status) {
-  const value = String(status || "").toLowerCase();
+  const value = String(status || "").trim().toLowerCase();
   return value === "approved" || value === "active" || value === "published" || value === "pending_update";
 }
 

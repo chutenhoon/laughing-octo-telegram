@@ -2,7 +2,7 @@ import { jsonResponse } from "../auth/_utils.js";
 import { getSessionUser, findUserByRef, toSafeHtml, toPlainText, jsonCachedResponse } from "../_catalog.js";
 
 function isApprovedStatus(status) {
-  const value = String(status || "").toLowerCase();
+  const value = String(status || "").trim().toLowerCase();
   return value === "approved" || value === "active" || value === "published" || value === "pending_update";
 }
 

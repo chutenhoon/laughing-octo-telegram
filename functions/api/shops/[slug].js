@@ -45,7 +45,7 @@ function isTruthyFlag(value) {
 }
 
 function isApproved(shop) {
-  const status = String(shop.status || "").toLowerCase();
+  const status = String(shop.status || "").trim().toLowerCase();
   const active = isTruthyFlag(shop.is_active);
   return active && (status === "approved" || status === "active" || status === "published" || status === "pending_update");
 }
