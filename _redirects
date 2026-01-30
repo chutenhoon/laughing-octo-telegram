@@ -1,5 +1,7 @@
 /api/* /api/:splat 200
 /media/* /media/:splat 200
+/gian-hang/nguoi-ban/* /gian-hang/nguoi-ban/index.html 200
+/gian-hang/* /gian-hang/[slug]/index.html 200
 /legacy/u /legacy/profile/public/ 200
 /legacy/u/ /legacy/profile/public/ 200
 /legacy/u/* /legacy/profile/public/ 200
