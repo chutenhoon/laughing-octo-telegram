@@ -8,6 +8,7 @@ function isApprovedStatus(status) {
 
 function isTruthyFlag(value) {
   if (value === true || value === 1) return true;
+  if (value === null || value === undefined || value === "") return true;
   const raw = String(value || "").trim().toLowerCase();
   return raw === "1" || raw === "true" || raw === "yes";
 }

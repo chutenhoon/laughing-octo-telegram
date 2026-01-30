@@ -22,7 +22,7 @@ function parseList(value) {
 }
 
 function flagTrue(column) {
-  return `(${column} = 1 OR lower(${column}) IN ('true','yes'))`;
+  return `(${column} = 1 OR lower(${column}) IN ('true','yes') OR ${column} IS NULL)`;
 }
 
 function buildWhere(params, binds, options = {}) {
@@ -37,7 +37,7 @@ function buildWhere(params, binds, options = {}) {
   }
 
   if (params.category) {
-    clauses.push("COALESCE(p.category, s.category) = ?");
+    clauses.push("lower(trim(COALESCE(p.category, s.category))) = lower(trim(?))");
     binds.push(params.category);
   }
   if (params.subcategories.length) {
