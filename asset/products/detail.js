@@ -138,7 +138,8 @@
 
     const sellerLink = document.getElementById("detail-seller-link");
     if (sellerLink) {
-      sellerLink.textContent = seller.name || shop.name || "Shop";
+      const sellerName = seller.displayName || seller.username || seller.name || shop.name || "Shop";
+      sellerLink.textContent = sellerName;
       const root = typeof getProjectRoot === "function" ? getProjectRoot() : "/";
       const isFile = window.location.protocol === "file:";
       const isLegacy = !isFile && root.includes("/legacy/");

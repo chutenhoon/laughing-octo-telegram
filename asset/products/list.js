@@ -219,6 +219,7 @@
 
   const buildCard = (item) => {
     const seller = item.seller || {};
+    const sellerName = seller.displayName || seller.username || seller.name || "Shop";
     const sellerBadge = renderSellerBadge(seller);
     const ratingLabel = item.rating != null ? item.rating : "--";
     const subLabel = item.subcategory || categoryFallback[item.category] || "BK";
@@ -251,7 +252,7 @@
             <div class="meta-col meta-right">
               <span class="seller-line">
                 <span class="seller-label">${translate("label.seller", "Seller")}:</span>
-                <span class="seller-value"><strong class="seller-name">${seller.name || "Shop"}</strong>${sellerBadge}</span>
+                <span class="seller-value"><strong class="seller-name">${sellerName}</strong>${sellerBadge}</span>
               </span>
               ${shopUrl ? `<button class="btn ghost shop-link" type="button" data-shop-url="${shopUrl}">${translate("label.shop", "Gian hàng")}</button>` : ""}
             </div>
