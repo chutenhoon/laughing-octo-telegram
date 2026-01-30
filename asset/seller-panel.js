@@ -67,6 +67,18 @@
       toastTimer = window.setTimeout(() => toast.classList.remove("show"), 2400);
     };
     window.BKSellerToast = { show: showToast };
+    const handleAuthError = (error) => {
+      const status = error && typeof error.status === "number" ? error.status : 0;
+      const code = error && error.message ? error.message : "";
+      if (status === 401 || code === "AUTH_REQUIRED") {
+        showToast("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+        if (window.BKAuth && typeof window.BKAuth.redirectToLogin === "function") {
+          window.setTimeout(() => window.BKAuth.redirectToLogin(), 600);
+        }
+        return true;
+      }
+      return false;
+    };
     const resolveLoadError = (error, fallback) => {
       const code = error && error.message ? error.message : "";
       if (code === "AUTH_REQUIRED") return "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
@@ -186,7 +198,8 @@
           state.loading = false;
           state.error = true;
           render();
-          if (options && typeof options.onError === "function") {
+          const handled = handleAuthError(error);
+          if (!handled && options && typeof options.onError === "function") {
             options.onError(error);
           }
         });
@@ -558,11 +571,14 @@
           renderStores();
           updateStoreOptions();
         })
-        .catch(() => {
+        .catch((error) => {
           storeState.loading = false;
           storeState.error = true;
           renderStores();
-          showToast("Không thể tải danh sách gian hàng.");
+          const handled = handleAuthError(error);
+          if (!handled) {
+            showToast(resolveLoadError(error, "Không thể tải danh sách gian hàng."));
+          }
         })
         .finally(() => {
           storeRefreshInFlight = false;
@@ -1806,10 +1822,11 @@
           render();
           if (typeof after === "function") after(data || []);
         })
-        .catch(() => {
+        .catch((error) => {
           state.loading = false;
           state.error = true;
           render();
+          handleAuthError(error);
         });
     };
 

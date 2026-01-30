@@ -38,10 +38,16 @@ async function getShopById(db, id) {
   return db.prepare(sql).bind(id).first();
 }
 
+function isTruthyFlag(value) {
+  if (value === true || value === 1) return true;
+  const raw = String(value || "").trim().toLowerCase();
+  return raw === "1" || raw === "true" || raw === "yes";
+}
+
 function isApproved(shop) {
   const status = String(shop.status || "").toLowerCase();
-  const active = Number(shop.is_active || 0) === 1;
-  return active && (status === "approved" || status === "active" || status === "published");
+  const active = isTruthyFlag(shop.is_active);
+  return active && (status === "approved" || status === "active" || status === "published" || status === "pending_update");
 }
 
 async function ensureShopImagesTable(db) {
@@ -162,7 +168,7 @@ export async function onRequestGet(context) {
       descriptionShort: shop.short_desc || "",
       descriptionLong: shop.long_desc || shop.description || "",
       status: shop.status || "pending",
-      isActive: Number(shop.is_active || 0) === 1,
+      isActive: isTruthyFlag(shop.is_active),
       rating: Number(shop.rating || 0),
       totalReviews: Number(shop.total_reviews || 0),
       totalOrders: Number(shop.total_orders || 0),

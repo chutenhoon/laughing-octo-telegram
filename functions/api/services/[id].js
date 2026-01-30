@@ -3,7 +3,19 @@ import { getSessionUser, findUserByRef, toSafeHtml, toPlainText, jsonCachedRespo
 
 function isApprovedStatus(status) {
   const value = String(status || "").toLowerCase();
-  return value === "approved" || value === "active" || value === "published";
+  return value === "approved" || value === "active" || value === "published" || value === "pending_update";
+}
+
+function isTruthyFlag(value) {
+  if (value === true || value === 1) return true;
+  const raw = String(value || "").trim().toLowerCase();
+  return raw === "1" || raw === "true" || raw === "yes";
+}
+
+function isVisibleProductStatus(status) {
+  const value = String(status || "").trim().toLowerCase();
+  if (!value) return true;
+  return value !== "disabled" && value !== "blocked" && value !== "banned";
 }
 
 export async function onRequestGet(context) {
@@ -43,8 +55,8 @@ export async function onRequestGet(context) {
     const isOwner = viewer && String(viewer.resolvedId || viewer.id) === String(row.owner_user_id || "");
     const isAdmin = viewer && String(viewer.role || "").toLowerCase() === "admin";
 
-    const productActive = Number(row.is_active || 0) === 1 && Number(row.is_published || 0) === 1 && isApprovedStatus(row.status);
-    const shopActive = Number(row.shop_active || 0) === 1 && isApprovedStatus(row.shop_status);
+    const productActive = isTruthyFlag(row.is_active) && isTruthyFlag(row.is_published) && isVisibleProductStatus(row.status);
+    const shopActive = isTruthyFlag(row.shop_active) && isApprovedStatus(row.shop_status);
     if (!productActive || !shopActive) {
       if (!isOwner && !isAdmin) {
         return jsonResponse({ ok: false, error: "NOT_FOUND" }, 404);

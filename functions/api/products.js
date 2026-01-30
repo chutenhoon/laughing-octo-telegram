@@ -23,15 +23,19 @@ function parseList(value) {
   return Array.from(new Set(raw));
 }
 
+function flagTrue(column) {
+  return `(${column} = 1 OR lower(${column}) IN ('true','yes'))`;
+}
+
 function buildWhere(params, binds, options = {}) {
   const clauses = [
     "p.kind = 'product'",
-    "p.is_active = 1",
-    "p.is_published = 1",
-    "s.is_active = 1",
+    flagTrue("p.is_active"),
+    flagTrue("p.is_published"),
+    flagTrue("s.is_active"),
   ];
   if (!options.includeUnapproved) {
-    clauses.push("s.status IN ('approved','active','published')");
+    clauses.push("lower(coalesce(s.status,'')) IN ('approved','active','published','pending_update')");
   }
 
   if (params.category) {

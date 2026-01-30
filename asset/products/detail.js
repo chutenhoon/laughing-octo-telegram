@@ -20,11 +20,20 @@
   };
 
   const renderSellerBadge = (data) => {
-    if (!data || !data.badge) return "";
-    const raw = String(data.badge || "").trim().toUpperCase();
+    if (!data) return "";
+    let badgeValue = String(data.badge || "").trim();
+    if (!badgeValue) {
+      const role = String(data.role || "").trim().toLowerCase();
+      if (role === "admin") badgeValue = "ADMIN";
+      if (role === "coadmin") badgeValue = "COADMIN";
+    }
+    const raw = String(badgeValue || "").trim().toUpperCase();
     if (!raw) return "";
     if (raw === "ADMIN") {
       return `<span class="seller-badge admin">${translate("seller.badge.admin", "Admin")}</span>`;
+    }
+    if (raw === "COADMIN") {
+      return `<span class="seller-badge coadmin">Coadmin</span>`;
     }
     if (raw === "VERIFIED") {
       return `<span class="seller-badge verified">${translate("seller.badge.verified", "Verified")}</span>`;

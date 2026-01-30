@@ -9,6 +9,32 @@
   const translate = (key, fallback, vars) =>
     typeof formatI18n === "function" ? formatI18n(getLanguage(), key, fallback, vars) : fallback || key;
 
+  const normalizeLabel = (value) => String(value || "").trim().toLowerCase();
+
+  const resolveBadgeValue = (data) => {
+    if (!data) return "";
+    const badge = String(data.badge || "").trim();
+    if (badge) return badge;
+    const role = String(data.role || "").trim().toLowerCase();
+    if (role === "admin") return "ADMIN";
+    if (role === "coadmin") return "COADMIN";
+    return "";
+  };
+
+  const resolveBadgeLabel = (raw) => {
+    const value = String(raw || "").trim();
+    if (!value) return "";
+    const normalized = value.toUpperCase();
+    if (normalized === "ADMIN") return translate("seller.badge.admin", "Admin");
+    if (normalized === "COADMIN") return "Coadmin";
+    if (normalized === "VERIFIED") return translate("seller.badge.verified", "Verified");
+    if (normalized.startsWith("MERCHANT-")) {
+      const tier = normalized.replace("MERCHANT-", "");
+      return translate("seller.badge.merchant", undefined, { tier });
+    }
+    return value;
+  };
+
   const formatVnd = (value) => {
     if (typeof formatPrice === "function") return formatPrice(value);
     return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(value);
@@ -35,11 +61,15 @@
   };
 
   const renderSellerBadge = (data) => {
-    if (!data || !data.badge) return "";
-    const raw = String(data.badge || "").trim().toUpperCase();
+    const badgeValue = resolveBadgeValue(data);
+    if (!badgeValue) return "";
+    const raw = String(badgeValue || "").trim().toUpperCase();
     if (!raw) return "";
     if (raw === "ADMIN") {
       return `<span class="seller-badge admin">${translate("seller.badge.admin", "Admin")}</span>`;
+    }
+    if (raw === "COADMIN") {
+      return `<span class="seller-badge coadmin">Coadmin</span>`;
     }
     if (raw === "VERIFIED") {
       return `<span class="seller-badge verified">${translate("seller.badge.verified", "Verified")}</span>`;
@@ -67,6 +97,7 @@
     other: "KH",
   };
 
+  const storeHero = document.getElementById("store-hero");
   const storeAvatar = document.getElementById("store-avatar");
   const storeName = document.getElementById("store-name");
   const storeOwnerName = document.getElementById("store-owner-name");
@@ -163,30 +194,100 @@
     return labels;
   };
 
+  const getInitials = (value) => {
+    const text = String(value || "").trim();
+    if (!text) return "BK";
+    const parts = text.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return `${parts[0][0] || ""}${parts[1][0] || ""}`.toUpperCase();
+    }
+    return text.slice(0, 2).toUpperCase();
+  };
+
+  const getCoverImage = (shop) => {
+    const list = Array.isArray(shop && shop.images) ? shop.images : [];
+    const sorted = list
+      .map((item) => ({ url: item.url, position: Number(item.position || 0) }))
+      .filter((item) => item.url)
+      .sort((a, b) => a.position - b.position);
+    return sorted.length ? sorted[0].url : "";
+  };
+
+  const applyCover = (coverUrl) => {
+    if (!storeHero) return;
+    if (coverUrl) {
+      const safeUrl = String(coverUrl).replace(/"/g, "%22").replace(/'/g, "%27");
+      storeHero.style.setProperty("--store-cover-image", `url(\"${safeUrl}\")`);
+      storeHero.classList.add("has-cover");
+    } else {
+      storeHero.style.removeProperty("--store-cover-image");
+      storeHero.classList.remove("has-cover");
+    }
+  };
+
+  const setHeroLoading = (active) => {
+    if (!storeHero) return;
+    storeHero.classList.toggle("is-loading", Boolean(active));
+    const targets = [storeName, storeOwnerName, storeOwnerTitle, storeMetaLine, storeShortDesc];
+    targets.forEach((el) => {
+      if (!el) return;
+      el.classList.toggle("skeleton", Boolean(active));
+      if (active) el.textContent = "";
+    });
+    if (storeAvatar) {
+      storeAvatar.classList.toggle("skeleton", Boolean(active));
+      if (active) storeAvatar.innerHTML = "";
+    }
+    if (storeOwnerBadge) {
+      storeOwnerBadge.classList.toggle("is-hidden", Boolean(active));
+    }
+  };
+
   const renderShop = async (shop) => {
     const categories = await loadCategories();
     const type = resolveType(shop, categories);
     const typeLabel = type === "service" ? "D\u1ecbch v\u1ee5" : "S\u1ea3n ph\u1ea9m";
     const categoryLabel = formatCategoryLabel(type, shop.category, categories);
     const tagLabels = formatTagLabels(shop.category, shop.tags && shop.tags.length ? shop.tags : shop.subcategory ? [shop.subcategory] : [], categories, type);
+    const owner = shop.owner || {};
+    const badgeValue = resolveBadgeValue(owner);
+    const badgeLabel = resolveBadgeLabel(badgeValue);
+    const normalizedBadge = normalizeLabel(badgeLabel);
+
+    applyCover(getCoverImage(shop));
 
     if (storeName) storeName.textContent = shop.name || "--";
-    if (storeOwnerName) storeOwnerName.textContent = (shop.owner && (shop.owner.displayName || shop.owner.username)) || "--";
-    if (storeOwnerBadge) storeOwnerBadge.innerHTML = renderSellerBadge(shop.owner || {});
+    if (storeOwnerName) storeOwnerName.textContent = (owner && (owner.displayName || owner.username)) || "--";
+    if (storeOwnerBadge) {
+      const badgeHtml = renderSellerBadge(owner);
+      storeOwnerBadge.innerHTML = badgeHtml;
+      storeOwnerBadge.style.display = badgeHtml ? "inline-flex" : "none";
+    }
     if (storeOwnerTitle) {
       const titleParts = [];
-      if (shop.owner && shop.owner.title) titleParts.push(shop.owner.title);
-      if (shop.owner && shop.owner.rank) titleParts.push(shop.owner.rank);
-      storeOwnerTitle.textContent = titleParts.join(" \u2022 ");
-      storeOwnerTitle.style.display = titleParts.length ? "inline-flex" : "none";
+      [owner.title, owner.rank].forEach((value) => {
+        const cleaned = String(value || "").trim();
+        if (!cleaned) return;
+        const normalized = normalizeLabel(cleaned);
+        if (normalizedBadge && normalized === normalizedBadge) return;
+        if (titleParts.some((item) => normalizeLabel(item) === normalized)) return;
+        titleParts.push(cleaned);
+      });
+      if (titleParts.length) {
+        storeOwnerTitle.textContent = titleParts.join(" \u2022 ");
+        storeOwnerTitle.style.display = "inline-flex";
+      } else {
+        storeOwnerTitle.textContent = "";
+        storeOwnerTitle.style.display = "none";
+      }
     }
 
     if (storeAvatar) {
       if (shop.avatarUrl) {
         storeAvatar.innerHTML = `<img src="${shop.avatarUrl}" alt="${escapeHtml(shop.name || "Shop")}" loading="lazy" />`;
       } else {
-        const fallback = String(shop.subcategory || shop.category || "BK").slice(0, 2);
-        storeAvatar.textContent = fallback;
+        const fallback = getInitials(shop.name || (owner && owner.displayName) || "BK");
+        storeAvatar.innerHTML = `<span class="store-avatar-fallback">${escapeHtml(fallback)}</span>`;
       }
     }
 
@@ -218,6 +319,7 @@
       window.BKStoreShop = state.shop;
       document.dispatchEvent(new CustomEvent("store:loaded", { detail: state.shop }));
     } catch (error) {}
+    setHeroLoading(false);
   };
 
   const renderSkeleton = () => {
@@ -354,21 +456,25 @@
     const storeId = getStoreRef();
     if (!storeId) {
       if (storeName) storeName.textContent = translate("store.notFound", "Gian h\u00e0ng kh\u00f4ng t\u1ed3n t\u1ea1i");
+      setHeroLoading(false);
       return;
     }
     try {
+      setHeroLoading(true);
       state.preview = isPreviewMode();
       const headers = state.preview ? getAdminHeaders() : null;
       const response = await fetch(`/api/shops/${encodeURIComponent(storeId)}`, headers ? { headers } : undefined);
       const data = await response.json();
       if (!response.ok || !data || data.ok === false || !data.shop) {
         if (storeName) storeName.textContent = translate("store.notFound", "Gian h\u00e0ng kh\u00f4ng t\u1ed3n t\u1ea1i");
+        setHeroLoading(false);
         return;
       }
       await renderShop(data.shop);
       await loadItems();
     } catch (error) {
       if (storeName) storeName.textContent = translate("store.notFound", "Gian h\u00e0ng kh\u00f4ng t\u1ed3n t\u1ea1i");
+      setHeroLoading(false);
     }
   };
 

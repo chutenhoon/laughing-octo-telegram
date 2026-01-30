@@ -111,6 +111,19 @@
     window.alert(message);
   };
 
+  const handleAuthError = (error) => {
+    const status = error && typeof error.status === "number" ? error.status : 0;
+    const code = error && error.message ? error.message : "";
+    if (status === 401 || code === "AUTH_REQUIRED") {
+      showToast("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+      if (window.BKAuth && typeof window.BKAuth.redirectToLogin === "function") {
+        window.setTimeout(() => window.BKAuth.redirectToLogin(), 600);
+      }
+      return true;
+    }
+    return false;
+  };
+
   const resolveLoadError = (error, fallback) => {
     const code = error && error.message ? error.message : "";
     if (code === "AUTH_REQUIRED") return "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
@@ -299,7 +312,10 @@
       state.loading = false;
       state.error = true;
       renderGroups();
-      showToast(resolveLoadError(error, "Không thể tải danh sách sản phẩm."));
+      const handled = handleAuthError(error);
+      if (!handled) {
+        showToast(resolveLoadError(error, "Không thể tải danh sách sản phẩm."));
+      }
     }
   };
 

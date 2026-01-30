@@ -4,7 +4,19 @@ const MAX_RESERVE_ATTEMPTS = 5;
 
 function isApprovedStatus(status) {
   const value = String(status || "").toLowerCase();
-  return value === "approved" || value === "active" || value === "published";
+  return value === "approved" || value === "active" || value === "published" || value === "pending_update";
+}
+
+function isTruthyFlag(value) {
+  if (value === true || value === 1) return true;
+  const raw = String(value || "").trim().toLowerCase();
+  return raw === "1" || raw === "true" || raw === "yes";
+}
+
+function isVisibleProductStatus(status) {
+  const value = String(status || "").trim().toLowerCase();
+  if (!value) return true;
+  return value !== "disabled" && value !== "blocked" && value !== "banned";
 }
 
 async function reserveInventoryLine(db, productId) {
@@ -93,8 +105,10 @@ export async function onRequestPost(context) {
     if (!productRow) return jsonResponse({ ok: false, error: "NOT_FOUND" }, 404);
 
     const productActive =
-      Number(productRow.is_active || 0) === 1 && Number(productRow.is_published || 0) === 1 && isApprovedStatus(productRow.status);
-    const shopActive = Number(productRow.shop_active || 0) === 1 && isApprovedStatus(productRow.shop_status);
+      isTruthyFlag(productRow.is_active) &&
+      isTruthyFlag(productRow.is_published) &&
+      isVisibleProductStatus(productRow.status);
+    const shopActive = isTruthyFlag(productRow.shop_active) && isApprovedStatus(productRow.shop_status);
     if (!productActive || !shopActive) return jsonResponse({ ok: false, error: "PRODUCT_UNAVAILABLE" }, 403);
 
     const body = await readJsonBody(context.request);

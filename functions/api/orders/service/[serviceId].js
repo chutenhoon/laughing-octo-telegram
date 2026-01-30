@@ -3,7 +3,19 @@ import { requireUser, toPlainText } from "../../_catalog.js";
 
 function isApprovedStatus(status) {
   const value = String(status || "").toLowerCase();
-  return value === "approved" || value === "active" || value === "published";
+  return value === "approved" || value === "active" || value === "published" || value === "pending_update";
+}
+
+function isTruthyFlag(value) {
+  if (value === true || value === 1) return true;
+  const raw = String(value || "").trim().toLowerCase();
+  return raw === "1" || raw === "true" || raw === "yes";
+}
+
+function isVisibleProductStatus(status) {
+  const value = String(status || "").trim().toLowerCase();
+  if (!value) return true;
+  return value !== "disabled" && value !== "blocked" && value !== "banned";
 }
 
 export async function onRequestPost(context) {
@@ -30,8 +42,10 @@ export async function onRequestPost(context) {
     if (!serviceRow) return jsonResponse({ ok: false, error: "NOT_FOUND" }, 404);
 
     const productActive =
-      Number(serviceRow.is_active || 0) === 1 && Number(serviceRow.is_published || 0) === 1 && isApprovedStatus(serviceRow.status);
-    const shopActive = Number(serviceRow.shop_active || 0) === 1 && isApprovedStatus(serviceRow.shop_status);
+      isTruthyFlag(serviceRow.is_active) &&
+      isTruthyFlag(serviceRow.is_published) &&
+      isVisibleProductStatus(serviceRow.status);
+    const shopActive = isTruthyFlag(serviceRow.shop_active) && isApprovedStatus(serviceRow.shop_status);
     if (!productActive || !shopActive) return jsonResponse({ ok: false, error: "SERVICE_UNAVAILABLE" }, 403);
 
     const body = await readJsonBody(context.request);
