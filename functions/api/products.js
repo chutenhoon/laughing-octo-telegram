@@ -35,7 +35,7 @@ function buildWhere(params, binds, options = {}) {
     flagTrue("s.is_active"),
   ];
   if (!options.includeUnapproved) {
-    clauses.push("lower(coalesce(s.status,'')) IN ('approved','active','published','pending_update')");
+    clauses.push("lower(trim(coalesce(s.status,''))) IN ('approved','active','published','pending_update')");
   }
 
   if (params.category) {

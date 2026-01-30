@@ -571,14 +571,11 @@
           renderStores();
           updateStoreOptions();
         })
-        .catch((error) => {
+        .catch(() => {
           storeState.loading = false;
           storeState.error = true;
           renderStores();
-          const handled = handleAuthError(error);
-          if (!handled) {
-            showToast(resolveLoadError(error, "Không thể tải danh sách gian hàng."));
-          }
+          showToast("Không thể tải danh sách gian hàng.");
         })
         .finally(() => {
           storeRefreshInFlight = false;
@@ -1822,11 +1819,10 @@
           render();
           if (typeof after === "function") after(data || []);
         })
-        .catch((error) => {
+        .catch(() => {
           state.loading = false;
           state.error = true;
           render();
-          handleAuthError(error);
         });
     };
 

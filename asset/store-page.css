@@ -7,7 +7,7 @@
 .store-hero {
   position: relative;
   display: grid;
-  grid-template-columns: 140px 1fr;
+  grid-template-columns: minmax(0, 800px) 1fr;
   gap: 22px;
   padding: 24px;
   align-items: center;
@@ -77,8 +77,11 @@
 }
 
 .store-avatar {
-  width: 140px;
-  height: 140px;
+  width: 100%;
+  max-width: 800px;
+  max-height: 800px;
+  aspect-ratio: 1 / 1;
+  height: auto;
   border-radius: 20px;
   overflow: hidden;
   display: flex;
@@ -95,6 +98,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
 }
 
 .store-avatar .store-avatar-fallback {

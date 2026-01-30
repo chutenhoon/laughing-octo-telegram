@@ -168,7 +168,7 @@ export async function onRequestGet(context) {
       descriptionShort: shop.short_desc || "",
       descriptionLong: shop.long_desc || shop.description || "",
       status: shop.status || "pending",
-      isActive: isTruthyFlag(shop.is_active),
+      isActive: Number(shop.is_active || 0) === 1,
       rating: Number(shop.rating || 0),
       totalReviews: Number(shop.total_reviews || 0),
       totalOrders: Number(shop.total_orders || 0),

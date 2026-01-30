@@ -2,6 +2,18 @@
   pointer-events: none;
 }
 
+.product-media {
+  width: 100%;
+  max-width: 800px;
+  max-height: 800px;
+  aspect-ratio: 1 / 1;
+  height: auto;
+}
+
+.product-media img {
+  object-position: center;
+}
+
 .product-card.is-skeleton .product-media,
 .product-card.is-skeleton .product-title,
 .product-card.is-skeleton .product-price,
@@ -14,7 +26,10 @@
 }
 
 .product-card.is-skeleton .product-media {
-  height: 180px;
+  max-width: 800px;
+  max-height: 800px;
+  aspect-ratio: 1 / 1;
+  height: auto;
 }
 
 .product-card.is-skeleton .product-title,
