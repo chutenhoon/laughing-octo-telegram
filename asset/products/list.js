@@ -50,6 +50,23 @@
     return "";
   };
 
+  const root =
+    typeof getProjectRoot === "function"
+      ? getProjectRoot()
+      : typeof getRootPath === "function"
+        ? getRootPath()
+        : "/";
+  const isFile = window.location.protocol === "file:";
+  const isLegacy = !isFile && root.includes("/legacy/");
+
+  const buildShopUrl = (ref) => {
+    const value = String(ref || "").trim();
+    if (!value) return "";
+    if (isFile) return `${root}seller/[id]/index.html?id=${encodeURIComponent(value)}`;
+    if (isLegacy) return `${root}gian-hang/[slug]/?id=${encodeURIComponent(value)}`;
+    return `${root}gian-hang/${encodeURIComponent(value)}`;
+  };
+
   const categoryKeys = {
     email: "product.category.email",
     tool: "product.category.tool",
@@ -213,9 +230,12 @@
       item.priceMax != null && item.priceMax > item.price
         ? `data-base-min="${item.price}" data-base-max="${item.priceMax}" data-base-currency="VND"`
         : `data-base-amount="${item.price}" data-base-currency="VND"`;
-    const detailUrl = typeof getProductDetailPath === "function" ? getProductDetailPath(item.id) : `/sanpham/[id]/?id=${encodeURIComponent(item.id)}`;
+    const detailUrl =
+      typeof getProductDetailPath === "function" ? getProductDetailPath(item.id) : `/sanpham/[id]/?id=${encodeURIComponent(item.id)}`;
+    const shopRef = seller.slug || item.shopId || "";
+    const shopUrl = buildShopUrl(shopRef);
     return `
-      <a class="product-card" href="${detailUrl}">
+      <div class="product-card" role="link" tabindex="0" data-detail-url="${detailUrl}">
         <div class="product-media">${media}</div>
         <div class="product-body">
           <div class="product-price" ${priceAttrs}>${priceLabel}</div>
@@ -233,12 +253,13 @@
                 <span class="seller-label">${translate("label.seller", "Seller")}:</span>
                 <span class="seller-value"><strong class="seller-name">${seller.name || "Shop"}</strong>${sellerBadge}</span>
               </span>
+              ${shopUrl ? `<button class="btn ghost shop-link" type="button" data-shop-url="${shopUrl}">${translate("label.shop", "Gian hàng")}</button>` : ""}
             </div>
           </div>
           ${subLabel ? `<div class="product-type">${translate("label.type", "Type")}: <strong>${subLabel}</strong></div>` : ""}
           <p class="product-desc">${item.descriptionShort || ""}</p>
         </div>
-      </a>
+      </div>
     `;
   };
 
@@ -255,10 +276,36 @@
       return;
     }
     grid.innerHTML = items.map(buildCard).join("");
+    bindCardNavigation();
     if (window.BKCurrency && typeof window.BKCurrency.applyToDom === "function") {
       window.BKCurrency.applyToDom(grid);
     }
     renderPagination(state.totalPages);
+  };
+
+  const bindCardNavigation = () => {
+    if (!grid || grid.dataset.bound === "1") return;
+    grid.dataset.bound = "1";
+    grid.addEventListener("click", (event) => {
+      const shopBtn = event.target.closest(".shop-link");
+      if (shopBtn && shopBtn.dataset.shopUrl) {
+        event.preventDefault();
+        event.stopPropagation();
+        window.location.href = shopBtn.dataset.shopUrl;
+        return;
+      }
+      const card = event.target.closest(".product-card");
+      if (card && card.dataset.detailUrl) {
+        window.location.href = card.dataset.detailUrl;
+      }
+    });
+    grid.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+      const card = event.target.closest(".product-card");
+      if (card && card.dataset.detailUrl) {
+        window.location.href = card.dataset.detailUrl;
+      }
+    });
   };
 
   const loadProducts = async () => {

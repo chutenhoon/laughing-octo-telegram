@@ -4011,6 +4011,7 @@ body.modal-open {
   backdrop-filter: var(--glass-blur);
   box-shadow: var(--shadow);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
 }
 
 .product-card:hover {
@@ -4045,6 +4046,14 @@ body.modal-open {
   padding: 16px 18px 18px;
   display: grid;
   gap: 8px;
+}
+
+.product-card .shop-link {
+  margin-top: 6px;
+  align-self: flex-start;
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 10px;
 }
 
 .product-price {
