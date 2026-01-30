@@ -19,6 +19,12 @@ export async function onRequestGet(context) {
     const url = new URL(context.request.url);
     const queryRef = String(url.searchParams.get("id") || "").trim();
     const paramRef = context?.params?.id ? String(context.params.id).trim() : "";
+    if (!queryRef && paramRef) {
+      const reserved = new Set(["panel", "join", "tasks"]);
+      if (reserved.has(paramRef.toLowerCase()) && typeof context.next === "function") {
+        return context.next();
+      }
+    }
     const ref = queryRef || paramRef;
     if (!ref) return jsonResponse({ ok: false, error: "NOT_FOUND" }, 404);
 
