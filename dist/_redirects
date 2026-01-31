@@ -1,5 +1,13 @@
 /api/* /api/:splat 200
 /media/* /media/:splat 200
+/sanpham /legacy/sanpham/ 200
+/sanpham/ /legacy/sanpham/ 200
+/sanpham/* /legacy/sanpham/[id]/index.html 200
+/dichvu /legacy/dichvu/ 200
+/dichvu/ /legacy/dichvu/ 200
+/dichvu/* /legacy/dichvu/[id]/index.html 200
+/gian-hang/nguoi-ban/* /legacy/gian-hang/nguoi-ban/index.html 200
+/gian-hang/* /legacy/gian-hang/[slug]/index.html 200
 /legacy/u /legacy/profile/public/ 200
 /legacy/u/ /legacy/profile/public/ 200
 /legacy/u/* /legacy/profile/public/ 200
