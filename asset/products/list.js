@@ -50,13 +50,13 @@
     return "";
   };
 
+  const isFile = window.location.protocol === "file:";
   const root =
-    typeof getProjectRoot === "function"
+    isFile && typeof getProjectRoot === "function"
       ? getProjectRoot()
       : typeof getRootPath === "function"
         ? getRootPath()
         : "/";
-  const isFile = window.location.protocol === "file:";
   const isLegacy = !isFile && root.includes("/legacy/");
 
   const buildShopUrl = (ref) => {

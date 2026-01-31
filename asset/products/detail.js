@@ -140,8 +140,13 @@
     if (sellerLink) {
       const sellerName = seller.displayName || seller.username || seller.name || shop.name || "Shop";
       sellerLink.textContent = sellerName;
-      const root = typeof getProjectRoot === "function" ? getProjectRoot() : "/";
       const isFile = window.location.protocol === "file:";
+      const root =
+        isFile && typeof getProjectRoot === "function"
+          ? getProjectRoot()
+          : typeof getRootPath === "function"
+            ? getRootPath()
+            : "/";
       const isLegacy = !isFile && root.includes("/legacy/");
       const ref = seller.slug || shop.slug || product.shopId || "";
       if (isFile) {
