@@ -2,21 +2,8 @@ import { jsonResponse } from "./auth/_utils.js";
 import { toPlainText, requireAdmin } from "./_catalog.js";
 
 const SOLD_STATUSES = ["delivered", "completed", "success"];
-const APPROVED_SHOP_STATUSES = [
-  "approved",
-  "active",
-  "published",
-  "pending_update",
-  "da duyet",
-  "đã duyệt",
-  "đã duyệt",
-  "cho cap nhat",
-  "chờ cập nhật",
-  "chờ cập nhật",
-];
 
 function normalizeNumber(value, fallback) {
-  if (value === null || value === undefined || value === "") return fallback;
   const num = Number(value);
   if (!Number.isFinite(num)) return fallback;
   return num;
@@ -37,7 +24,7 @@ function parseList(value) {
 }
 
 function flagTrue(column) {
-  return `(${column} = 1 OR lower(${column}) IN ('true','yes') OR ${column} IS NULL)`;
+  return `(${column} = 1 OR lower(${column}) IN ('true','yes'))`;
 }
 
 function buildWhere(params, binds, options = {}) {
@@ -48,13 +35,11 @@ function buildWhere(params, binds, options = {}) {
     flagTrue("s.is_active"),
   ];
   if (!options.includeUnapproved) {
-    clauses.push(
-      `lower(trim(coalesce(s.status,''))) IN (${APPROVED_SHOP_STATUSES.map((status) => `'${status}'`).join(",")})`
-    );
+    clauses.push("lower(trim(coalesce(s.status,''))) IN ('approved','active','published','pending_update')");
   }
 
   if (params.category) {
-    clauses.push("lower(trim(COALESCE(p.category, s.category))) = lower(trim(?))");
+    clauses.push("COALESCE(p.category, s.category) = ?");
     binds.push(params.category);
   }
   if (params.subcategories.length) {
@@ -127,12 +112,12 @@ export async function onRequestGet(context) {
     const total = Number(countRow && countRow.total ? countRow.total : 0);
 
     const soldCondition = SOLD_STATUSES.map(() => "?").join(", ");
-    const soldBinds = [...SOLD_STATUSES, ...binds, params.perPage, offset];
+    const soldBinds = [...binds, ...SOLD_STATUSES, params.perPage, offset];
     const listSql = `
       SELECT p.id, p.shop_id, p.name, p.description_short, p.description, p.category, p.subcategory, p.tags_json,
              p.price, p.price_max, p.stock_count, p.thumbnail_media_id, p.status, p.created_at,
              s.store_name, s.store_slug, s.rating AS shop_rating, s.category AS store_category, s.subcategory AS store_subcategory, s.tags_json AS store_tags_json,
-             u.badge, u.role, u.display_name, u.username, u.title, u.rank,
+             u.badge, u.role, u.display_name, u.title, u.rank,
              (
                SELECT COALESCE(SUM(oi.quantity), 0)
                  FROM order_items oi
@@ -179,7 +164,6 @@ export async function onRequestGet(context) {
           badge: row.badge || "",
           role: row.role || "",
           displayName: row.display_name || "",
-          username: row.username || "",
           title: row.title || "",
           rank: row.rank || "",
         },

@@ -1,27 +1,16 @@
-/api/* /api/:splat 200
-/media/* /media/:splat 200
-/sanpham /legacy/sanpham/ 200
-/sanpham/ /legacy/sanpham/ 200
-/sanpham/* /legacy/sanpham/[id]/index.html 200
-/dichvu /legacy/dichvu/ 200
-/dichvu/ /legacy/dichvu/ 200
-/dichvu/* /legacy/dichvu/[id]/index.html 200
-/gian-hang/nguoi-ban/* /legacy/gian-hang/nguoi-ban/index.html 200
-/gian-hang/* /legacy/gian-hang/[slug]/index.html 200
-/legacy/u /legacy/profile/public/ 200
-/legacy/u/ /legacy/profile/public/ 200
-/legacy/u/* /legacy/profile/public/ 200
-/legacy/* /legacy/:splat 200
-/asset/* /asset/:splat 200
-/assets/* /assets/:splat 200
-/audio/* /audio/:splat 200
-/picture/* /picture/:splat 200
-/sw.js /sw.js 200
-/favicon.ico /favicon.ico 200
-/favicon-16x16.png /favicon-16x16.png 200
-/favicon-32x32.png /favicon-32x32.png 200
-/apple-touch-icon.png /apple-touch-icon.png 200
-/android-chrome-192x192.png /android-chrome-192x192.png 200
-/android-chrome-512x512.png /android-chrome-512x512.png 200
-/site.webmanifest /site.webmanifest 200
-/* /index.html 200
+/sanpham /sanpham/index.html 200
+/sanpham/ /sanpham/index.html 200
+/sanpham/* /sanpham/[id]/index.html 200
+
+/dichvu /dichvu/index.html 200
+/dichvu/ /dichvu/index.html 200
+/dichvu/* /dichvu/[id]/index.html 200
+
+/gian-hang/nguoi-ban/* /seller/[id]/index.html 200
+/gian-hang/* /seller/[id]/index.html 200
+
+/u /profile/public/ 200
+/u/ /profile/public/ 200
+/u/* /profile/public/ 200
+/profile/messages /profile/messages/index.html 200
+/profile/messages/ /profile/messages/index.html 200

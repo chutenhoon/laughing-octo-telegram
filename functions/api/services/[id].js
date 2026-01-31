@@ -2,24 +2,12 @@ import { jsonResponse } from "../auth/_utils.js";
 import { getSessionUser, findUserByRef, toSafeHtml, toPlainText, jsonCachedResponse } from "../_catalog.js";
 
 function isApprovedStatus(status) {
-  const value = String(status || "").trim().toLowerCase();
-  return (
-    value === "approved" ||
-    value === "active" ||
-    value === "published" ||
-    value === "pending_update" ||
-    value === "da duyet" ||
-    value === "đã duyệt" ||
-    value === "đã duyệt" ||
-    value === "cho cap nhat" ||
-    value === "chờ cập nhật" ||
-    value === "chờ cập nhật"
-  );
+  const value = String(status || "").toLowerCase();
+  return value === "approved" || value === "active" || value === "published" || value === "pending_update";
 }
 
 function isTruthyFlag(value) {
   if (value === true || value === 1) return true;
-  if (value === null || value === undefined || value === "") return true;
   const raw = String(value || "").trim().toLowerCase();
   return raw === "1" || raw === "true" || raw === "yes";
 }

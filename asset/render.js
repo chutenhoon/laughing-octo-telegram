@@ -13,7 +13,6 @@ function getProjectRoot() {
     "/checkout/",
     "/u/",
     "/seller/",
-    "/gian-hang/",
     "/polyfluxdev2026/",
     "/asset/",
     "/components/",
@@ -48,8 +47,6 @@ function getProjectRoot() {
 
 function getRootPath() {
   if (window.location.protocol === "file:") return getProjectRoot();
-  const path = window.location.pathname.replace(/\\/g, "/");
-  if (path.startsWith("/legacy/")) return "/legacy/";
   return "/";
 }
 
@@ -122,11 +119,9 @@ function ensureBadgeStyles() {
 function getProductDetailPath(productId) {
   const root = getRootPath();
   const isFile = window.location.protocol === "file:";
-  const isLegacy = root.startsWith("/legacy/");
-  const base = isFile || isLegacy ? "sanpham/[id]/" : "sanpham/";
-  if (!productId) return root + base;
-  if (isFile || isLegacy) return root + base + `?id=${encodeURIComponent(productId)}`;
-  return root + base + encodeURIComponent(productId);
+  const base = isFile ? "sanpham/[id]/index.html" : "sanpham/[id]/";
+  const suffix = productId ? `?id=${encodeURIComponent(productId)}` : "";
+  return root + base + suffix;
 }
 
 // Remove trailing /index.html from the current URL when served over HTTP(S)
@@ -156,8 +151,6 @@ function normalizeIndexLinks(isFile) {
 
 function normalizeInternalLinks(isFile) {
   if (isFile) return;
-  const root = typeof getRootPath === "function" ? getRootPath() : "/";
-  const prefix = root.endsWith("/") ? root : `${root}/`;
   const routes = [
     "sanpham/",
     "dichvu/",
@@ -168,7 +161,6 @@ function normalizeInternalLinks(isFile) {
     "forgot/",
     "checkout/",
     "seller/",
-    "gian-hang/",
     "polyfluxdev2026/",
     "topup/",
     "topups/",
@@ -192,12 +184,12 @@ function normalizeInternalLinks(isFile) {
     const cleaned = raw.replace(/^(?:\.{1,2}\/)+/g, "");
     if (!cleaned) return;
     if (/^index\.html$/i.test(cleaned)) {
-      a.setAttribute("href", root || "/");
+      a.setAttribute("href", "/");
       return;
     }
     const match = routes.some((route) => cleaned === route || cleaned.startsWith(route));
     if (match) {
-      a.setAttribute("href", prefix + cleaned.replace(/^\/+/, ""));
+      a.setAttribute("href", "/" + cleaned.replace(/^\/+/, ""));
     }
   });
 }
@@ -376,7 +368,7 @@ const getMaintenanceRouteKeyForPath = (pathname) => {
   if (path.startsWith("/nhiemvu/tao")) return "task_posting";
   if (path.startsWith("/nhiemvu")) return "tasks_market";
   if (path.startsWith("/seller/panel") || path.startsWith("/seller/tasks") || path.startsWith("/seller/join")) return "seller_panel";
-  if (path.startsWith("/seller/") || path.startsWith("/gian-hang/")) return "seller_public";
+  if (path.startsWith("/seller/")) return "seller_public";
   if (path.startsWith("/checkout") || path.startsWith("/proof")) return "payments";
   if (path.startsWith("/profile/messages")) return "profile.chat";
   if (path.startsWith("/profile/orders")) return "profile.orders";

@@ -1,21 +1,7 @@
 import { jsonResponse } from "./auth/_utils.js";
 import { toPlainText, requireAdmin } from "./_catalog.js";
 
-const APPROVED_SHOP_STATUSES = [
-  "approved",
-  "active",
-  "published",
-  "pending_update",
-  "da duyet",
-  "đã duyệt",
-  "đã duyệt",
-  "cho cap nhat",
-  "chờ cập nhật",
-  "chờ cập nhật",
-];
-
 function normalizeNumber(value, fallback) {
-  if (value === null || value === undefined || value === "") return fallback;
   const num = Number(value);
   if (!Number.isFinite(num)) return fallback;
   return num;
@@ -36,7 +22,7 @@ function parseList(value) {
 }
 
 function flagTrue(column) {
-  return `(${column} = 1 OR lower(${column}) IN ('true','yes') OR ${column} IS NULL)`;
+  return `(${column} = 1 OR lower(${column}) IN ('true','yes'))`;
 }
 
 function buildWhere(params, binds, options = {}) {
@@ -47,13 +33,11 @@ function buildWhere(params, binds, options = {}) {
     flagTrue("s.is_active"),
   ];
   if (!options.includeUnapproved) {
-    clauses.push(
-      `lower(trim(coalesce(s.status,''))) IN (${APPROVED_SHOP_STATUSES.map((status) => `'${status}'`).join(",")})`
-    );
+    clauses.push("lower(trim(coalesce(s.status,''))) IN ('approved','active','published','pending_update')");
   }
 
   if (params.category) {
-    clauses.push("lower(trim(COALESCE(p.category, s.category))) = lower(trim(?))");
+    clauses.push("COALESCE(p.category, s.category) = ?");
     binds.push(params.category);
   }
   if (params.subcategories.length) {

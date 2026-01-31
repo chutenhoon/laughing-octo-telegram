@@ -581,13 +581,10 @@
   const buildPreviewUrl = (store) => {
     if (!store) return "";
     const root = window.location.protocol === "file:" && typeof getProjectRoot === "function" ? getProjectRoot() : "/";
-    const base = window.location.protocol === "file:" ? "seller/[id]/index.html" : "gian-hang/";
+    const base = window.location.protocol === "file:" ? "seller/[id]/index.html" : "seller/[id]/";
     const ref = store.slug || store.id || "";
     if (!ref) return "";
-    if (window.location.protocol === "file:") {
-      return `${root}${base}?id=${encodeURIComponent(ref)}&preview=1`;
-    }
-    return `${root}${base}${encodeURIComponent(ref)}?preview=1`;
+    return `${root}${base}?id=${encodeURIComponent(ref)}&preview=1`;
   };
 
   const openPreviewPage = (store) => {

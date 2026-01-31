@@ -47,6 +47,16 @@
     return "";
   };
 
+  const resolveShopRef = (product) => {
+    if (!product) return "";
+    if (product.shopId != null && product.shopId !== "") return String(product.shopId).trim();
+    if (product.shop && product.shop.id != null && product.shop.id !== "") return String(product.shop.id).trim();
+    const seller = product.seller || {};
+    if (seller.storeId != null && seller.storeId !== "") return String(seller.storeId).trim();
+    if (seller.id != null && seller.id !== "") return String(seller.id).trim();
+    return "";
+  };
+
   const getProductId = () => {
     const params = new URLSearchParams(window.location.search);
     let id = params.get("id");
@@ -127,6 +137,8 @@
     const seller = product.seller || {};
     const shop = product.shop || {};
     const priceLabel = formatPriceRange(product);
+    const shopRef = resolveShopRef(product);
+    const shopUrl = shopRef ? `/gian-hang/${encodeURIComponent(shopRef)}` : "";
 
     setText("detail-title", product.title);
     setText("detail-short", product.descriptionShort || "");
@@ -138,30 +150,21 @@
 
     const sellerLink = document.getElementById("detail-seller-link");
     if (sellerLink) {
-      const sellerName = seller.displayName || seller.username || seller.name || shop.name || "Shop";
-      sellerLink.textContent = sellerName;
-      const isFile = window.location.protocol === "file:";
-      const root =
-        isFile && typeof getProjectRoot === "function"
-          ? getProjectRoot()
-          : typeof getRootPath === "function"
-            ? getRootPath()
-            : "/";
-      const isLegacy = !isFile && root.includes("/legacy/");
-      const ref = seller.slug || shop.slug || product.shopId || "";
-      if (isFile) {
-        const base = "seller/[id]/index.html";
-        sellerLink.href = ref ? `${root}${base}?id=${encodeURIComponent(ref)}` : "#";
-      } else if (isLegacy) {
-        const base = "gian-hang/[slug]/";
-        sellerLink.href = ref ? `${root}${base}?id=${encodeURIComponent(ref)}` : "#";
-      } else {
-        const base = "gian-hang/";
-        sellerLink.href = ref ? `${root}${base}${encodeURIComponent(ref)}` : "#";
-      }
+      sellerLink.textContent = seller.name || shop.name || "Shop";
+      sellerLink.href = shopUrl || "#";
     }
     setHTML("detail-seller-badge", renderSellerBadge(seller));
-    setText("detail-shop-id", shop.slug || product.shopId || "--");
+    setText("detail-shop-id", shopRef || "--");
+    const shopLink = document.getElementById("detail-shop-link");
+    if (shopLink) {
+      if (shopUrl) {
+        shopLink.href = shopUrl;
+        shopLink.style.display = "inline-flex";
+      } else {
+        shopLink.href = "#";
+        shopLink.style.display = "none";
+      }
+    }
     setText("detail-rating-note", product.rating != null ? product.rating : "--");
     const ratingNote = document.getElementById("detail-rating-note");
     if (ratingNote) {

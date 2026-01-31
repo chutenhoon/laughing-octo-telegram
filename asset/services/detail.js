@@ -47,6 +47,16 @@
     return "";
   };
 
+  const resolveShopRef = (service) => {
+    if (!service) return "";
+    if (service.shopId != null && service.shopId !== "") return String(service.shopId).trim();
+    if (service.shop && service.shop.id != null && service.shop.id !== "") return String(service.shop.id).trim();
+    const seller = service.seller || {};
+    if (seller.storeId != null && seller.storeId !== "") return String(seller.storeId).trim();
+    if (seller.id != null && seller.id !== "") return String(seller.id).trim();
+    return "";
+  };
+
   const buildAuthHeaders = () => {
     if (!window.BKAuth || typeof window.BKAuth.read !== "function") return {};
     const auth = window.BKAuth.read();
@@ -87,8 +97,6 @@
     }
 
     const service = data.service;
-    const seller = service.seller || {};
-    const shop = service.shop || {};
     setText("service-title", service.title);
     setText("service-sub", service.descriptionShort || "");
     setText("service-description", service.descriptionHtml ? "" : service.descriptionShort || "");
@@ -96,33 +104,23 @@
     if (descEl && service.descriptionHtml) descEl.innerHTML = service.descriptionHtml;
     setText("service-price", formatPriceRange(service));
     setText("service-eta", service.subcategory || service.category || "");
-
-    const sellerLink = document.getElementById("service-seller-link");
-    if (sellerLink) {
-      const sellerName = seller.displayName || seller.username || seller.name || shop.name || "Shop";
-      sellerLink.textContent = sellerName;
-      const isFile = window.location.protocol === "file:";
-      const root =
-        isFile && typeof getProjectRoot === "function"
-          ? getProjectRoot()
-          : typeof getRootPath === "function"
-            ? getRootPath()
-            : "/";
-      const isLegacy = !isFile && root.includes("/legacy/");
-      const ref = seller.slug || shop.slug || service.shopId || "";
-      if (isFile) {
-        const base = "seller/[id]/index.html";
-        sellerLink.href = ref ? `${root}${base}?id=${encodeURIComponent(ref)}` : "#";
-      } else if (isLegacy) {
-        const base = "gian-hang/[slug]/";
-        sellerLink.href = ref ? `${root}${base}?id=${encodeURIComponent(ref)}` : "#";
+    const seller = service.seller || {};
+    const shop = service.shop || {};
+    const shopRef = resolveShopRef(service);
+    const shopUrl = shopRef ? `/gian-hang/${encodeURIComponent(shopRef)}` : "";
+    setText("service-seller-name", seller.name || shop.name || "Shop");
+    const badgeEl = document.getElementById("service-seller-badge");
+    if (badgeEl) badgeEl.innerHTML = renderSellerBadge(seller);
+    const shopLink = document.getElementById("service-shop-link");
+    if (shopLink) {
+      if (shopUrl) {
+        shopLink.href = shopUrl;
+        shopLink.style.display = "inline-flex";
       } else {
-        const base = "gian-hang/";
-        sellerLink.href = ref ? `${root}${base}${encodeURIComponent(ref)}` : "#";
+        shopLink.href = "#";
+        shopLink.style.display = "none";
       }
     }
-    const sellerBadge = document.getElementById("service-seller-badge");
-    if (sellerBadge) sellerBadge.innerHTML = renderSellerBadge(seller);
 
     const saveBtn = document.querySelector(".form-grid .btn.primary");
     const statusEl = document.querySelector(".service-request-status");

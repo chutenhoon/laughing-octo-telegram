@@ -3,64 +3,6 @@
 const DEFAULT_MIGRATION_ID = "2026-01-28-approvals";
 export const SCHEMA_USER_VERSION = 20260208;
 
-function stripDiacritics(value) {
-  return String(value || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-}
-
-function normalizeToken(value) {
-  const raw = String(value || "").trim();
-  if (!raw) return "";
-  return stripDiacritics(raw)
-    .toLowerCase()
-    .replace(/[_-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function normalizeShopStatus(value) {
-  const normalized = normalizeToken(value);
-  if (!normalized) return "";
-  if (normalized === "approved" || normalized === "active" || normalized === "published") return "approved";
-  if (normalized === "pending_update" || normalized === "pending update" || normalized === "cho cap nhat") return "pending_update";
-  if (normalized === "pending" || normalized === "cho duyet" || normalized === "dang duyet") return "pending";
-  if (normalized === "rejected" || normalized === "tu choi" || normalized === "denied" || normalized === "declined") return "rejected";
-  if (
-    normalized === "disabled" ||
-    normalized === "inactive" ||
-    normalized === "paused" ||
-    normalized === "pause" ||
-    normalized === "vo hieu" ||
-    normalized === "khong hoat dong"
-  ) {
-    return "disabled";
-  }
-  if (normalized === "da duyet" || normalized === "duyet" || normalized === "accepted") return "approved";
-  return normalized;
-}
-
-function normalizeProductStatus(value) {
-  const normalized = normalizeToken(value);
-  if (!normalized) return "";
-  if (normalized === "draft" || normalized === "nhap" || normalized === "ban nhap") return "draft";
-  if (normalized === "pending" || normalized === "cho duyet" || normalized === "dang duyet") return "pending";
-  if (normalized === "approved" || normalized === "active" || normalized === "published") return normalized;
-  if (normalized === "da duyet" || normalized === "duyet" || normalized === "accepted") return "approved";
-  if (
-    normalized === "disabled" ||
-    normalized === "inactive" ||
-    normalized === "paused" ||
-    normalized === "pause" ||
-    normalized === "vo hieu" ||
-    normalized === "khong hoat dong"
-  ) {
-    return "disabled";
-  }
-  if (normalized === "blocked" || normalized === "banned") return normalized;
-  return normalized;
-}
-
 function safeEqual(a, b) {
   const left = String(a || "");
   const right = String(b || "");
@@ -1032,40 +974,6 @@ async function backfillConversationPairKeys(db, report) {
   }
 }
 
-async function normalizeTableStatuses(db, report, table, normalizeFn) {
-  const cols = await getColumns(db, table);
-  if (!cols.size || !cols.has("status")) return;
-  let rows = [];
-  try {
-    const result = await db.prepare(`SELECT rowid, status FROM ${table}`).all();
-    rows = result && Array.isArray(result.results) ? result.results : [];
-  } catch (error) {
-    report.errors.push({ table, action: "status_scan", error: String(error) });
-    return;
-  }
-
-  let updated = 0;
-  for (const row of rows) {
-    const current = row && row.status != null ? String(row.status) : "";
-    const next = normalizeFn(current);
-    if (!next || next === current) continue;
-    try {
-      await db.prepare(`UPDATE ${table} SET status = ? WHERE rowid = ?`).bind(next, row.rowid).run();
-      updated += 1;
-    } catch (error) {
-      report.errors.push({ table, action: "status_update", error: String(error) });
-    }
-  }
-  if (updated > 0) {
-    report.backfills.push(`${table}.status_normalized:${updated}`);
-  }
-}
-
-async function normalizeStatuses(db, report) {
-  await normalizeTableStatuses(db, report, "shops", normalizeShopStatus);
-  await normalizeTableStatuses(db, report, "products", normalizeProductStatus);
-}
-
 async function backfillFeaturedMedia(db, report) {
   try {
     const userCols = await getColumns(db, "users");
@@ -1504,7 +1412,6 @@ export async function runMigrations(db, options = {}) {
   await backfillFeaturedMedia(db, report);
   await backfillFollowCounters(db, report);
   await backfillConversationPairKeys(db, report);
-  await normalizeStatuses(db, report);
   await ensureIndexes(db, report);
   await ensureUniqueIndexIfColumns(db, report, "users", "idx_users_id", ["id"]);
   await ensureIndexIfColumns(db, report, "products", "idx_products_shop", ["shop_id"]);

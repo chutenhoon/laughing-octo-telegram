@@ -22,6 +22,17 @@
     return formatVnd(price);
   };
 
+  const resolveShopRef = (item) => {
+    if (!item) return "";
+    if (item.shopId != null && item.shopId !== "") return String(item.shopId).trim();
+    const seller = item.seller || {};
+    if (seller.storeId != null && seller.storeId !== "") return String(seller.storeId).trim();
+    if (seller.id != null && seller.id !== "") return String(seller.id).trim();
+    return "";
+  };
+
+  const buildShopUrl = (shopRef) => (shopRef ? `/gian-hang/${encodeURIComponent(shopRef)}` : "");
+
   const renderSellerBadge = (seller) => {
     if (!seller) return "";
     let badgeValue = String(seller.badge || "").trim();
@@ -48,23 +59,6 @@
       return `<span class="seller-badge merchant merchant-${tierClass}">${label}</span>`;
     }
     return "";
-  };
-
-  const isFile = window.location.protocol === "file:";
-  const root =
-    isFile && typeof getProjectRoot === "function"
-      ? getProjectRoot()
-      : typeof getRootPath === "function"
-        ? getRootPath()
-        : "/";
-  const isLegacy = !isFile && root.includes("/legacy/");
-
-  const buildShopUrl = (ref) => {
-    const value = String(ref || "").trim();
-    if (!value) return "";
-    if (isFile) return `${root}seller/[id]/index.html?id=${encodeURIComponent(value)}`;
-    if (isLegacy) return `${root}gian-hang/[slug]/?id=${encodeURIComponent(value)}`;
-    return `${root}gian-hang/${encodeURIComponent(value)}`;
   };
 
   const categoryKeys = {
@@ -219,7 +213,6 @@
 
   const buildCard = (item) => {
     const seller = item.seller || {};
-    const sellerName = seller.displayName || seller.username || seller.name || "Shop";
     const sellerBadge = renderSellerBadge(seller);
     const ratingLabel = item.rating != null ? item.rating : "--";
     const subLabel = item.subcategory || categoryFallback[item.category] || "BK";
@@ -231,35 +224,36 @@
       item.priceMax != null && item.priceMax > item.price
         ? `data-base-min="${item.price}" data-base-max="${item.priceMax}" data-base-currency="VND"`
         : `data-base-amount="${item.price}" data-base-currency="VND"`;
-    const detailUrl =
-      typeof getProductDetailPath === "function" ? getProductDetailPath(item.id) : `/sanpham/[id]/?id=${encodeURIComponent(item.id)}`;
-    const shopRef = seller.slug || item.shopId || "";
+    const detailUrl = typeof getProductDetailPath === "function" ? getProductDetailPath(item.id) : `/sanpham/[id]/?id=${encodeURIComponent(item.id)}`;
+    const shopRef = resolveShopRef(item);
     const shopUrl = buildShopUrl(shopRef);
     return `
-      <div class="product-card" role="link" tabindex="0" data-detail-url="${detailUrl}">
-        <div class="product-media">${media}</div>
-        <div class="product-body">
-          <div class="product-price" ${priceAttrs}>${priceLabel}</div>
-          <h3 class="product-title">
-            ${item.title}
-          </h3>
-          <div class="product-meta">
-            <div class="meta-col">
-              <span>${translate("label.stock", "Stock")}: <strong>${item.stockCount ?? "--"}</strong></span>
-              <span>${translate("label.sold", "Sold")}: <strong>${item.soldCount ?? "--"}</strong></span>
-              <span>${translate("label.rating", "Rating")}: <strong>${ratingLabel}</strong></span>
+      <div class="product-card">
+        <a class="product-card-link" href="${detailUrl}">
+          <div class="product-media">${media}</div>
+          <div class="product-body">
+            <div class="product-price" ${priceAttrs}>${priceLabel}</div>
+            <h3 class="product-title">
+              ${item.title}
+            </h3>
+            <div class="product-meta">
+              <div class="meta-col">
+                <span>${translate("label.stock", "Stock")}: <strong>${item.stockCount ?? "--"}</strong></span>
+                <span>${translate("label.sold", "Sold")}: <strong>${item.soldCount ?? "--"}</strong></span>
+                <span>${translate("label.rating", "Rating")}: <strong>${ratingLabel}</strong></span>
+              </div>
+              <div class="meta-col meta-right">
+                <span class="seller-line">
+                  <span class="seller-label">${translate("label.seller", "Seller")}:</span>
+                  <span class="seller-value"><strong class="seller-name">${seller.name || "Shop"}</strong>${sellerBadge}</span>
+                </span>
+              </div>
             </div>
-            <div class="meta-col meta-right">
-              <span class="seller-line">
-                <span class="seller-label">${translate("label.seller", "Seller")}:</span>
-                <span class="seller-value"><strong class="seller-name">${sellerName}</strong>${sellerBadge}</span>
-              </span>
-              ${shopUrl ? `<button class="btn ghost shop-link" type="button" data-shop-url="${shopUrl}">${translate("label.shop", "Gian hàng")}</button>` : ""}
-            </div>
+            ${subLabel ? `<div class="product-type">${translate("label.type", "Type")}: <strong>${subLabel}</strong></div>` : ""}
+            <p class="product-desc">${item.descriptionShort || ""}</p>
           </div>
-          ${subLabel ? `<div class="product-type">${translate("label.type", "Type")}: <strong>${subLabel}</strong></div>` : ""}
-          <p class="product-desc">${item.descriptionShort || ""}</p>
-        </div>
+        </a>
+        ${shopUrl ? `<div class="product-card-actions"><a class="shop-link" href="${shopUrl}">Gian h\u00e0ng</a></div>` : ""}
       </div>
     `;
   };
@@ -277,36 +271,10 @@
       return;
     }
     grid.innerHTML = items.map(buildCard).join("");
-    bindCardNavigation();
     if (window.BKCurrency && typeof window.BKCurrency.applyToDom === "function") {
       window.BKCurrency.applyToDom(grid);
     }
     renderPagination(state.totalPages);
-  };
-
-  const bindCardNavigation = () => {
-    if (!grid || grid.dataset.bound === "1") return;
-    grid.dataset.bound = "1";
-    grid.addEventListener("click", (event) => {
-      const shopBtn = event.target.closest(".shop-link");
-      if (shopBtn && shopBtn.dataset.shopUrl) {
-        event.preventDefault();
-        event.stopPropagation();
-        window.location.href = shopBtn.dataset.shopUrl;
-        return;
-      }
-      const card = event.target.closest(".product-card");
-      if (card && card.dataset.detailUrl) {
-        window.location.href = card.dataset.detailUrl;
-      }
-    });
-    grid.addEventListener("keydown", (event) => {
-      if (event.key !== "Enter") return;
-      const card = event.target.closest(".product-card");
-      if (card && card.dataset.detailUrl) {
-        window.location.href = card.dataset.detailUrl;
-      }
-    });
   };
 
   const loadProducts = async () => {

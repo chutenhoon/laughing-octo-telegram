@@ -40,29 +40,14 @@ async function getShopById(db, id) {
 
 function isTruthyFlag(value) {
   if (value === true || value === 1) return true;
-  if (value === null || value === undefined || value === "") return true;
   const raw = String(value || "").trim().toLowerCase();
   return raw === "1" || raw === "true" || raw === "yes";
 }
 
 function isApproved(shop) {
-  const status = String(shop.status || "").trim().toLowerCase();
+  const status = String(shop.status || "").toLowerCase();
   const active = isTruthyFlag(shop.is_active);
-  return (
-    active &&
-    [
-      "approved",
-      "active",
-      "published",
-      "pending_update",
-      "da duyet",
-      "đã duyệt",
-      "đã duyệt",
-      "cho cap nhat",
-      "chờ cập nhật",
-      "chờ cập nhật",
-    ].includes(status)
-  );
+  return active && (status === "approved" || status === "active" || status === "published" || status === "pending_update");
 }
 
 async function ensureShopImagesTable(db) {

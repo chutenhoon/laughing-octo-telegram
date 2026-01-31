@@ -214,23 +214,10 @@ export async function requireSeller(context) {
   const user = base.user;
   const role = String(user.role || "").toLowerCase();
   const sellerApproved = isTruthy(user.seller_approved);
-  if (role === "admin" || role === "seller" || sellerApproved) return base;
-  const db = base.db;
-  const userId = user.resolvedId || user.id;
-  if (db && userId) {
-    try {
-      const row = await db
-        .prepare(
-          "SELECT 1 FROM shops WHERE user_id = ? AND (is_active = 1 OR lower(is_active) IN ('true','yes')) AND lower(trim(coalesce(status,''))) IN ('approved','active','published','pending_update','da duyet','đã duyệt','Ä‘Ã£ duyá»‡t','cho cap nhat','chờ cập nhật','chá» cáº­p nháº­t') LIMIT 1"
-        )
-        .bind(userId)
-        .first();
-      if (row) return base;
-    } catch (error) {
-      // ignore lookup failures
-    }
+  if (!(role === "admin" || role === "seller" || sellerApproved)) {
+    return { ok: false, response: authError("SELLER_REQUIRED", 403) };
   }
-  return { ok: false, response: authError("SELLER_REQUIRED", 403) };
+  return base;
 }
 
 function safeEqual(a, b) {

@@ -605,19 +605,12 @@
         const purchasedCount = document.getElementById("profile-purchased-count");
         const soldCount = document.getElementById("profile-sold-count");
         const levelCount = document.getElementById("profile-level-count");
-        const sellerPath = isFile ? "gian-hang/nguoi-ban/index.html" : "gian-hang/nguoi-ban/";
+        const sellerPath = isFile ? "seller/[id]/index.html" : "seller/[id]/";
         let profileStats = null;
 
         const setStatVisibility = (el, value) => {
           if (!el) return;
           el.style.display = typeof value === "number" ? "" : "none";
-        };
-
-        const getShopOwnerRef = () => {
-          if (profileUser && profileUser.username) return String(profileUser.username).trim();
-          if (profileUsername) return profileUsername;
-          if (profileUser && profileUser.id != null) return String(profileUser.id).trim();
-          return profileRef || "";
         };
 
         const updateStats = (stats) => {
@@ -640,7 +633,7 @@
           const sold = profileStats && typeof profileStats.sold === "number" ? profileStats.sold : null;
           const top = profileStats && typeof profileStats.rank === "number" ? profileStats.rank : null;
           const shopTotal = profileStats && typeof profileStats.shopCount === "number" ? profileStats.shopCount : null;
-          const shopOwnerRef = getShopOwnerRef();
+          const shopId = profileStats && profileStats.shopId ? String(profileStats.shopId) : "";
 
           setStatVisibility(statPurchased, purchased);
           if (purchasedCount && typeof purchased === "number") purchasedCount.textContent = purchased.toLocaleString(getLocale());
@@ -653,17 +646,9 @@
             shopCount.textContent = typeof shopTotal === "number" ? shopTotal.toLocaleString(getLocale()) : "";
           }
           if (shopLink) {
-            if (shopOwnerRef && typeof shopTotal === "number" && shopTotal > 0) {
-              shopLink.href = isFile
-                ? `${root}${sellerPath}?u=${encodeURIComponent(shopOwnerRef)}`
-                : `${root}${sellerPath}${encodeURIComponent(shopOwnerRef)}`;
-              shopLink.style.pointerEvents = "";
-              shopLink.style.opacity = "";
-            } else {
-              shopLink.href = "#";
-              shopLink.style.pointerEvents = "none";
-              shopLink.style.opacity = "0.6";
-            }
+            shopLink.href = shopId ? root + sellerPath + "?id=" + encodeURIComponent(shopId) : "#";
+            shopLink.style.pointerEvents = shopId ? "" : "none";
+            shopLink.style.opacity = shopId ? "" : "0.6";
           }
         };
         updateStats(profileStats);

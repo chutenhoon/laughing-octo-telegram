@@ -49,37 +49,6 @@
     return formatVnd(price);
   };
 
-  const normalizeRoot = (value) => {
-    const raw = String(value || "");
-    if (!raw) return "/";
-    return raw.endsWith("/") ? raw : `${raw}/`;
-  };
-
-  const root = normalizeRoot(
-    typeof getRootPath === "function"
-      ? getRootPath()
-      : typeof getProjectRoot === "function"
-        ? getProjectRoot()
-        : "/"
-  );
-  const isFile = window.location.protocol === "file:";
-  const isLegacy = !isFile && String(root || "").includes("/legacy/");
-
-  const buildProductDetailUrl = (productId) => {
-    if (typeof getProductDetailPath === "function") return getProductDetailPath(productId);
-    const base = isFile || isLegacy ? "sanpham/[id]/" : "sanpham/";
-    if (!productId) return root + base;
-    if (isFile || isLegacy) return root + base + `?id=${encodeURIComponent(productId)}`;
-    return root + base + encodeURIComponent(productId);
-  };
-
-  const buildServiceDetailUrl = (serviceId) => {
-    const base = isFile || isLegacy ? "dichvu/[id]/" : "dichvu/";
-    if (!serviceId) return root + base;
-    if (isFile || isLegacy) return root + base + `?id=${encodeURIComponent(serviceId)}`;
-    return root + base + encodeURIComponent(serviceId);
-  };
-
   const escapeHtml = (value) =>
     String(value || "").replace(/[&<>"']/g, (char) => {
       const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
@@ -407,7 +376,10 @@
       item.priceMax != null && item.priceMax > item.price
         ? `data-base-min="${item.price}" data-base-max="${item.priceMax}" data-base-currency="VND"`
         : `data-base-amount="${item.price}" data-base-currency="VND"`;
-    const detailUrl = type === "service" ? buildServiceDetailUrl(item.id) : buildProductDetailUrl(item.id);
+    const detailUrl =
+      type === "service"
+        ? `/dichvu/[id]/?id=${encodeURIComponent(item.id)}`
+        : `/sanpham/[id]/?id=${encodeURIComponent(item.id)}`;
     return `
       <a class="product-card" href="${detailUrl}">
         <div class="product-media">${media}</div>

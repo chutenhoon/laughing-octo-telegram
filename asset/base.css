@@ -3841,6 +3841,39 @@ body.modal-open {
   word-break: break-word;
 }
 
+.service-seller {
+  margin-top: 16px;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--stroke);
+  background: rgba(10, 10, 16, 0.65);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.service-seller .seller-label {
+  white-space: nowrap;
+  color: var(--muted);
+}
+
+.service-seller .seller-value {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.service-seller .seller-name {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  color: #ffffff;
+  font-weight: 600;
+}
+
 .detail-price {
   font-family: "Outfit", sans-serif;
   font-size: 26px;
@@ -4011,12 +4044,26 @@ body.modal-open {
   backdrop-filter: var(--glass-blur);
   box-shadow: var(--shadow);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  cursor: pointer;
 }
 
 .product-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 22px 50px rgba(0, 0, 0, 0.55);
+}
+
+.product-card-link {
+  display: flex;
+  flex-direction: column;
+  color: inherit;
+  text-decoration: none;
+  flex: 1;
+  min-height: 0;
+}
+
+.product-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 18px 16px;
 }
 
 .product-media {
@@ -4046,14 +4093,6 @@ body.modal-open {
   padding: 16px 18px 18px;
   display: grid;
   gap: 8px;
-}
-
-.product-card .shop-link {
-  margin-top: 6px;
-  align-self: flex-start;
-  padding: 6px 12px;
-  font-size: 12px;
-  border-radius: 10px;
 }
 
 .product-price {
@@ -4131,6 +4170,40 @@ body.modal-open {
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
+}
+
+.seller-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.shop-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  border: 1px solid rgba(139, 124, 255, 0.45);
+  background: rgba(139, 124, 255, 0.12);
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.shop-link:hover {
+  transform: translateY(-1px);
+  background: rgba(139, 124, 255, 0.2);
+  border-color: rgba(139, 124, 255, 0.7);
+  box-shadow: 0 10px 24px rgba(16, 18, 30, 0.25);
+}
+
+.shop-link:focus-visible {
+  outline: 2px solid rgba(139, 124, 255, 0.9);
+  outline-offset: 2px;
 }
 
 .seller-badge {
