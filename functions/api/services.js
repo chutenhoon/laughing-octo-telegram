@@ -25,19 +25,32 @@ function flagTrue(column) {
   return `(${column} = 1 OR lower(${column}) IN ('true','yes'))`;
 }
 
+function flagTrueOrNull(column) {
+  return `(${column} IS NULL OR ${flagTrue(column)})`;
+}
+
+function normalizeCategory(value) {
+  const trimmed = String(value || "").trim();
+  return trimmed ? trimmed.toLowerCase() : "";
+}
+
 function buildWhere(params, binds, options = {}) {
   const clauses = [
-    "p.kind = 'service'",
-    flagTrue("p.is_active"),
-    flagTrue("p.is_published"),
-    flagTrue("s.is_active"),
+    "(lower(trim(p.kind)) = 'service' OR (p.kind IS NULL AND lower(trim(coalesce(p.type,''))) = 'service'))",
   ];
+  if (!options.includeInactive) {
+    clauses.push(flagTrueOrNull("p.is_active"));
+  }
+  if (!options.includeUnpublished) {
+    clauses.push(flagTrueOrNull("p.is_published"));
+  }
+  clauses.push(flagTrueOrNull("s.is_active"));
   if (!options.includeUnapproved) {
     clauses.push("lower(trim(coalesce(s.status,''))) IN ('approved','active','published','pending_update')");
   }
 
   if (params.category) {
-    clauses.push("COALESCE(p.category, s.category) = ?");
+    clauses.push("lower(trim(COALESCE(p.category, s.category))) = ?");
     binds.push(params.category);
   }
   if (params.subcategories.length) {
@@ -77,14 +90,21 @@ export async function onRequestGet(context) {
     const url = new URL(context.request.url);
     const preview = String(url.searchParams.get("preview") || "").toLowerCase();
     let includeUnapproved = false;
+    let includeUnpublished = false;
+    let includeInactive = false;
     if (preview === "1" || preview === "true") {
       const adminAuth = await requireAdmin(context);
-      includeUnapproved = adminAuth && adminAuth.ok;
+      if (adminAuth && adminAuth.ok) {
+        includeUnapproved = true;
+        includeUnpublished = true;
+        includeInactive = true;
+      }
     }
     const shopId = String(url.searchParams.get("shop") || url.searchParams.get("shopId") || "").trim();
     const sortParam = url.searchParams.get("sort");
+    const categoryValue = normalizeCategory(url.searchParams.get("category"));
     const params = {
-      category: String(url.searchParams.get("category") || "").trim() || "",
+      category: categoryValue,
       subcategories: parseList(url.searchParams.get("subcategory") || url.searchParams.get("subcategories") || ""),
       search: buildSearch(url.searchParams.get("search") || url.searchParams.get("q") || ""),
       sort: String(sortParam || (shopId ? "custom" : "popular")).trim(),
@@ -96,7 +116,7 @@ export async function onRequestGet(context) {
     params.perPage = Math.min(40, Math.max(1, Math.floor(params.perPage)));
 
     const binds = [];
-    const whereClause = buildWhere(params, binds, { includeUnapproved });
+    const whereClause = buildWhere(params, binds, { includeUnapproved, includeUnpublished, includeInactive });
     const orderClause = buildOrder(params.sort);
     const offset = (params.page - 1) * params.perPage;
 
@@ -112,6 +132,7 @@ export async function onRequestGet(context) {
     const listSql = `
       SELECT p.id, p.shop_id, p.name, p.description_short, p.description, p.category, p.subcategory, p.tags_json,
              p.price, p.price_max, p.thumbnail_media_id, p.status, p.created_at,
+             p.is_active, p.is_published, p.kind, p.type,
              s.store_name, s.store_slug, s.rating AS shop_rating, s.category AS store_category, s.subcategory AS store_subcategory, s.tags_json AS store_tags_json,
              u.badge, u.role, u.display_name, u.title, u.rank,
              (
@@ -150,6 +171,10 @@ export async function onRequestGet(context) {
         requestCount: Number(row.request_count || 0),
         rating: Number(row.shop_rating || 0),
         status: row.status || "draft",
+        isActive: row.is_active != null ? Number(row.is_active || 0) === 1 : null,
+        isPublished: row.is_published != null ? Number(row.is_published || 0) === 1 : null,
+        kind: row.kind || "",
+        type: row.type || "",
         createdAt: row.created_at || null,
         thumbnailId: row.thumbnail_media_id || "",
         seller: {

@@ -941,6 +941,39 @@ async function backfillFollowCounters(db, report) {
   }
 }
 
+async function backfillProductFlags(db, report) {
+  const productCols = await getColumns(db, "products");
+  if (!productCols.has("kind") && !productCols.has("is_published") && !productCols.has("is_active")) return;
+
+  if (productCols.has("kind")) {
+    try {
+      await db.prepare("UPDATE products SET kind = 'service' WHERE kind IS NULL AND lower(trim(coalesce(type,''))) = 'service'").run();
+      await db.prepare("UPDATE products SET kind = 'product' WHERE kind IS NULL").run();
+      report.backfills.push("products.kind");
+    } catch (error) {
+      report.errors.push({ table: "products", action: "backfill", error: String(error) });
+    }
+  }
+
+  if (productCols.has("is_published")) {
+    try {
+      await db.prepare("UPDATE products SET is_published = 1 WHERE is_published IS NULL").run();
+      report.backfills.push("products.is_published");
+    } catch (error) {
+      report.errors.push({ table: "products", action: "backfill", error: String(error) });
+    }
+  }
+
+  if (productCols.has("is_active")) {
+    try {
+      await db.prepare("UPDATE products SET is_active = 1 WHERE is_active IS NULL").run();
+      report.backfills.push("products.is_active");
+    } catch (error) {
+      report.errors.push({ table: "products", action: "backfill", error: String(error) });
+    }
+  }
+}
+
 async function backfillConversationPairKeys(db, report) {
   try {
     const convoCols = await getColumns(db, "conversations");
@@ -1407,6 +1440,7 @@ export async function runMigrations(db, options = {}) {
 
   await migrateSellerToShops(db, report);
   await backfillShopIds(db, report);
+  await backfillProductFlags(db, report);
   await backfillUserIds(db, report);
   await backfillUsernames(db, report);
   await backfillFeaturedMedia(db, report);

@@ -22,6 +22,12 @@
     return formatVnd(price);
   };
 
+  const escapeHtml = (value) =>
+    String(value || "").replace(/[&<>"']/g, (char) => {
+      const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+      return map[char] || char;
+    });
+
   const resolveShopRef = (item) => {
     if (!item) return "";
     if (item.shopId != null && item.shopId !== "") return String(item.shopId).trim();
@@ -32,6 +38,12 @@
   };
 
   const buildShopUrl = (shopRef) => (shopRef ? `/gian-hang/${encodeURIComponent(shopRef)}` : "");
+
+  const isPreviewMode = () => {
+    const params = new URLSearchParams(window.location.search);
+    const preview = params.get("preview");
+    return preview === "1" || preview === "true";
+  };
 
   const renderSellerBadge = (seller) => {
     if (!seller) return "";
@@ -133,6 +145,7 @@
     subcategories: new Set(),
     page: 1,
     totalPages: 1,
+    preview: false,
   };
 
   const categoryTitle = document.getElementById("category-title");
@@ -193,6 +206,34 @@
     grid.innerHTML = Array.from({ length: 6 }, () => skeleton).join("");
   };
 
+  const buildPreviewBadges = (item) => {
+    if (!state.preview) return "";
+    const badges = [];
+    if (item && item.isPublished === false) {
+      badges.push({ label: translate("label.unpublished", "Ch\u01b0a publish"), className: "warn" });
+    }
+    if (item && item.isActive === false) {
+      badges.push({ label: translate("label.inactive", "\u0110ang \u1ea9n"), className: "bad" });
+    }
+    if (!badges.length) return "";
+    return badges.map((badge) => `<span class="status-badge ${badge.className}">${badge.label}</span>`).join("");
+  };
+
+  const buildEmptyHint = () => {
+    const parts = [];
+    if (state.search) parts.push(`${translate("label.search", "T\u1eeb kh\u00f3a")}: &quot;${escapeHtml(state.search)}&quot;`);
+    if (state.subcategories.size) {
+      const tags = Array.from(state.subcategories).join(", ");
+      parts.push(`${translate("label.filters", "B\u1ed9 l\u1ecdc")}: ${escapeHtml(tags)}`);
+    }
+    if (state.category) {
+      const labelKey = categoryKeys[state.category];
+      const label = labelKey ? translate(labelKey, state.category) : state.category;
+      parts.push(`${translate("label.category", "Danh m\u1ee5c")}: ${escapeHtml(label)}`);
+    }
+    return parts.length ? `<div class="empty-state-meta">${parts.join(" \u2022 ")}</div>` : "";
+  };
+
   const renderPagination = (total) => {
     if (!pagination) return;
     pagination.innerHTML = "";
@@ -227,6 +268,10 @@
     const detailUrl = typeof getProductDetailPath === "function" ? getProductDetailPath(item.id) : `/sanpham/[id]/?id=${encodeURIComponent(item.id)}`;
     const shopRef = resolveShopRef(item);
     const shopUrl = buildShopUrl(shopRef);
+    const previewBadges = buildPreviewBadges(item);
+    const actions = [];
+    if (previewBadges) actions.push(`<div class="card-badges">${previewBadges}</div>`);
+    if (shopUrl) actions.push(`<a class="shop-link" href="${shopUrl}">Gian h\u00e0ng</a>`);
     return `
       <div class="product-card">
         <a class="product-card-link" href="${detailUrl}">
@@ -253,7 +298,7 @@
             <p class="product-desc">${item.descriptionShort || ""}</p>
           </div>
         </a>
-        ${shopUrl ? `<div class="product-card-actions"><a class="shop-link" href="${shopUrl}">Gian h\u00e0ng</a></div>` : ""}
+        ${actions.length ? `<div class="product-card-actions">${actions.join("")}</div>` : ""}
       </div>
     `;
   };
@@ -265,6 +310,7 @@
         <div class="card empty-state product-empty" style="grid-column: 1 / -1;">
           <strong>${translate("empty.noData", "No data")}</strong>
           <div style="margin-top:4px;">${translate("empty.adjustCategory", "Adjust filters and try again.")}</div>
+          ${buildEmptyHint()}
         </div>
       `;
       if (pagination) pagination.innerHTML = "";
@@ -286,6 +332,7 @@
     params.set("sort", state.sort);
     params.set("page", String(state.page));
     params.set("perPage", String(PAGE_SIZE));
+    if (state.preview) params.set("preview", "1");
     try {
       const response = await fetch(`/api/products?${params.toString()}`);
       const data = await response.json();
@@ -395,6 +442,7 @@
 
   const init = () => {
     if (!grid) return;
+    state.preview = isPreviewMode();
     renderSubcategories();
     initFilters();
     loadProducts();
