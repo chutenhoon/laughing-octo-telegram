@@ -16,7 +16,18 @@ function isTruthyFlag(value) {
 
 function isApprovedStatus(status) {
   const normalized = String(status || "").trim().toLowerCase();
-  return ["approved", "active", "published", "pending_update"].includes(normalized);
+  return [
+    "approved",
+    "active",
+    "published",
+    "pending_update",
+    "da duyet",
+    "đã duyệt",
+    "Ä‘Ã£ duyá»‡t",
+    "cho cap nhat",
+    "chờ cập nhật",
+    "chá» cáº­p nháº­t",
+  ].includes(normalized);
 }
 
 async function buildAvatarUrl(requestUrl, env, key) {
@@ -99,7 +110,9 @@ export async function onRequestGet(context) {
     const where = ["s.user_id = ?"];
     if (!includeAll) {
       where.push(" (s.is_active = 1 OR lower(s.is_active) IN ('true','yes')) ");
-      where.push(" lower(trim(coalesce(s.status,''))) IN ('approved','active','published','pending_update') ");
+      where.push(
+        " lower(trim(coalesce(s.status,''))) IN ('approved','active','published','pending_update','da duyet','đã duyệt','Ä‘Ã£ duyá»‡t','cho cap nhat','chờ cập nhật','chá» cáº­p nháº­t') "
+      );
     }
     const sql = `
       SELECT s.id, s.store_name, s.store_slug, s.store_type, s.category, s.subcategory, s.tags_json,

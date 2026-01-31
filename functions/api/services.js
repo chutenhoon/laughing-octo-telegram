@@ -8,7 +8,9 @@ const APPROVED_SHOP_STATUSES = [
   "pending_update",
   "da duyet",
   "đã duyệt",
+  "đã duyệt",
   "cho cap nhat",
+  "chờ cập nhật",
   "chờ cập nhật",
 ];
 

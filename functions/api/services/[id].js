@@ -10,7 +10,9 @@ function isApprovedStatus(status) {
     value === "pending_update" ||
     value === "da duyet" ||
     value === "đã duyệt" ||
+    value === "đã duyệt" ||
     value === "cho cap nhat" ||
+    value === "chờ cập nhật" ||
     value === "chờ cập nhật"
   );
 }

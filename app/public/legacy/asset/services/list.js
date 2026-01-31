@@ -50,6 +50,23 @@
     return "";
   };
 
+  const root =
+    typeof getProjectRoot === "function"
+      ? getProjectRoot()
+      : typeof getRootPath === "function"
+        ? getRootPath()
+        : "/";
+  const isFile = window.location.protocol === "file:";
+  const isLegacy = !isFile && String(root || "").includes("/legacy/");
+
+  const buildShopUrl = (ref) => {
+    const value = String(ref || "").trim();
+    if (!value) return "";
+    if (isFile) return `${root}seller/[id]/index.html?id=${encodeURIComponent(value)}`;
+    if (isLegacy) return `${root}gian-hang/[slug]/?id=${encodeURIComponent(value)}`;
+    return `${root}gian-hang/${encodeURIComponent(value)}`;
+  };
+
   const categoryKeys = {
     interaction: "service.category.interaction",
     software: "service.category.software",
@@ -174,9 +191,6 @@
   };
 
   const getServiceDetailPath = (serviceId) => {
-    const root = typeof getRootPath === "function" ? getRootPath() : getProjectRoot();
-    const isFile = window.location.protocol === "file:";
-    const isLegacy = root.startsWith("/legacy/");
     const base = isFile || isLegacy ? "dichvu/[id]/" : "dichvu/";
     if (!serviceId) return root + base;
     if (isFile || isLegacy) return root + base + `?id=${encodeURIComponent(serviceId)}`;
@@ -185,6 +199,7 @@
 
   const buildCard = (item) => {
     const seller = item.seller || {};
+    const sellerName = seller.displayName || seller.username || seller.name || "Shop";
     const sellerBadge = renderSellerBadge(seller);
     const ratingLabel = item.rating != null ? item.rating : "--";
     const subLabel = item.subcategory || categoryFallback[item.category] || "DV";
@@ -196,8 +211,11 @@
       item.priceMax != null && item.priceMax > item.price
         ? `data-base-min="${item.price}" data-base-max="${item.priceMax}" data-base-currency="VND"`
         : `data-base-amount="${item.price}" data-base-currency="VND"`;
+    const detailUrl = getServiceDetailPath(item.id);
+    const shopRef = seller.slug || item.shopId || "";
+    const shopUrl = buildShopUrl(shopRef);
     return `
-      <a class="product-card" href="${getServiceDetailPath(item.id)}">
+      <div class="product-card" role="link" tabindex="0" data-detail-url="${detailUrl}">
         <div class="product-media">${media}</div>
         <div class="product-body">
           <div class="product-price" ${priceAttrs}>${priceLabel}</div>
@@ -210,14 +228,15 @@
             <div class="meta-col meta-right">
               <span class="seller-line">
                 <span class="seller-label">${translate("label.seller", "Seller")}:</span>
-                <span class="seller-value"><strong class="seller-name">${seller.name || "Shop"}</strong>${sellerBadge}</span>
+                <span class="seller-value"><strong class="seller-name">${sellerName}</strong>${sellerBadge}</span>
               </span>
+              ${shopUrl ? `<button class="btn ghost shop-link" type="button" data-shop-url="${shopUrl}">${translate("label.shop", "Gian hàng")}</button>` : ""}
             </div>
           </div>
           ${subLabel ? `<div class="product-type">${translate("label.type", "Type")}: <strong>${subLabel}</strong></div>` : ""}
           <p class="product-desc">${item.descriptionShort || ""}</p>
         </div>
-      </a>
+      </div>
     `;
   };
 
@@ -234,10 +253,36 @@
       return;
     }
     grid.innerHTML = items.map(buildCard).join("");
+    bindCardNavigation();
     if (window.BKCurrency && typeof window.BKCurrency.applyToDom === "function") {
       window.BKCurrency.applyToDom(grid);
     }
     renderPagination(state.totalPages);
+  };
+
+  const bindCardNavigation = () => {
+    if (!grid || grid.dataset.bound === "1") return;
+    grid.dataset.bound = "1";
+    grid.addEventListener("click", (event) => {
+      const shopBtn = event.target.closest(".shop-link");
+      if (shopBtn && shopBtn.dataset.shopUrl) {
+        event.preventDefault();
+        event.stopPropagation();
+        window.location.href = shopBtn.dataset.shopUrl;
+        return;
+      }
+      const card = event.target.closest(".product-card");
+      if (card && card.dataset.detailUrl) {
+        window.location.href = card.dataset.detailUrl;
+      }
+    });
+    grid.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+      const card = event.target.closest(".product-card");
+      if (card && card.dataset.detailUrl) {
+        window.location.href = card.dataset.detailUrl;
+      }
+    });
   };
 
   const loadServices = async () => {

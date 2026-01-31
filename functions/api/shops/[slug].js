@@ -57,7 +57,9 @@ function isApproved(shop) {
       "pending_update",
       "da duyet",
       "đã duyệt",
+      "đã duyệt",
       "cho cap nhat",
+      "chờ cập nhật",
       "chờ cập nhật",
     ].includes(status)
   );

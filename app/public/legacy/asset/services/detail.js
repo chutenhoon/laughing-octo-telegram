@@ -19,6 +19,34 @@
     return formatVnd(price);
   };
 
+  const renderSellerBadge = (data) => {
+    if (!data) return "";
+    let badgeValue = String(data.badge || "").trim();
+    if (!badgeValue) {
+      const role = String(data.role || "").trim().toLowerCase();
+      if (role === "admin") badgeValue = "ADMIN";
+      if (role === "coadmin") badgeValue = "COADMIN";
+    }
+    const raw = String(badgeValue || "").trim().toUpperCase();
+    if (!raw) return "";
+    if (raw === "ADMIN") {
+      return `<span class="seller-badge admin">${translate("seller.badge.admin", "Admin")}</span>`;
+    }
+    if (raw === "COADMIN") {
+      return `<span class="seller-badge coadmin">Coadmin</span>`;
+    }
+    if (raw === "VERIFIED") {
+      return `<span class="seller-badge verified">${translate("seller.badge.verified", "Verified")}</span>`;
+    }
+    if (raw.startsWith("MERCHANT-")) {
+      const tier = raw.replace("MERCHANT-", "");
+      const tierClass = tier.toLowerCase();
+      const label = translate("seller.badge.merchant", undefined, { tier });
+      return `<span class="seller-badge merchant merchant-${tierClass}">${label}</span>`;
+    }
+    return "";
+  };
+
   const buildAuthHeaders = () => {
     if (!window.BKAuth || typeof window.BKAuth.read !== "function") return {};
     const auth = window.BKAuth.read();
@@ -59,6 +87,8 @@
     }
 
     const service = data.service;
+    const seller = service.seller || {};
+    const shop = service.shop || {};
     setText("service-title", service.title);
     setText("service-sub", service.descriptionShort || "");
     setText("service-description", service.descriptionHtml ? "" : service.descriptionShort || "");
@@ -66,6 +96,28 @@
     if (descEl && service.descriptionHtml) descEl.innerHTML = service.descriptionHtml;
     setText("service-price", formatPriceRange(service));
     setText("service-eta", service.subcategory || service.category || "");
+
+    const sellerLink = document.getElementById("service-seller-link");
+    if (sellerLink) {
+      const sellerName = seller.displayName || seller.username || seller.name || shop.name || "Shop";
+      sellerLink.textContent = sellerName;
+      const root = typeof getProjectRoot === "function" ? getProjectRoot() : "/";
+      const isFile = window.location.protocol === "file:";
+      const isLegacy = !isFile && root.includes("/legacy/");
+      const ref = seller.slug || shop.slug || service.shopId || "";
+      if (isFile) {
+        const base = "seller/[id]/index.html";
+        sellerLink.href = ref ? `${root}${base}?id=${encodeURIComponent(ref)}` : "#";
+      } else if (isLegacy) {
+        const base = "gian-hang/[slug]/";
+        sellerLink.href = ref ? `${root}${base}?id=${encodeURIComponent(ref)}` : "#";
+      } else {
+        const base = "gian-hang/";
+        sellerLink.href = ref ? `${root}${base}${encodeURIComponent(ref)}` : "#";
+      }
+    }
+    const sellerBadge = document.getElementById("service-seller-badge");
+    if (sellerBadge) sellerBadge.innerHTML = renderSellerBadge(seller);
 
     const saveBtn = document.querySelector(".form-grid .btn.primary");
     const statusEl = document.querySelector(".service-request-status");

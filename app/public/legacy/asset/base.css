@@ -4018,6 +4018,14 @@ body.modal-open {
   box-shadow: 0 22px 50px rgba(0, 0, 0, 0.55);
 }
 
+.product-card .shop-link {
+  margin-top: 6px;
+  align-self: flex-start;
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 10px;
+}
+
 .product-media {
   height: 200px;
   background: rgba(255, 255, 255, 0.04);
