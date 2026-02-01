@@ -47,17 +47,21 @@
     return "";
   };
 
-  const resolveShopRef = (service) => {
-    if (!service) return "";
-    if (service.shop && service.shop.slug) return String(service.shop.slug).trim();
-    if (service.shopSlug) return String(service.shopSlug).trim();
-    if (service.shopId != null && service.shopId !== "") return String(service.shopId).trim();
-    if (service.shop && service.shop.id != null && service.shop.id !== "") return String(service.shop.id).trim();
+  const resolveShopRefs = (service) => {
+    if (!service) return { slug: "", id: "" };
+    const shop = service.shop || {};
     const seller = service.seller || {};
-    if (seller.slug) return String(seller.slug).trim();
-    if (seller.storeId != null && seller.storeId !== "") return String(seller.storeId).trim();
-    if (seller.id != null && seller.id !== "") return String(seller.id).trim();
-    return "";
+    const slug =
+      (shop.slug && String(shop.slug).trim()) ||
+      (service.shopSlug && String(service.shopSlug).trim()) ||
+      (seller.slug && String(seller.slug).trim()) ||
+      "";
+    const id =
+      (service.shopId != null && service.shopId !== "" ? String(service.shopId).trim() : "") ||
+      (shop.id != null && shop.id !== "" ? String(shop.id).trim() : "") ||
+      (seller.storeId != null && seller.storeId !== "" ? String(seller.storeId).trim() : "") ||
+      (seller.id != null && seller.id !== "" ? String(seller.id).trim() : "");
+    return { slug, id };
   };
 
   const resolveSellerName = (seller) => {
@@ -119,8 +123,12 @@
     setText("service-eta", service.subcategory || service.category || "");
     const seller = service.seller || {};
     const shop = service.shop || {};
-    const shopRef = resolveShopRef(service);
-    const shopUrl = shopRef ? `/gian-hang/${encodeURIComponent(shopRef)}` : "";
+    const shopRef = resolveShopRefs(service);
+    const shopUrl = shopRef.slug
+      ? `/gian-hang/${encodeURIComponent(shopRef.slug)}`
+      : shopRef.id
+        ? `/gian-hang/?id=${encodeURIComponent(shopRef.id)}`
+        : "";
     setText("service-seller-name", resolveSellerName(seller) || "Seller");
     const badgeEl = document.getElementById("service-seller-badge");
     if (badgeEl) badgeEl.innerHTML = renderSellerBadge(seller);

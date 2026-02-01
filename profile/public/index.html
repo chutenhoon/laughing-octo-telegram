@@ -634,6 +634,7 @@
           const top = profileStats && typeof profileStats.rank === "number" ? profileStats.rank : null;
           const shopTotal = profileStats && typeof profileStats.shopCount === "number" ? profileStats.shopCount : null;
           const shopId = profileStats && profileStats.shopId ? String(profileStats.shopId) : "";
+          const shopSlug = profileStats && profileStats.shopSlug ? String(profileStats.shopSlug) : "";
 
           setStatVisibility(statPurchased, purchased);
           if (purchasedCount && typeof purchased === "number") purchasedCount.textContent = purchased.toLocaleString(getLocale());
@@ -646,9 +647,19 @@
             shopCount.textContent = typeof shopTotal === "number" ? shopTotal.toLocaleString(getLocale()) : "";
           }
           if (shopLink) {
-            shopLink.href = shopId ? root + sellerPath + "?id=" + encodeURIComponent(shopId) : "#";
-            shopLink.style.pointerEvents = shopId ? "" : "none";
-            shopLink.style.opacity = shopId ? "" : "0.6";
+            let shopUrl = "#";
+            if (isFile) {
+              const ref = shopSlug || shopId;
+              shopUrl = ref ? root + sellerPath + "?id=" + encodeURIComponent(ref) : "#";
+            } else if (shopSlug) {
+              shopUrl = root + "gian-hang/" + encodeURIComponent(shopSlug);
+            } else if (shopId) {
+              shopUrl = root + "gian-hang/?id=" + encodeURIComponent(shopId);
+            }
+            const hasShop = shopSlug || shopId;
+            shopLink.href = shopUrl;
+            shopLink.style.pointerEvents = hasShop ? "" : "none";
+            shopLink.style.opacity = hasShop ? "" : "0.6";
           }
         };
         updateStats(profileStats);

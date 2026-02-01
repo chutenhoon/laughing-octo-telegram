@@ -63,17 +63,21 @@
     return categoryId;
   };
 
-  const resolveShopRef = (product) => {
-    if (!product) return "";
-    if (product.shop && product.shop.slug) return String(product.shop.slug).trim();
-    if (product.shopSlug) return String(product.shopSlug).trim();
-    if (product.shopId != null && product.shopId !== "") return String(product.shopId).trim();
-    if (product.shop && product.shop.id != null && product.shop.id !== "") return String(product.shop.id).trim();
+  const resolveShopRefs = (product) => {
+    if (!product) return { slug: "", id: "" };
+    const shop = product.shop || {};
     const seller = product.seller || {};
-    if (seller.slug) return String(seller.slug).trim();
-    if (seller.storeId != null && seller.storeId !== "") return String(seller.storeId).trim();
-    if (seller.id != null && seller.id !== "") return String(seller.id).trim();
-    return "";
+    const slug =
+      (shop.slug && String(shop.slug).trim()) ||
+      (product.shopSlug && String(product.shopSlug).trim()) ||
+      (seller.slug && String(seller.slug).trim()) ||
+      "";
+    const id =
+      (product.shopId != null && product.shopId !== "" ? String(product.shopId).trim() : "") ||
+      (shop.id != null && shop.id !== "" ? String(shop.id).trim() : "") ||
+      (seller.storeId != null && seller.storeId !== "" ? String(seller.storeId).trim() : "") ||
+      (seller.id != null && seller.id !== "" ? String(seller.id).trim() : "");
+    return { slug, id };
   };
 
   const resolveSellerName = (seller) => {
@@ -86,7 +90,13 @@
     return fallback;
   };
 
-  const buildShopUrl = (shopRef) => (shopRef ? `/gian-hang/${encodeURIComponent(shopRef)}` : "");
+  const buildShopUrl = (slug, id) => {
+    const safeSlug = String(slug || "").trim();
+    if (safeSlug) return `/gian-hang/${encodeURIComponent(safeSlug)}`;
+    const safeId = String(id || "").trim();
+    if (safeId) return `/gian-hang/?id=${encodeURIComponent(safeId)}`;
+    return "";
+  };
 
   const getProductId = () => {
     const params = new URLSearchParams(window.location.search);
@@ -172,8 +182,8 @@
     const seller = product.seller || {};
     const shop = product.shop || {};
     const priceLabel = formatPriceRange(product);
-    const shopRef = resolveShopRef(product);
-    const shopUrl = buildShopUrl(shopRef);
+    const shopRef = resolveShopRefs(product);
+    const shopUrl = buildShopUrl(shopRef.slug, shopRef.id);
 
     setText("detail-title", product.title);
     setText("detail-short", product.descriptionShort || "");
@@ -198,7 +208,7 @@
       sellerLink.href = shopUrl || "#";
     }
     setHTML("detail-seller-badge", renderSellerBadge(seller));
-    setText("detail-shop-id", shopRef || "--");
+    setText("detail-shop-id", shopRef.slug || shopRef.id || "--");
     const shopLink = document.getElementById("detail-shop-link");
     if (shopLink) {
       if (shopUrl) {

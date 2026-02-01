@@ -146,6 +146,14 @@
     return String(last).trim();
   };
 
+  const isTemplatePath = () => {
+    const parts = window.location.pathname.split("/").filter(Boolean);
+    if (!parts.length) return false;
+    let last = parts[parts.length - 1];
+    if (last === "index.html") last = parts[parts.length - 2] || "";
+    return last === "[id]" || last === "[slug]";
+  };
+
   const getStoreRef = () => {
     const params = new URLSearchParams(window.location.search);
     const direct = params.get("id") || params.get("shop") || "";
@@ -209,6 +217,21 @@
   const buildFetchOptions = () => {
     const headers = mergeHeaders(getUserHeaders(), state.preview ? getAdminHeaders() : null);
     return headers ? { headers } : undefined;
+  };
+
+  const getAuthUser = () => {
+    if (!window.BKAuth || typeof window.BKAuth.read !== "function") return null;
+    const auth = window.BKAuth.read();
+    if (!auth || !auth.loggedIn) return null;
+    return auth.user || null;
+  };
+
+  const buildShopRedirectUrl = (slug, id) => {
+    const safeSlug = String(slug || "").trim();
+    if (safeSlug) return `/gian-hang/${encodeURIComponent(safeSlug)}`;
+    const safeId = String(id || "").trim();
+    if (safeId) return `/gian-hang/?id=${encodeURIComponent(safeId)}`;
+    return "";
   };
 
   const loadCategories = async () => {
@@ -308,12 +331,16 @@
 
   const setStoreState = (status, message) => {
     if (storeSection) {
-      storeSection.classList.toggle("is-not-found", status === "not-found");
+      storeSection.classList.toggle("is-not-found", status === "not-found" || status === "invalid");
     }
     if (!storeState) return;
-    if (status === "not-found") {
+    if (status === "not-found" || status === "invalid") {
       storeState.classList.remove("is-hidden");
-      const title = message || translate("store.notFound", "Gian hàng không tồn tại");
+      const title =
+        message ||
+        (status === "invalid"
+          ? translate("store.invalidLink", "Liên kết gian hàng không hợp lệ.")
+          : translate("store.notFound", "Gian hàng không tồn tại"));
       storeState.innerHTML = `<strong>${escapeHtml(title)}</strong>`;
       return;
     }
@@ -535,6 +562,44 @@
     return true;
   };
 
+  const fetchProfileStats = async () => {
+    const user = getAuthUser();
+    if (!user) return null;
+    const ref = user.id != null && user.id !== "" ? String(user.id) : user.username || user.email || "";
+    const cleaned = String(ref || "").trim();
+    if (!cleaned) return null;
+    const params = new URLSearchParams();
+    params.set("view", "public");
+    params.set("id", cleaned);
+    try {
+      const headers = getUserHeaders();
+      const response = await fetch(`/api/profile?${params.toString()}`, headers ? { headers } : undefined);
+      const data = await response.json();
+      if (!response.ok || !data || data.ok === false) return null;
+      return data.stats || null;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const attemptRecovery = async () => {
+    const user = getAuthUser();
+    if (!user) {
+      setHeroLoading(false);
+      setStoreState("invalid");
+      return;
+    }
+    setHeroLoading(true);
+    const stats = await fetchProfileStats();
+    const redirectUrl = buildShopRedirectUrl(stats && stats.shopSlug, stats && stats.shopId);
+    if (redirectUrl) {
+      window.location.replace(redirectUrl);
+      return;
+    }
+    setHeroLoading(false);
+    setStoreState("invalid");
+  };
+
   const renderSkeleton = () => {
     if (!itemsGrid) return;
     const skeleton = `
@@ -717,9 +782,12 @@
   const init = async () => {
     const storeId = getStoreRef();
     if (!storeId) {
-      if (storeName) storeName.textContent = translate("store.notFound", "Gian h\u00e0ng kh\u00f4ng t\u1ed3n t\u1ea1i");
-      setHeroLoading(false);
-      setStoreState("not-found");
+      if (isTemplatePath()) {
+        await attemptRecovery();
+      } else {
+        setHeroLoading(false);
+        setStoreState("invalid");
+      }
       return;
     }
     try {

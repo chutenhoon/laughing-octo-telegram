@@ -23,7 +23,13 @@
     return "";
   };
 
-  const buildShopUrl = (shopRef) => (shopRef ? `/gian-hang/${encodeURIComponent(shopRef)}` : "");
+  const buildShopUrl = (slug, id) => {
+    const safeSlug = String(slug || "").trim();
+    if (safeSlug) return `/gian-hang/${encodeURIComponent(safeSlug)}`;
+    const safeId = String(id || "").trim();
+    if (safeId) return `/gian-hang/?id=${encodeURIComponent(safeId)}`;
+    return "";
+  };
 
   const getInitials = (value) => {
     const text = String(value || "").trim();
@@ -251,8 +257,9 @@
     const sellerBadge = renderSellerBadge(owner);
     const sellerName = resolveSellerName(owner) || "Seller";
     const shopName = shop.name || "Gian hàng";
-    const shopRef = shop.slug || shop.id;
-    const shopUrl = buildShopUrl(shopRef);
+    const shopSlug = shop.slug || "";
+    const shopId = shop.id || "";
+    const shopUrl = buildShopUrl(shopSlug, shopId);
     const mediaUrl = shop.coverUrl || shop.avatarUrl || "";
     const media = mediaUrl
       ? `<img src="${mediaUrl}" alt="${escapeHtml(shopName)}" loading="lazy" />`
