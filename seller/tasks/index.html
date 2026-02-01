@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Qu&#7843;n l&#253; nhi&#7879;m v&#7909; | polyflux.xyz</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="../../apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="../../favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="../../favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="../../android-chrome-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="../../android-chrome-512x512.png" />
+    <link rel="manifest" href="../../site.webmanifest" />
+    <link rel="icon" href="../../favicon.ico" />
+    <meta name="description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta property="og:title" content="polyflux.xyz" />
+    <meta property="og:description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta property="og:image" content="../../asset/logo-preview.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="vi_VN" />
+    <meta property="og:site_name" content="polyflux.xyz" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="polyflux.xyz" />
+    <meta name="twitter:description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta name="twitter:image" content="../../asset/logo-preview.png" />
+    <link rel="stylesheet" href="../../asset/base.css" />
+  </head>
+  <body class="seller-shell">
+    <video class="video-bg" autoplay muted loop playsinline preload="metadata">
+      <source src="../../asset/bg-donut.mp4" type="video/mp4" />
+    </video>
+    <div class="video-overlay"></div>
+
+    <div
+      class="card seller-guard"
+      id="task-guard"
+      data-guard-login="B&#7841;n c&#7847;n &#273;&#259;ng nh&#7853;p &#273;&#7875; qu&#7843;n l&#253; nhi&#7879;m v&#7909;."
+      data-guard-pending="T&#224;i kho&#7843;n c&#7911;a b&#7841;n ch&#432;a &#273;&#432;&#7907;c c&#7845;p quy&#7873;n &#273;&#259;ng nhi&#7879;m v&#7909;. Vui l&#242;ng li&#234;n h&#7879; admin &#273;&#7875; h&#7895; tr&#7907;."
+      style="display: none;"
+    >
+      <h3>Y&#234;u c&#7847;u quy&#7873;n nhi&#7879;m v&#7909;</h3>
+      <p class="hero-sub" id="task-guard-text"></p>
+      <div class="seller-guard-actions">
+        <a class="btn primary" data-auth-login href="#">&#272;&#259;ng nh&#7853;p</a>
+        <a class="btn" id="task-guard-apply" href="/nhiemvu/tao/">Xin quy&#7873;n &#273;&#259;ng b&#224;i</a>
+      </div>
+    </div>
+
+    <main class="seller-layout" id="task-dashboard" style="display: none;">
+      <aside class="seller-sidebar glass">
+        <a href="/" class="seller-brand" style="text-decoration: none;">
+          <img src="../../asset/logo.png" alt="PolyFlux" />
+          <span>polyflux<b>.xyz</b></span>
+        </a>
+        <nav class="seller-nav" id="task-nav">
+          <button
+            class="active"
+            type="button"
+            data-view="list"
+            data-title="Qu&#7843;n l&#253; nhi&#7879;m v&#7909;"
+            data-sub="Theo d&#245;i b&#224;i &#273;&#259;ng v&#224; tr&#7841;ng th&#225;i duy&#7879;t c&#7911;a nhi&#7879;m v&#7909;."
+          >
+            Danh s&#225;ch nhi&#7879;m v&#7909;
+          </button>
+          <button
+            type="button"
+            data-view="create"
+            data-title="&#272;&#259;ng b&#224;i m&#7899;i"
+            data-sub="T&#7841;o nhi&#7879;m v&#7909; m&#7899;i, thi&#7871;t l&#7853;p th&#432;&#7903;ng v&#224; s&#7889; l&#432;&#7907;ng."
+          >
+            &#272;&#259;ng b&#224;i m&#7899;i
+          </button>
+          <button
+            type="button"
+            data-view="review"
+            data-title="Duy&#7879;t b&#225;o c&#225;o"
+            data-sub="Ki&#7875;m tra b&#7857;ng ch&#7913;ng, duy&#7879;t ho&#7863;c khi&#7871;u n&#7841;i trong 30 ph&#250;t."
+          >
+            Duy&#7879;t b&#225;o c&#225;o
+          </button>
+        </nav>
+        <div class="seller-sidebar-footer" id="task-shop-footer">
+          <a class="btn ghost" id="task-manage-shop" href="../panel/">Qu&#7843;n l&#253; shop</a>
+        </div>
+      </aside>
+
+      <section class="seller-main">
+        <div class="seller-topbar glass">
+          <div>
+            <h1 id="task-page-title">Qu&#7843;n l&#253; nhi&#7879;m v&#7909;</h1>
+            <p class="hero-sub" id="task-page-sub">T&#7841;o, c&#7853;p nh&#7853;t v&#224; theo d&#245;i nhi&#7879;m v&#7909; b&#7841;n &#273;&#259;ng.</p>
+          </div>
+          <div class="seller-topbar-actions">
+            <button class="btn ghost" id="task-refresh" type="button">L&#224;m m&#7899;i</button>
+            <button class="btn primary" id="task-new" type="button">&#272;&#259;ng b&#224;i m&#7899;i</button>
+          </div>
+        </div>
+
+        <div class="seller-content">
+          <section class="seller-section active" data-view="list">
+            <div class="seller-card">
+              <div class="seller-task-headline">
+                <div>
+                  <h3>Danh s&#225;ch nhi&#7879;m v&#7909;</h3>
+                  <p class="hero-sub">Theo d&#245;i b&#224;i &#273;&#259;ng v&#224; tr&#7841;ng th&#225;i duy&#7879;t.</p>
+                </div>
+                <button class="btn ghost" id="task-open-create" type="button">&#272;&#259;ng b&#224;i m&#7899;i</button>
+              </div>
+              <div class="seller-task-grid" id="task-manage-grid"></div>
+              <div class="empty-state" id="task-empty-state" style="margin-top: 12px; display: none;">
+                <strong>Ch&#432;a c&#243; nhi&#7879;m v&#7909; n&#224;o.</strong>
+                H&#227;y &#273;&#259;ng b&#224;i m&#7899;i &#273;&#7875; b&#7855;t &#273;&#7847;u thu h&#250;t c&#7897;ng t&#225;c vi&#234;n.
+              </div>
+            </div>
+          </section>
+
+          <section class="seller-section" data-view="create">
+            <div class="seller-card">
+              <h3>&#272;&#259;ng b&#224;i nhi&#7879;m v&#7909; m&#7899;i</h3>
+              <p class="hero-sub">Thi&#7871;t l&#7853;p th&#244;ng tin c&#417; b&#7843;n, th&#432;&#7903;ng v&#224; s&#7889; l&#432;&#7907;ng.</p>
+              <form class="form-grid" id="task-form">
+                <div class="form-field">
+                  <label>Ti&#234;u &#273;&#7873;</label>
+                  <input id="task-title" required placeholder="VD: Quay video review shop" />
+                </div>
+                <div class="form-field">
+                  <label>Th&#432;&#7903;ng (VND)</label>
+                  <input id="task-reward" type="number" min="0" step="1000" required placeholder="50000" />
+                </div>
+                <div class="form-field">
+                  <label>S&#7889; l&#432;&#7907;ng</label>
+                  <input id="task-quantity" type="number" min="1" step="1" required placeholder="1" />
+                </div>
+                <div class="form-field">
+                  <label>H&#7871;t h&#7841;n</label>
+                  <input id="task-deadline" type="date" />
+                </div>
+                <div class="form-field" style="grid-column: 1 / -1;">
+                  <label>M&#244; t&#7843; ng&#7855;n</label>
+                  <textarea id="task-short" rows="3" placeholder="M&#244; t&#7843; nhanh y&#234;u c&#7847;u nhi&#7879;m v&#7909;"></textarea>
+                </div>
+                <div class="form-field">
+                  <label>Tr&#7841;ng th&#225;i</label>
+                  <select id="task-status">
+                    <option value="&#272;ang m&#7903;">&#272;ang m&#7903;</option>
+                    <option value="T&#7841;m d&#7915;ng">T&#7841;m d&#7915;ng</option>
+                    <option value="&#272;&#227; &#273;&#243;ng">&#272;&#227; &#273;&#243;ng</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>Nh&#227;n m&#7889;c</label>
+                  <input id="task-tag" placeholder="VD: TikTok, Facebook" />
+                </div>
+                <div class="seller-task-form-actions" style="grid-column: 1 / -1;">
+                  <button class="btn primary" id="task-submit" type="submit">&#272;&#259;ng b&#224;i m&#7899;i</button>
+                  <button class="btn ghost" id="task-reset" type="button">L&#224;m m&#7899;i form</button>
+                </div>
+              </form>
+              <div class="hero-sub" style="margin-top: 10px;">
+                B&#224;i nhi&#7879;m v&#7909; s&#7869; &#273;&#432;&#7907;c hi&#7875;n th&#7883; trong danh s&#225;ch marketplace sau khi duy&#7879;t.
+              </div>
+            </div>
+          </section>
+
+          <section class="seller-section" data-view="review">
+            <div class="seller-card">
+              <h3>Duy&#7879;t b&#225;o c&#225;o</h3>
+              <p class="hero-sub">X&#225;c nh&#7853;n b&#7857;ng ch&#7913;ng ho&#224;n th&#224;nh v&#224; ph&#7843;n h&#7891;i trong 30 ph&#250;t.</p>
+              <div class="table-like is-responsive task-review-table" id="task-review-table">
+                <div class="table-like-header">
+                  <span>Nhi&#7879;m v&#7909;</span>
+                  <span>Ng&#432;&#7901;i nh&#7853;n</span>
+                  <span>N&#7897;p l&#250;c</span>
+                  <span>H&#7841;n duy&#7879;t</span>
+                  <span>H&#224;nh &#273;&#7897;ng</span>
+                </div>
+                <div id="task-review-rows"></div>
+                <div class="empty-state" id="task-review-empty" style="margin-top: 10px;">
+                  <strong>Ch&#432;a c&#243; b&#7857;ng ch&#7913;ng c&#7847;n duy&#7879;t.</strong>
+                  H&#227;y quay l&#7841;i khi c&#243; ng&#432;&#7901;i n&#7897;p b&#225;o c&#225;o.
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <script src="../../asset/render.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const guard = document.getElementById("task-guard");
+        const guardText = document.getElementById("task-guard-text");
+        const dashboard = document.getElementById("task-dashboard");
+        const auth = window.BKAuth ? window.BKAuth.read() : { loggedIn: false };
+
+        if (!auth.loggedIn) {
+          if (guard) {
+            guard.style.display = "block";
+            if (guardText) guardText.innerHTML = guard.dataset.guardLogin || "";
+          }
+          if (dashboard) dashboard.style.display = "none";
+          return;
+        }
+
+        if (!window.BKAuth || !window.BKAuth.isTaskApproved(auth)) {
+          if (guard) {
+            guard.style.display = "block";
+            if (guardText) guardText.innerHTML = guard.dataset.guardPending || "";
+          }
+          if (dashboard) dashboard.style.display = "none";
+          return;
+        }
+
+        if (guard) guard.style.display = "none";
+        if (dashboard) dashboard.style.display = "grid";
+        const currentUserId = window.BKTasks ? window.BKTasks.getUserId(auth) : "";
+        const currentUserName = window.BKTasks ? window.BKTasks.getUserName(auth, "BKUser") : "BKUser";
+        const shopFooter = document.getElementById("task-shop-footer");
+        if (shopFooter) {
+          const canManageShop = window.BKAuth && window.BKAuth.isSellerApproved(auth);
+          shopFooter.style.display = canManageShop ? "" : "none";
+        }
+
+        const navButtons = document.querySelectorAll(".seller-nav button");
+        const sections = document.querySelectorAll(".seller-section");
+        const pageTitle = document.getElementById("task-page-title");
+        const pageSub = document.getElementById("task-page-sub");
+
+        const setView = (view) => {
+          navButtons.forEach((btn) => btn.classList.toggle("active", btn.getAttribute("data-view") === view));
+          sections.forEach((section) => {
+            section.classList.toggle("active", section.getAttribute("data-view") === view);
+          });
+          const active = Array.from(navButtons).find((btn) => btn.getAttribute("data-view") === view);
+          if (active) {
+            if (pageTitle && active.dataset.title) pageTitle.innerHTML = active.dataset.title;
+            if (pageSub && active.dataset.sub) pageSub.innerHTML = active.dataset.sub;
+          }
+        };
+
+        navButtons.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            setView(btn.getAttribute("data-view"));
+          });
+        });
+
+        const dataKey = "bk_task_manage_list";
+        const grid = document.getElementById("task-manage-grid");
+        const emptyState = document.getElementById("task-empty-state");
+        const form = document.getElementById("task-form");
+        const submitBtn = document.getElementById("task-submit");
+        const resetBtn = document.getElementById("task-reset");
+        const refreshBtn = document.getElementById("task-refresh");
+        const newBtn = document.getElementById("task-new");
+        const openCreateBtn = document.getElementById("task-open-create");
+        const reviewRows = document.getElementById("task-review-rows");
+        const reviewEmpty = document.getElementById("task-review-empty");
+
+        const titleInput = document.getElementById("task-title");
+        const shortInput = document.getElementById("task-short");
+        const rewardInput = document.getElementById("task-reward");
+        const quantityInput = document.getElementById("task-quantity");
+        const deadlineInput = document.getElementById("task-deadline");
+        const statusInput = document.getElementById("task-status");
+        const tagInput = document.getElementById("task-tag");
+
+        let tasks = [];
+        let editingId = "";
+
+        const parseNumber = (value) => {
+          const n = Number(value);
+          return Number.isFinite(n) ? n : 0;
+        };
+
+        const formatDate = (value) => {
+          if (!value) return "--";
+          if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+            const parts = value.split("-");
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+          }
+          return value;
+        };
+
+        const formatDateTime = (value) => {
+          if (!value) return "--";
+          const date = new Date(value);
+          if (Number.isNaN(date.getTime())) return "--";
+          const dd = String(date.getDate()).padStart(2, "0");
+          const mm = String(date.getMonth() + 1).padStart(2, "0");
+          const hh = String(date.getHours()).padStart(2, "0");
+          const min = String(date.getMinutes()).padStart(2, "0");
+          return `${dd}/${mm}/${date.getFullYear()} ${hh}:${min}`;
+        };
+
+        const formatReward = (value) => {
+          if (typeof formatPrice === "function") {
+            return formatPrice(value);
+          }
+          return `${value} VND`;
+        };
+
+        const formatCountdown = (ms) =>
+          window.BKTasks && typeof window.BKTasks.formatCountdown === "function"
+            ? window.BKTasks.formatCountdown(ms)
+            : "--:--:--";
+
+        const escapeHtml = (value) =>
+          String(value || "").replace(/[&<>"']/g, (char) => {
+            const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" };
+            return map[char] || char;
+          });
+
+        const getStatusTone = (statusText) => {
+          const text = String(statusText || "").toLowerCase();
+          if (text.includes("m\u1edf")) return "good";
+          if (text.includes("t\u1ea1m") || text.includes("d\u1eebng")) return "warn";
+          return "bad";
+        };
+
+        const renderTasks = () => {
+          if (!grid) return;
+          if (!tasks.length) {
+            grid.innerHTML = "";
+            if (emptyState) emptyState.style.display = "block";
+            return;
+          }
+          if (emptyState) emptyState.style.display = "none";
+          grid.innerHTML = tasks
+            .map((task) => {
+              const statusText = task.status || "\u0110ang m\u1edf";
+              const tone = getStatusTone(statusText);
+              const reward = formatReward(parseNumber(task.reward || 0));
+              const quantity = task.quantity ? task.quantity : "--";
+              const createdAt = formatDate(task.createdAt);
+              const deadline = task.deadline ? formatDate(task.deadline) : "";
+              const tag = task.tag ? task.tag : "";
+              return `
+                <div class="seller-card seller-task-card" data-id="${task.id}">
+                  <div class="seller-task-head">
+                    <div>
+                      <div class="seller-task-title">${task.title || "Nhi\u1ec7m v\u1ee5 m\u1edbi"}</div>
+                      <div class="seller-task-desc">${task.short || "Ch\u01b0a c\u00f3 m\u00f4 t\u1ea3."}</div>
+                    </div>
+                    <span class="seller-tag ${tone}">${statusText}</span>
+                  </div>
+                  <div class="seller-task-meta">
+                    <span>Th\u01b0\u1edfng: <strong>${reward}</strong></span>
+                    <span>S\u1ed1 l\u01b0\u1ee3ng: <strong>${quantity}</strong></span>
+                    <span>Ng\u00e0y t\u1ea1o: <strong>${createdAt}</strong></span>
+                    ${deadline ? `<span>H\u1ebft h\u1ea1n: <strong>${deadline}</strong></span>` : ""}
+                    ${tag ? `<span>Nh\u00e3n: <strong>${tag}</strong></span>` : ""}
+                  </div>
+                  <div class="seller-task-actions">
+                    <button class="btn ghost" type="button" data-action="edit" data-id="${task.id}">S\u1eeda</button>
+                    <button class="btn ghost" type="button" data-action="close" data-id="${task.id}">\u0110\u00f3ng</button>
+                    <button class="btn ghost" type="button" data-action="remove" data-id="${task.id}">X\u00f3a</button>
+                  </div>
+                </div>
+              `;
+            })
+            .join("");
+        };
+
+        let reviewAssignments = [];
+
+        const renderReviewRows = () => {
+          if (!reviewRows) return;
+          const now = Date.now();
+          const allAssignments = window.BKTasks ? window.BKTasks.syncAssignments(window.BKTasks.readAssignments()) : [];
+          reviewAssignments = allAssignments
+            .filter((item) => item && item.ownerId === currentUserId && item.status === "submitted")
+            .sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
+
+          if (!reviewAssignments.length) {
+            reviewRows.innerHTML = "";
+            if (reviewEmpty) reviewEmpty.style.display = "grid";
+            return;
+          }
+          if (reviewEmpty) reviewEmpty.style.display = "none";
+          reviewRows.innerHTML = reviewAssignments
+            .map((item) => {
+              const title = escapeHtml(item.taskTitle || item.title || "Nhiem vu");
+              const assignee = escapeHtml(item.assigneeName || "BKUser");
+              const submittedAt = formatDateTime(item.submittedAt);
+              const dueAt = Number(item.reviewDueAt || 0);
+              const dueLabel = dueAt ? formatCountdown(dueAt - now) : "--:--:--";
+              const proofParts = [];
+              if (item.proofLink) {
+                const link = escapeHtml(item.proofLink);
+                proofParts.push(`<a href="${link}" target="_blank" rel="noopener">Link</a>`);
+              }
+              if (item.proofFileName) proofParts.push(escapeHtml(item.proofFileName));
+              if (item.proofNote) proofParts.push(escapeHtml(item.proofNote));
+              const proofLine = proofParts.length
+                ? `<div class="hero-sub">B\u1eb1ng ch\u1ee9ng: ${proofParts.join(" - ")}</div>`
+                : `<div class="hero-sub">B\u1eb1ng ch\u1ee9ng: --</div>`;
+              return `
+                <div class="table-like-row" data-review-row data-assign-id="${item.id}">
+                  <div data-label="Nhiem vu">
+                    <strong>${title}</strong>
+                    ${proofLine}
+                  </div>
+                  <div data-label="Nguoi nhan">${assignee}</div>
+                  <div data-label="Nop luc">${submittedAt}</div>
+                  <div data-label="Han duyet" data-review-countdown data-review-due="${dueAt}">${dueLabel}</div>
+                  <div data-label="Hanh dong">
+                    <div class="seller-table-actions">
+                      <button class="btn sm primary" type="button" data-review-action="approve" data-assign-id="${item.id}">Duy\u1ec7t</button>
+                      <button class="btn sm ghost" type="button" data-review-action="complain" data-assign-id="${item.id}">Khi\u1ebfu n\u1ea1i</button>
+                    </div>
+                  </div>
+                </div>
+              `;
+            })
+            .join("");
+        };
+
+        const updateReviewCountdowns = () => {
+          if (!reviewRows || !reviewAssignments.length) return;
+          const now = Date.now();
+          let needsRefresh = false;
+          reviewRows.querySelectorAll("[data-review-countdown]").forEach((el) => {
+            const due = Number(el.dataset.reviewDue || 0);
+            if (!due) return;
+            const remain = due - now;
+            if (remain <= 0) needsRefresh = true;
+            el.textContent = formatCountdown(remain);
+          });
+          if (needsRefresh) renderReviewRows();
+        };
+
+        const saveTasks = () => {
+          try {
+            localStorage.setItem(dataKey, JSON.stringify(tasks));
+          } catch (e) {}
+        };
+
+        const normalizeTaskOwners = (list) => {
+          let changed = false;
+          const normalized = (Array.isArray(list) ? list : []).map((task) => {
+            if (!task || typeof task !== "object") return task;
+            const next = { ...task };
+            if (!next.ownerId && currentUserId) {
+              next.ownerId = currentUserId;
+              changed = true;
+            }
+            if (!next.ownerName && currentUserName) {
+              next.ownerName = currentUserName;
+              changed = true;
+            }
+            return next;
+          });
+          return { list: normalized, changed };
+        };
+
+        const loadTasks = (forceRemote = false) => {
+          if (!forceRemote) {
+            try {
+              const raw = localStorage.getItem(dataKey);
+              if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                  const normalized = normalizeTaskOwners(parsed);
+                  tasks = normalized.list;
+                  if (normalized.changed) saveTasks();
+                  renderTasks();
+                  renderReviewRows();
+                  return;
+                }
+              }
+            } catch (e) {}
+          }
+          const dataPath = typeof getProjectRoot === "function" ? getProjectRoot() + "data/mock-tasks.json" : "../../data/mock-tasks.json";
+          if (typeof loadJSON === "function") {
+            loadJSON(dataPath).then((data) => {
+              const normalized = normalizeTaskOwners(Array.isArray(data) ? data : []);
+              tasks = normalized.list;
+              renderTasks();
+              renderReviewRows();
+            });
+          }
+        };
+
+        const resetForm = () => {
+          if (form) form.reset();
+          editingId = "";
+          if (submitBtn) submitBtn.textContent = "\u0110\u0103ng b\u00e0i m\u1edbi";
+        };
+
+        if (form) {
+          form.addEventListener("submit", (event) => {
+            event.preventDefault();
+            const title = titleInput ? titleInput.value.trim() : "";
+            if (!title) return;
+            const existingTask = editingId ? tasks.find((item) => item.id === editingId) : null;
+            const next = {
+              id: editingId || `task-${Date.now()}`,
+              title,
+              short: shortInput ? shortInput.value.trim() : "",
+              reward: parseNumber(rewardInput ? rewardInput.value : 0),
+              quantity: parseNumber(quantityInput ? quantityInput.value : 0),
+              createdAt: editingId ? (tasks.find((t) => t.id === editingId) || {}).createdAt || new Date().toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+              status: statusInput ? statusInput.value : "\u0110ang m\u1edf",
+              deadline: deadlineInput ? deadlineInput.value : "",
+              tag: tagInput ? tagInput.value.trim() : "",
+              ownerId: (existingTask && existingTask.ownerId) || currentUserId,
+              ownerName: (existingTask && existingTask.ownerName) || currentUserName,
+            };
+
+            if (editingId) {
+              tasks = tasks.map((task) => (task.id === editingId ? next : task));
+            } else {
+              tasks.unshift(next);
+            }
+            saveTasks();
+            renderTasks();
+            resetForm();
+            setView("list");
+            if (window.BKAuth && typeof window.BKAuth.showToast === "function") {
+              window.BKAuth.showToast("Da luu nhiem vu.");
+            }
+          });
+        }
+
+        if (resetBtn) {
+          resetBtn.addEventListener("click", () => {
+            resetForm();
+          });
+        }
+
+        if (refreshBtn) {
+          refreshBtn.addEventListener("click", () => {
+            loadTasks();
+            if (window.BKAuth && typeof window.BKAuth.showToast === "function") {
+              window.BKAuth.showToast("Da lam moi danh sach.");
+            }
+          });
+        }
+
+        if (newBtn) {
+          newBtn.addEventListener("click", () => {
+            setView("create");
+          });
+        }
+
+        if (openCreateBtn) {
+          openCreateBtn.addEventListener("click", () => {
+            setView("create");
+          });
+        }
+
+        if (grid) {
+          grid.addEventListener("click", (event) => {
+            const btn = event.target.closest("button[data-action]");
+            if (!btn) return;
+            const action = btn.getAttribute("data-action");
+            const id = btn.getAttribute("data-id");
+            const task = tasks.find((item) => item.id === id);
+            if (!task) return;
+
+            if (action === "edit") {
+              editingId = id;
+              if (titleInput) titleInput.value = task.title || "";
+              if (shortInput) shortInput.value = task.short || "";
+              if (rewardInput) rewardInput.value = task.reward || "";
+              if (quantityInput) quantityInput.value = task.quantity || "";
+              if (deadlineInput) deadlineInput.value = task.deadline || "";
+              if (statusInput) statusInput.value = task.status || "\u0110ang m\u1edf";
+              if (tagInput) tagInput.value = task.tag || "";
+              if (submitBtn) submitBtn.textContent = "C\u1eadp nh\u1eadt nhi\u1ec7m v\u1ee5";
+              setView("create");
+              return;
+            }
+
+            if (action === "close") {
+              task.status = "\u0110\u00e3 \u0111\u00f3ng";
+              saveTasks();
+              renderTasks();
+              return;
+            }
+
+            if (action === "remove") {
+              tasks = tasks.filter((item) => item.id !== id);
+              saveTasks();
+              renderTasks();
+            }
+          });
+        }
+
+        if (reviewRows) {
+          reviewRows.addEventListener("click", (event) => {
+            const btn = event.target.closest("button[data-review-action]");
+            if (!btn) return;
+            const action = btn.getAttribute("data-review-action");
+            const id = btn.getAttribute("data-assign-id");
+            if (!action || !id) return;
+            const list = window.BKTasks ? window.BKTasks.syncAssignments(window.BKTasks.readAssignments()) : [];
+            const assignment = list.find((item) => item && item.id === id);
+            if (!assignment || String(assignment.status || "") !== "submitted") return;
+            const now = Date.now();
+
+            if (action === "approve") {
+              assignment.status = "approved";
+              assignment.approvedAt = now;
+              assignment.payoutAt = now;
+              assignment.reviewedAt = now;
+              assignment.reviewDueAt = 0;
+              assignment.updatedAt = now;
+              if (window.BKTasks) window.BKTasks.writeAssignments(list);
+              renderReviewRows();
+              updateReviewCountdowns();
+              if (window.BKAuth && typeof window.BKAuth.showToast === "function") {
+                window.BKAuth.showToast("\u0110\u00e3 duy\u1ec7t b\u00e1o c\u00e1o.");
+              }
+              return;
+            }
+
+            if (action === "complain") {
+              const reason = window.prompt("Ly do khi\u1ebfu n\u1ea1i (tuy chon):");
+              if (reason == null) return;
+              assignment.status = "redo";
+              assignment.reviewNote = String(reason || "").trim();
+              assignment.reviewedAt = now;
+              assignment.reviewDueAt = 0;
+              assignment.updatedAt = now;
+              if (window.BKTasks) window.BKTasks.writeAssignments(list);
+              renderReviewRows();
+              updateReviewCountdowns();
+              if (window.BKAuth && typeof window.BKAuth.showToast === "function") {
+                window.BKAuth.showToast("\u0110\u00e3 g\u1eedi y\u00eau c\u1ea7u l\u00e0m l\u1ea1i.");
+              }
+            }
+          });
+        }
+
+        loadTasks();
+        renderReviewRows();
+        updateReviewCountdowns();
+        setInterval(updateReviewCountdowns, 1000);
+
+        window.addEventListener("storage", (event) => {
+          if (event.key === dataKey) {
+            loadTasks();
+            return;
+          }
+          if (window.BKTasks && event.key === window.BKTasks.assignKey) {
+            renderReviewRows();
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
+
+

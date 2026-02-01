@@ -1,0 +1,175 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Gian h&#224;ng | polyflux.xyz</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="../../apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="../../favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="../../favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="../../android-chrome-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="../../android-chrome-512x512.png" />
+    <link rel="manifest" href="../../site.webmanifest" />
+    <link rel="icon" href="../../favicon.ico" />
+    <meta name="description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta property="og:title" content="polyflux.xyz" />
+    <meta property="og:description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta property="og:image" content="../../asset/logo-preview.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="vi_VN" />
+    <meta property="og:site_name" content="polyflux.xyz" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="polyflux.xyz" />
+    <meta name="twitter:description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta name="twitter:image" content="../../asset/logo-preview.png" />
+    <link rel="stylesheet" href="../../asset/base.css" />
+    <link rel="stylesheet" href="../../asset/catalog.css" />
+    <link rel="stylesheet" href="../../asset/store-page.css" />
+    <link rel="stylesheet" href="../../asset/store-gallery.css" />
+  </head>
+  <body>
+    <video class="video-bg" autoplay muted loop playsinline preload="metadata">
+      <source src="../../asset/bg-donut.mp4" type="video/mp4" />
+    </video>
+    <div class="video-overlay"></div>
+
+    <header class="wrap">
+      <nav class="nav glass">
+        <a href="/" class="brand" style="display: flex; align-items: center; gap: 12px; text-decoration: none;">
+          <img src="../../asset/logo.png" alt="PolyFlux" />
+          <span>polyflux<b>.xyz</b></span>
+        </a>
+        <div class="nav-links">
+          <a href="/products/" data-nav="sanpham">S&#7843;n Ph&#7849;m <span class="badge">HOT</span></a>
+          <a href="/dichvu/" data-nav="dichvu">D&#7883;ch V&#7909;</a>
+          <a href="/nhiemvu/" data-nav="nhiemvu">Nhi&#7879;m V&#7909;</a>
+          <a href="/profile/topups/" data-nav="topups">N&#7841;p ti&#7873;n</a>
+        </div>
+        <div class="nav-actions">
+          <button class="btn balance-btn" data-balance type="button">0 VND</button>
+          <a class="btn login-btn" href="/login/">Login</a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="wrap">
+      <section class="section store-page">
+        <div class="store-hero glass" id="store-hero">
+          <div class="store-avatar" id="store-avatar"></div>
+          <div class="store-hero-body">
+            <div class="store-title-row">
+              <h1 id="store-name">--</h1>
+              <div class="store-owner-badge" id="store-owner-badge"></div>
+            </div>
+            <div class="store-owner-line">
+              <span id="store-owner-name">--</span>
+              <span class="store-owner-title" id="store-owner-title"></span>
+            </div>
+            <div class="store-meta-line" id="store-meta-line"></div>
+            <p class="store-short-desc" id="store-short-desc"></p>
+          </div>
+        </div>
+
+        <div class="store-gallery glass is-hidden" id="store-gallery">
+          <div class="store-gallery-head">
+            <h3>H&#236;nh &#7843;nh gian h&#224;ng</h3>
+            <div class="store-gallery-controls">
+              <button class="btn ghost" type="button" id="store-gallery-prev">&#x2039;</button>
+              <button class="btn ghost" type="button" id="store-gallery-next">&#x203A;</button>
+            </div>
+          </div>
+          <div class="store-gallery-hero" id="store-gallery-hero"></div>
+          <div class="store-gallery-carousel" id="store-gallery-carousel">
+            <div class="store-gallery-track" id="store-gallery-track"></div>
+            <div class="store-gallery-dots" id="store-gallery-dots"></div>
+          </div>
+        </div>
+
+        <div class="store-desc glass" id="store-long-desc"></div>
+
+        <div class="store-state card empty-state is-hidden" id="store-state"></div>
+
+        <div class="store-browse">
+          <div class="product-layout store-layout">
+            <aside class="product-sidebar" id="store-filter-panel">
+              <div class="card filter-card">
+                <div class="filter-head">
+                  <h3 data-i18n-key="filter.title">L&#7885;c</h3>
+                  <p data-i18n-key="filter.descSubcategories">Ch&#7885;n 1 ho&#7863;c nhi&#7873;u danh m&#7909;c con</p>
+                </div>
+                <div class="filter-list" id="store-filter-list"></div>
+                <div class="form-field" style="margin-top: 14px;">
+                  <label for="store-filter-search" data-i18n-key="filter.searchLabel">T&#236;m ki&#7871;m</label>
+                  <input
+                    id="store-filter-search"
+                    placeholder="Nh&#7853;p t&#234;n s&#7843;n ph&#7849;m..."
+                    data-i18n-placeholder="filter.searchPlaceholder.product"
+                  />
+                </div>
+                <button class="btn primary" id="store-filter-apply" type="button" data-i18n-key="filter.apply">T&#236;m ki&#7871;m</button>
+              </div>
+            </aside>
+
+            <div class="product-main">
+              <div class="mobile-filter-bar">
+                <button class="btn filter-toggle" id="store-filter-toggle" type="button" aria-expanded="false" aria-controls="store-filter-panel">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 6h16l-5.5 6.2v4.9l-5 2.7v-7.6L4 6z" fill="currentColor" />
+                  </svg>
+                  <span data-i18n-key="filter.title">L&#7885;c</span>
+                </button>
+              </div>
+
+              <div class="product-head">
+                <div>
+                  <h2 id="store-items-title">S&#7843;n ph&#7849;m</h2>
+                  <p class="hero-sub" id="store-items-sub">S&#7855;p x&#7871;p theo nhu c&#7847;u v&#224; ch&#7885;n nhanh s&#7843;n ph&#7849;m ph&#249; h&#7907;p.</p>
+                </div>
+                <div class="sort-tabs" id="store-sort-tabs" role="tablist">
+                  <button class="sort-pill active" data-sort="popular" type="button" data-i18n-key="sort.popular">Ph&#7893; bi&#7871;n</button>
+                  <button class="sort-pill" data-sort="rating" type="button" data-i18n-key="sort.rating">&#272;&#225;nh gi&#225;</button>
+                </div>
+              </div>
+
+              <div class="store-items-tabs" id="store-items-tabs">
+                <button class="sort-pill active" type="button" data-type="product">S&#7843;n ph&#7849;m</button>
+                <button class="sort-pill" type="button" data-type="service">D&#7883;ch v&#7909;</button>
+              </div>
+
+              <div class="product-grid-luxe" id="store-items-grid"></div>
+              <div class="table-pagination" id="store-items-pagination"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        <div class="footer-grid">
+          <div>
+            <h4>About polyflux.xyz</h4>
+            <p>
+              The #1 trusted marketplace for digital assets on polyflux.xyz. Buy accounts, emails, tools and more with
+              instant delivery.
+            </p>
+          </div>
+          <div>
+            <h4>Quick links</h4>
+            <a href="/products/">S&#7843;n ph&#7849;m</a>
+            <a href="/dichvu/">D&#7883;ch v&#7909;</a>
+            <a href="/nhiemvu/">Nhi&#7879;m v&#7909;</a>
+          </div>
+          <div>
+            <h4>Need help?</h4>
+            <p>Want to open a store on polyflux.xyz?</p>
+            <a href="/seller/join/" class="btn ghost">Apply seller</a>
+          </div>
+        </div>
+      </footer>
+    </main>
+
+    <script src="../../asset/render.js"></script>
+    <script src="../../asset/store-page.js"></script>
+    <script src="../../asset/store-gallery.js"></script>
+  </body>
+</html>
+

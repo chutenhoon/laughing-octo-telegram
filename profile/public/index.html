@@ -1,0 +1,2290 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title data-i18n-key="profile.public.pageTitle">Profile | polyflux.xyz</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="../../apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="../../favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="../../favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="../../android-chrome-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="../../android-chrome-512x512.png" />
+    <link rel="manifest" href="../../site.webmanifest" />
+    <link rel="icon" href="../../favicon.ico" />
+    <meta name="description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta property="og:title" content="polyflux.xyz" />
+    <meta property="og:description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta property="og:image" content="../../asset/logo-preview.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="vi_VN" />
+    <meta property="og:site_name" content="polyflux.xyz" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="polyflux.xyz" />
+    <meta name="twitter:description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta name="twitter:image" content="../../asset/logo-preview.png" />
+<link rel="stylesheet" href="../../asset/base.css" />
+  </head>
+  <body class="page-profile page-public-profile">
+    <video class="video-bg" autoplay muted loop playsinline preload="metadata">
+      <source src="../../asset/bg-donut.mp4" type="video/mp4" />
+    </video>
+    <div class="video-overlay"></div>
+
+    <header class="wrap">
+      <nav class="nav glass">
+        <a href="/" class="brand" style="display: flex; align-items: center; gap: 12px; text-decoration: none;">
+          <img src="../../asset/logo.png" alt="PolyFlux" />
+          <span>polyflux<b>.xyz</b></span>
+        </a>
+        <div class="nav-links">
+          <a href="/products/" data-nav="sanpham">S&#7843;n Ph&#7849;m <span class="badge">HOT</span></a>
+          <a href="/dichvu/" data-nav="dichvu">D&#7883;ch V&#7909;</a>
+          <a href="/nhiemvu/" data-nav="nhiemvu">Nhi&#7879;m V&#7909;</a>
+          <a href="/profile/topups/" data-nav="topups">N&#7841;p ti&#7873;n</a>
+        </div>
+        <div class="nav-actions">
+                    <button class="btn balance-btn" data-balance type="button">0 VND</button>
+          <a class="btn login-btn" href="/login/">Login</a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="wrap">
+      <section class="section">
+        <div class="card profile-public-shell is-loading" aria-busy="true">
+          <div class="profile-public-card">
+            <div class="profile-public-avatar">
+              <img src="../../asset/avt-macdinh.jpg" alt="Avatar" loading="lazy" id="profile-avatar-image" />
+            </div>
+            <div class="profile-public-info">
+              <div class="profile-public-head">
+                <div>
+                  <h3 id="profile-name"></h3>
+                  <div class="profile-public-meta">
+                    <span><span data-i18n-key="profile.public.joinedLabel">Joined</span>: <strong id="profile-joined"></strong></span>
+                    <span><span data-i18n-key="profile.public.badgeLabel">Badge</span>: <span class="profile-badge" id="profile-badge"></span></span>
+                    <span class="profile-online">
+                      <span data-i18n-key="profile.public.onlineLabel">Online</span>:
+                      <span class="online-dot" id="profile-online-dot" aria-hidden="true"></span>
+                      <span id="profile-online-text"></span>
+                    </span>
+                  </div>
+                </div>
+                <div class="profile-public-actions">
+                  <button class="btn ghost profile-follow-btn" id="profile-follow-btn" type="button">Follow</button>
+                  <button class="btn ghost profile-message-btn" id="profile-message-btn" type="button" data-i18n-key="profile.public.message">
+                    Nh?n tin
+                  </button>
+                </div>
+              </div>
+              <div class="profile-public-follow">
+                <div class="profile-follow-stat">
+                  <span data-i18n-key="profile.public.followersLabel">Followers</span>
+                  <strong id="profile-followers"></strong>
+                </div>
+                <div class="profile-follow-stat">
+                  <span data-i18n-key="profile.public.followingLabel">Following</span>
+                  <strong id="profile-following"></strong>
+                </div>
+              </div>
+              <div class="profile-public-stats">
+                <div class="profile-stat" id="profile-stat-purchased">
+                  <span data-i18n-key="profile.public.stats.purchased">Purchased</span>
+                  <strong id="profile-purchased-count"></strong>
+                </div>
+                <div class="profile-stat" id="profile-stat-sold">
+                  <span data-i18n-key="profile.public.stats.sold">Sold</span>
+                  <strong id="profile-sold-count"></strong>
+                </div>
+                <div class="profile-stat" id="profile-stat-level">
+                  <span data-i18n-key="profile.public.stats.rank">Top</span>
+                  <strong id="profile-level-count"></strong>
+                </div>
+                <a class="profile-stat profile-stat-link" id="profile-shop-link" href="#">
+                  <span data-i18n-key="profile.public.stats.shop">View shop</span>
+                  <strong id="profile-shop-count"></strong>
+                </a>
+              </div>
+            </div>
+          </div>
+          <div class="profile-skeleton" aria-hidden="true">
+            <div class="profile-skeleton-head">
+              <div class="profile-skeleton-avatar skeleton"></div>
+              <div class="profile-skeleton-lines">
+                <div class="profile-skeleton-line skeleton"></div>
+                <div class="profile-skeleton-line skeleton w-60"></div>
+                <div class="profile-skeleton-line skeleton w-45"></div>
+              </div>
+              <div class="profile-skeleton-actions">
+                <div class="profile-skeleton-pill skeleton"></div>
+                <div class="profile-skeleton-pill skeleton"></div>
+              </div>
+            </div>
+            <div class="profile-skeleton-follow">
+              <div class="profile-skeleton-chip skeleton"></div>
+              <div class="profile-skeleton-chip skeleton"></div>
+            </div>
+            <div class="profile-skeleton-stats">
+              <div class="profile-skeleton-card skeleton"></div>
+              <div class="profile-skeleton-card skeleton"></div>
+              <div class="profile-skeleton-card skeleton"></div>
+              <div class="profile-skeleton-card skeleton"></div>
+            </div>
+          </div>
+          <div class="profile-public-error" id="profile-error" role="status" aria-live="polite">
+            <strong>Không th? t?i h? so</strong>
+            <span id="profile-error-text">Vui lòng th? l?i sau.</span>
+            <button class="btn ghost" id="profile-retry-btn" type="button">Th? l?i</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 18px;">
+          <div class="story-header">
+            <h3 data-i18n-key="profile.public.featured.title">Featured posts</h3>
+            <button class="btn ghost" id="story-manage-btn" type="button" data-owner-only data-i18n-key="profile.public.featured.manage">
+              Edit featured posts
+            </button>
+          </div>
+          <div class="story-grid" id="story-grid"></div>
+          <div class="story-note" data-i18n-key="profile.public.featured.note">Featured posts are auto-removed after 30 days.</div>
+        </div>
+        <div class="profile-message-anchor" id="profile-message-anchor" aria-hidden="true"></div>
+      </section>
+
+      <footer>
+        <div class="footer-grid">
+          <div>
+            <h4>About polyflux.xyz</h4>
+            <p>
+              The #1 trusted marketplace for digital assets on polyflux.xyz. Buy accounts, emails, tools and more with
+              instant delivery.
+            </p>
+          </div>
+          <div>
+            <h4>&#272;i&#7873;u h&#432;&#7899;ng</h4>
+            <p><a href="/products/">S&#7843;n ph&#7849;m</a></p>
+            <p><a href="/dichvu/">D&#7883;ch v&#7909;</a></p>
+            <p><a href="/nhiemvu/">Nhi&#7879;m v&#7909; marketplace</a></p>
+            <p><a href="/profile/">T&#224;i kho&#7843;n c&#7911;a t&#244;i</a></p>
+          </div>
+          <div>
+            <h4>Thanh to&#225;n &amp; b&#7843;o m&#7853;t</h4>
+            <p>20+ ph&#432;&#417;ng th&#7913;c thanh to&#225;n, x&#7917; l&#253; t&#7921; &#273;&#7897;ng.</p>
+            <p>L&#7883;ch s&#7917; &#273;&#417;n h&#224;ng minh b&#7841;ch.</p>
+            <p>2FA &amp; c&#7843;nh b&#225;o &#273;&#259;ng nh&#7853;p kh&#7843; nghi.</p>
+          </div>
+          <div>
+            <h4>Tham gia b&#225;n h&#224;ng</h4>
+            <p>Mu&#7889;n m&#7903; gian h&#224;ng tr&#234;n polyflux.xyz?</p>
+            <a href="/seller/join/" class="btn primary" style="margin-top: 8px; display: inline-flex; align-items: center; gap: 6px;">
+              Tham gia b&#225;n h&#224;ng
+            </a>
+          </div>
+        </div>
+      </footer>
+    </main>
+
+    <nav class="mobile-nav">
+      <div class="mobile-nav-top">
+        <a href="/" class="mobile-brand" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+          <img src="../../asset/logo.png" alt="PolyFlux" />
+          <span>polyflux<b>.xyz</b></span>
+        </a>
+        <div class="mobile-actions">
+                    <button class="btn balance-btn" data-balance type="button">0 VND</button>
+          <a class="btn login-btn" href="/login/">Login</a>
+        
+          <button class="menu-btn" id="mobile-menu" type="button" aria-label="Menu">
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="mobile-links">
+        <a href="/products/" data-nav="sanpham">S&#7843;n Ph&#7849;m</a>
+        <a href="/dichvu/" data-nav="dichvu">D&#7883;ch V&#7909;</a>
+        <a href="/nhiemvu/" data-nav="nhiemvu">Nhi&#7879;m V&#7909;</a>
+        <a href="/profile/topups/" data-nav="topups">N&#7841;p ti&#7873;n</a>
+      </div>
+    </nav>
+
+    <div class="modal-backdrop story-preview-modal" id="story-preview-modal" aria-hidden="true">
+      <div class="modal-card story-preview-card" role="dialog" aria-modal="true" aria-labelledby="story-preview-title">
+        <div class="story-preview-head">
+          <h3 id="story-preview-title">--</h3>
+          <button
+            class="btn ghost story-preview-close"
+            id="story-preview-close"
+            type="button"
+            aria-label="Close"
+            data-i18n-aria="profile.public.manage.close"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+        <div class="story-preview-body" id="story-preview-body"></div>
+        <div class="story-preview-meta">
+          <span id="story-preview-date">--</span>
+          <span class="story-preview-type" id="story-preview-type">--</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop story-manage-modal" id="story-manage-modal" aria-hidden="true">
+      <div class="modal-card story-manage-panel" role="dialog" aria-modal="true" aria-labelledby="story-manage-title">
+        <div class="story-manage-head">
+          <h3 id="story-manage-title" data-i18n-key="profile.public.manage.title">Manage profile</h3>
+          <button
+            class="btn ghost story-manage-close"
+            id="story-manage-close"
+            type="button"
+            aria-label="Close"
+            data-i18n-aria="profile.public.manage.close"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+        <div class="story-manage-body">
+          <div class="story-manage-section">
+            <div class="story-manage-title">
+              <h4 data-i18n-key="profile.public.featured.title">Featured posts</h4>
+              <span id="story-limit-note"></span>
+            </div>
+            <div class="story-manage-grid" id="story-manage-grid">
+              <div class="story-manage-card" data-slot="0">
+                <div class="story-manage-preview-wrap">
+                  <div class="story-manage-preview" data-slot="0"></div>
+                  <button
+                    class="btn ghost story-thumb-btn"
+                    type="button"
+                    data-slot="0"
+                    title="Ð?t ?nh bìa"
+                    aria-label="Ð?t ?nh bìa"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="M4 6.5a2 2 0 0 1 2-2h2.5l1.2-1.3a2 2 0 0 1 1.5-.7h2.6a2 2 0 0 1 1.5.7L16.5 4.5H19a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-11zm8 2.5a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"
+                        fill="currentColor"
+                      />
+                    </svg>
+                    <span>Ð?t ?nh bìa</span>
+                  </button>
+                </div>
+                <input
+                  class="story-title-input"
+                  data-slot="0"
+                  placeholder="Post title"
+                  data-i18n-placeholder="profile.public.manage.titlePlaceholder"
+                />
+                <div class="story-manage-actions">
+                  <button class="btn ghost story-upload" type="button" data-slot="0" data-i18n-key="profile.public.manage.upload">Upload</button>
+                  <button class="btn ghost story-remove" type="button" data-slot="0" data-i18n-key="profile.public.manage.remove">Remove</button>
+                </div>
+                <input class="story-thumb-input" type="file" accept="image/*" data-slot="0" style="display: none;" />
+                <input class="story-file-input" type="file" accept="image/*,video/*" data-slot="0" style="display: none;" />
+                <span class="story-slot-label">1</span>
+              </div>
+              <div class="story-manage-card" data-slot="1">
+                <div class="story-manage-preview-wrap">
+                  <div class="story-manage-preview" data-slot="1"></div>
+                  <button
+                    class="btn ghost story-thumb-btn"
+                    type="button"
+                    data-slot="1"
+                    title="Ð?t ?nh bìa"
+                    aria-label="Ð?t ?nh bìa"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="M4 6.5a2 2 0 0 1 2-2h2.5l1.2-1.3a2 2 0 0 1 1.5-.7h2.6a2 2 0 0 1 1.5.7L16.5 4.5H19a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-11zm8 2.5a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"
+                        fill="currentColor"
+                      />
+                    </svg>
+                    <span>Ð?t ?nh bìa</span>
+                  </button>
+                </div>
+                <input
+                  class="story-title-input"
+                  data-slot="1"
+                  placeholder="Post title"
+                  data-i18n-placeholder="profile.public.manage.titlePlaceholder"
+                />
+                <div class="story-manage-actions">
+                  <button class="btn ghost story-upload" type="button" data-slot="1" data-i18n-key="profile.public.manage.upload">Upload</button>
+                  <button class="btn ghost story-remove" type="button" data-slot="1" data-i18n-key="profile.public.manage.remove">Remove</button>
+                </div>
+                <input class="story-thumb-input" type="file" accept="image/*" data-slot="1" style="display: none;" />
+                <input class="story-file-input" type="file" accept="image/*,video/*" data-slot="1" style="display: none;" />
+                <span class="story-slot-label">2</span>
+              </div>
+              <div class="story-manage-card" data-slot="2">
+                <div class="story-manage-preview-wrap">
+                  <div class="story-manage-preview" data-slot="2"></div>
+                  <button
+                    class="btn ghost story-thumb-btn"
+                    type="button"
+                    data-slot="2"
+                    title="Ð?t ?nh bìa"
+                    aria-label="Ð?t ?nh bìa"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="M4 6.5a2 2 0 0 1 2-2h2.5l1.2-1.3a2 2 0 0 1 1.5-.7h2.6a2 2 0 0 1 1.5.7L16.5 4.5H19a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-11zm8 2.5a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"
+                        fill="currentColor"
+                      />
+                    </svg>
+                    <span>Ð?t ?nh bìa</span>
+                  </button>
+                </div>
+                <input
+                  class="story-title-input"
+                  data-slot="2"
+                  placeholder="Post title"
+                  data-i18n-placeholder="profile.public.manage.titlePlaceholder"
+                />
+                <div class="story-manage-actions">
+                  <button class="btn ghost story-upload" type="button" data-slot="2" data-i18n-key="profile.public.manage.upload">Upload</button>
+                  <button class="btn ghost story-remove" type="button" data-slot="2" data-i18n-key="profile.public.manage.remove">Remove</button>
+                </div>
+                <input class="story-thumb-input" type="file" accept="image/*" data-slot="2" style="display: none;" />
+                <input class="story-file-input" type="file" accept="image/*,video/*" data-slot="2" style="display: none;" />
+                <span class="story-slot-label">3</span>
+              </div>
+              <div class="story-manage-card" data-slot="3">
+                <div class="story-manage-preview-wrap">
+                  <div class="story-manage-preview" data-slot="3"></div>
+                  <button
+                    class="btn ghost story-thumb-btn"
+                    type="button"
+                    data-slot="3"
+                    title="Ð?t ?nh bìa"
+                    aria-label="Ð?t ?nh bìa"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="M4 6.5a2 2 0 0 1 2-2h2.5l1.2-1.3a2 2 0 0 1 1.5-.7h2.6a2 2 0 0 1 1.5.7L16.5 4.5H19a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-11zm8 2.5a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"
+                        fill="currentColor"
+                      />
+                    </svg>
+                    <span>Ð?t ?nh bìa</span>
+                  </button>
+                </div>
+                <input
+                  class="story-title-input"
+                  data-slot="3"
+                  placeholder="Post title"
+                  data-i18n-placeholder="profile.public.manage.titlePlaceholder"
+                />
+                <div class="story-manage-actions">
+                  <button class="btn ghost story-upload" type="button" data-slot="3" data-i18n-key="profile.public.manage.upload">Upload</button>
+                  <button class="btn ghost story-remove" type="button" data-slot="3" data-i18n-key="profile.public.manage.remove">Remove</button>
+                </div>
+                <input class="story-thumb-input" type="file" accept="image/*" data-slot="3" style="display: none;" />
+                <input class="story-file-input" type="file" accept="image/*,video/*" data-slot="3" style="display: none;" />
+                <span class="story-slot-label">4</span>
+              </div>
+            </div>
+            <div class="story-manage-help" data-i18n-key="profile.public.manage.help">
+              ?nh 9:16, t?i da 2MB. Video t?i da 60s (c?n quy?n).
+            </div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn ghost" id="story-manage-cancel" type="button" data-i18n-key="profile.public.manage.close">Close</button>
+          <button class="btn primary" id="story-manage-save" type="button" data-i18n-key="profile.public.manage.save">Save changes</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="../../asset/render.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const grid = document.getElementById("story-grid");
+        if (!grid) return;
+        const profileShell = document.querySelector(".profile-public-shell");
+        const profileError = document.getElementById("profile-error");
+        const profileErrorText = document.getElementById("profile-error-text");
+        const profileRetryBtn = document.getElementById("profile-retry-btn");
+        let isProfileLoading = false;
+        let isProfileError = false;
+        let profileFetchController = null;
+        const setProfileLoading = (value) => {
+          isProfileLoading = Boolean(value);
+          if (!profileShell) return;
+          profileShell.classList.toggle("is-loading", isProfileLoading);
+          profileShell.setAttribute("aria-busy", isProfileLoading ? "true" : "false");
+          if (isProfileLoading) profileShell.classList.remove("is-error");
+        };
+        const setProfileError = (message) => {
+          isProfileError = Boolean(message);
+          if (!profileShell) return;
+          profileShell.classList.toggle("is-error", isProfileError);
+          if (profileErrorText) profileErrorText.textContent = message || "";
+        };
+        const abortProfileFetch = () => {
+          if (!profileFetchController) return;
+          try {
+            profileFetchController.abort();
+          } catch (error) {}
+          profileFetchController = null;
+        };
+
+        let currentLanguage = typeof getCurrentLanguage === "function" ? getCurrentLanguage() : "vi";
+        const t = (key, fallback, vars) =>
+          typeof formatI18n === "function" ? formatI18n(currentLanguage, key, fallback, vars) : fallback || key;
+        const uiKit = window.BKUI || {};
+        const applyNameWithBadge = typeof uiKit.applyNameWithBadge === "function" ? uiKit.applyNameWithBadge : null;
+        const isAdminUser = typeof uiKit.isAdminUser === "function" ? uiKit.isAdminUser : null;
+        const getLocale = () => {
+          const map = { vi: "vi-VN", en: "en-US", ko: "ko-KR", ja: "ja-JP", zh: "zh-CN" };
+          return map[currentLanguage] || "en-US";
+        };
+
+        const root =
+          typeof getRootPath === "function"
+            ? getRootPath()
+            : typeof getProjectRoot === "function"
+              ? getProjectRoot()
+              : "../../";
+        const isFile = window.location.protocol === "file:";
+        const params = new URLSearchParams(window.location.search);
+        const auth = window.BKAuth ? window.BKAuth.read() : { loggedIn: false, user: null };
+        const normalizeId = (value) => (value == null ? "" : String(value).trim().toLowerCase());
+        const isValidUsername = (value) => /^[a-z0-9._-]{3,20}$/.test(value);
+        const path = window.location.pathname;
+        const hasUserPath = /^\/u(\/|$)/i.test(path) || /^\/@/i.test(path);
+        const pathMatch = path.match(/\/u\/([^/]+)/i) || path.match(/\/@([^/]+)/i);
+        const rawPathUsername = pathMatch && pathMatch[1] ? decodeURIComponent(pathMatch[1]) : "";
+        const pathUsername = normalizeId(rawPathUsername);
+        const queryUsername = params.get("u") || params.get("username") || "";
+        const normalizedQueryUsername = normalizeId(queryUsername);
+        const paramUsername = normalizedQueryUsername || pathUsername;
+        const legacyId = params.get("id") ? String(params.get("id")).trim() : "";
+        const invalidPathUsername = hasUserPath && (!pathUsername || !isValidUsername(pathUsername));
+        const invalidQueryUsername = !hasUserPath && queryUsername && !isValidUsername(normalizedQueryUsername);
+        if (invalidPathUsername || invalidQueryUsername) {
+          const message = t("profile.public.invalidUsername", "Username không h?p l?");
+          if (window.BKAuth && typeof window.BKAuth.showToast === "function") {
+            window.BKAuth.showToast(message);
+          } else {
+            alert(message);
+          }
+          setProfileLoading(false);
+          setProfileError(message);
+          document.querySelectorAll("[data-owner-only], [data-admin-only]").forEach((el) => {
+            el.style.display = "none";
+          });
+          return;
+        }
+        const rawUserId = auth && auth.user && auth.user.id != null ? String(auth.user.id).trim() : "";
+        const rawUsername = auth && auth.user && auth.user.username ? String(auth.user.username).trim() : "";
+        const rawEmail = auth && auth.user && auth.user.email ? String(auth.user.email).trim() : "";
+        const rawAuthRefs = [];
+        if (rawUsername) rawAuthRefs.push(rawUsername);
+        if (rawUserId) rawAuthRefs.push(rawUserId);
+        if (!rawAuthRefs.length && rawUserId) rawAuthRefs.push(rawUserId);
+        const authPrimary = rawAuthRefs.length ? rawAuthRefs[0] : "";
+        const authRefSet = new Set([...rawAuthRefs, rawEmail].map((value) => normalizeId(value)).filter(Boolean));
+        const profileUsername = paramUsername && isValidUsername(paramUsername) ? paramUsername : "";
+        let profileRef = profileUsername || authPrimary || "bk-user";
+        let profileKey = normalizeId(profileRef);
+        let profileUser = auth && auth.user ? auth.user : null;
+        const resolveIsOwner = (candidate) => {
+          if (!auth || !auth.loggedIn) return false;
+          const authUser = auth.user || {};
+          const authId = authUser.id != null ? String(authUser.id).trim() : "";
+          const candidateUser = candidate || null;
+          const candidateId =
+            candidateUser && candidateUser.id != null ? String(candidateUser.id).trim() : "";
+          if (authId && candidateId && authId === candidateId) return true;
+          const candidateName = candidateUser && candidateUser.username ? String(candidateUser.username) : profileRef;
+          const candidateKey = normalizeId(candidateName);
+          if (candidateKey && authRefSet.has(candidateKey)) return true;
+          if (profileRef && authRefSet.has(normalizeId(profileRef))) return true;
+          return false;
+        };
+        let isOwner = resolveIsOwner(profileUser);
+        const isAdmin = Boolean(auth && auth.user && auth.user.role === "admin");
+        const hasVideoPermission = (user) =>
+          Boolean(
+            user &&
+              (user.can_upload_video === true ||
+                user.can_upload_video === 1 ||
+                user.can_upload_video === "1" ||
+                user.canUploadVideo === true ||
+                user.canUploadVideo === 1 ||
+                user.canUploadVideo === "1")
+          );
+        const resolveCanUploadVideo = (user) => Boolean(isOwner && (isAdmin || hasVideoPermission(user)));
+        const useRemote = !isFile;
+        const apiUrl = useRemote ? "/api/profile" : "";
+        const uploadApiUrl = useRemote ? "/api/profile/upload" : "";
+        const followApiUrl = useRemote ? "/api/follow" : "";
+        const mediaBase = useRemote ? "/api/media?id=" : "";
+        const PROFILE_CACHE_TTL_MS = 30000;
+        const profileCache =
+          window.__BK_PROFILE_CACHE__ instanceof Map ? window.__BK_PROFILE_CACHE__ : new Map();
+        window.__BK_PROFILE_CACHE__ = profileCache;
+        setProfileLoading(useRemote);
+        const fallback = root + "asset/avt-macdinh.jpg";
+        const storyFallback =
+          window.BKAssets && typeof window.BKAssets.getAssetUrl === "function"
+            ? window.BKAssets.getAssetUrl(window.BKAssets.LINK_PREVIEW_IMAGE)
+            : root + "asset/logo-preview.png";
+        const getStoriesKey = () => `bk_profile_stories_${profileKey}`;
+        const readProfileCache = (key) => {
+          if (!key || !profileCache) return null;
+          const entry = profileCache.get(key);
+          if (!entry) return null;
+          if (Date.now() - entry.savedAt > PROFILE_CACHE_TTL_MS) {
+            profileCache.delete(key);
+            return null;
+          }
+          return entry.data || null;
+        };
+        const writeProfileCache = (key, data) => {
+          if (!key || !profileCache || !data) return;
+          profileCache.set(key, { data, savedAt: Date.now() });
+        };
+        const profileAvatar = document.getElementById("profile-avatar-image");
+        const profileAvatarWrap = document.querySelector(".profile-public-avatar");
+        const avatarUploadBtn = document.getElementById("profile-avatar-upload");
+        const avatarRemoveBtn = document.getElementById("profile-avatar-remove");
+        const avatarInput = document.getElementById("profile-avatar-input");
+        const profileJoined = document.getElementById("profile-joined");
+        const profileOnlineText = document.getElementById("profile-online-text");
+        const profileOnlineDot = document.getElementById("profile-online-dot");
+        const profileMessageBtn = document.getElementById("profile-message-btn");
+        const messageAnchor = document.getElementById("profile-message-anchor");
+        const buildProfileUrl = (username) => {
+          const base = root + (isFile ? "profile/public/index.html" : "u/");
+          if (!username) return base;
+          if (isFile) return `${base}?u=${encodeURIComponent(username)}`;
+          return `${base}${encodeURIComponent(username)}`;
+        };
+          const buildMessagesUrl = (username, userId, conversationId) => {
+            const base = root + (isFile ? "profile/messages/index.html" : "profile/messages");
+            const nextUsername = String(username || "").trim();
+            const nextUserId = String(userId || "").trim();
+            const nextConversationId = String(conversationId || "").trim();
+            const params = new URLSearchParams();
+            if (nextConversationId) {
+              params.set("conversationId", nextConversationId);
+            } else if (nextUsername) {
+              params.set("u", nextUsername);
+            } else if (nextUserId) {
+              params.set("uid", nextUserId);
+            }
+            const query = params.toString();
+            return query ? `${base}?${query}` : base;
+          };
+        const buildMediaUrl = (mediaId) => (mediaId ? `${mediaBase}${encodeURIComponent(mediaId)}` : "");
+        const buildStoryMediaUrl = (token) =>
+          token ? `${root}media/${encodeURIComponent(String(token))}` : "";
+
+        const notify = (message) => {
+          if (!message) return;
+          if (window.BKAuth && typeof window.BKAuth.showToast === "function") {
+            window.BKAuth.showToast(message);
+          } else {
+            alert(message);
+          }
+        };
+        const getOwnerRef = () => String(rawUsername || rawEmail || authPrimary || rawUserId || "").trim();
+
+        const shopLink = document.getElementById("profile-shop-link");
+        const shopCount = document.getElementById("profile-shop-count");
+        const statPurchased = document.getElementById("profile-stat-purchased");
+        const statSold = document.getElementById("profile-stat-sold");
+        const statLevel = document.getElementById("profile-stat-level");
+        const purchasedCount = document.getElementById("profile-purchased-count");
+        const soldCount = document.getElementById("profile-sold-count");
+        const levelCount = document.getElementById("profile-level-count");
+        const sellerPath = isFile ? "gian-hang/[slug]/index.html" : "gian-hang/";
+        let profileStats = null;
+
+        const setStatVisibility = (el, value) => {
+          if (!el) return;
+          el.style.display = typeof value === "number" ? "" : "none";
+        };
+
+        const updateStats = (stats) => {
+          if (isProfileLoading || isProfileError) return;
+          if (!stats && !profileStats) {
+            setStatVisibility(statPurchased, null);
+            setStatVisibility(statSold, null);
+            if (statLevel) statLevel.style.display = "none";
+            if (levelCount) levelCount.textContent = "";
+            if (shopCount) shopCount.textContent = "";
+            if (shopLink) {
+              shopLink.href = "#";
+              shopLink.style.pointerEvents = "none";
+              shopLink.style.opacity = "0.6";
+            }
+            return;
+          }
+          profileStats = stats || profileStats;
+          const purchased = profileStats && typeof profileStats.purchased === "number" ? profileStats.purchased : null;
+          const sold = profileStats && typeof profileStats.sold === "number" ? profileStats.sold : null;
+          const top = profileStats && typeof profileStats.rank === "number" ? profileStats.rank : null;
+          const shopTotal = profileStats && typeof profileStats.shopCount === "number" ? profileStats.shopCount : null;
+          const shopId = profileStats && profileStats.shopId ? String(profileStats.shopId) : "";
+          const shopSlug = profileStats && profileStats.shopSlug ? String(profileStats.shopSlug) : "";
+
+          setStatVisibility(statPurchased, purchased);
+          if (purchasedCount && typeof purchased === "number") purchasedCount.textContent = purchased.toLocaleString(getLocale());
+          setStatVisibility(statSold, sold);
+          if (soldCount && typeof sold === "number") soldCount.textContent = sold.toLocaleString(getLocale());
+          if (statLevel) statLevel.style.display = typeof top === "number" ? "" : "none";
+          if (levelCount) levelCount.textContent = typeof top === "number" ? top.toLocaleString(getLocale()) : "";
+
+          if (shopCount) {
+            shopCount.textContent = typeof shopTotal === "number" ? shopTotal.toLocaleString(getLocale()) : "";
+          }
+          if (shopLink) {
+            let shopUrl = "#";
+            if (isFile) {
+              const ref = shopSlug || shopId;
+              shopUrl = ref ? root + sellerPath + "?id=" + encodeURIComponent(ref) : "#";
+            } else if (shopSlug) {
+              shopUrl = root + "gian-hang/" + encodeURIComponent(shopSlug);
+            } else if (shopId) {
+              shopUrl = root + "gian-hang/?id=" + encodeURIComponent(shopId);
+            }
+            const hasShop = shopSlug || shopId;
+            shopLink.href = shopUrl;
+            shopLink.style.pointerEvents = hasShop ? "" : "none";
+            shopLink.style.opacity = hasShop ? "" : "0.6";
+          }
+        };
+        updateStats(profileStats);
+
+        const now = new Date();
+        const toDate = (value) => {
+          if (value == null || value === "") return null;
+          if (typeof value === "number") {
+            return new Date(value < 1e12 ? value * 1000 : value);
+          }
+          if (typeof value === "string" && /^\d+$/.test(value)) {
+            const num = Number(value);
+            return new Date(num < 1e12 ? num * 1000 : num);
+          }
+          const date = new Date(value);
+          return Number.isNaN(date.getTime()) ? null : date;
+        };
+        const within30Days = (value) => {
+          const date = toDate(value);
+          if (!date) return false;
+          const diff = (now - date) / (1000 * 60 * 60 * 24);
+          return diff <= 30;
+        };
+
+        const formatDate = (value) => {
+          const date = toDate(value);
+          if (!date) return "--/--/----";
+          const dd = String(date.getDate()).padStart(2, "0");
+          const mm = String(date.getMonth() + 1).padStart(2, "0");
+          return `${dd}/${mm}/${date.getFullYear()}`;
+        };
+        const formatJoinedDate = (value) => {
+          const date = toDate(value);
+          if (!date) return "--/--/----";
+          try {
+            return date.toLocaleDateString("vi-VN", {
+              timeZone: "Asia/Ho_Chi_Minh",
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            });
+          } catch (error) {
+            return formatDate(date);
+          }
+        };
+        const toEpochSeconds = (value) => {
+          if (value == null || value === "") return null;
+          const raw = typeof value === "number" ? value : Number(value);
+          if (!Number.isFinite(raw)) return null;
+          return raw > 1e12 ? Math.floor(raw / 1000) : Math.floor(raw);
+        };
+        const formatLastSeen = (value) => {
+          const seconds = toEpochSeconds(value);
+          if (!seconds) return t("profile.public.online.offline", "Ngo\u1ea1i tuy\u1ebfn");
+          const diff = Math.max(0, Math.floor(Date.now() / 1000) - seconds);
+          const minutes = Math.floor(diff / 60);
+          if (minutes < 60) {
+            return t("profile.public.online.minutes", `${minutes} ph\u00fat tr\u01b0\u1edbc`, { count: minutes });
+          }
+          const hours = Math.floor(minutes / 60);
+          if (hours < 24) {
+            return t("profile.public.online.hours", `${hours} gi\u1edd tr\u01b0\u1edbc`, { count: hours });
+          }
+          const days = Math.floor(hours / 24);
+          if (days === 1) return t("profile.public.online.yesterday", "H\u00f4m qua");
+          return t("profile.public.online.days", `${days} ng\u00e0y tr\u01b0\u1edbc`, { count: days });
+        };
+
+        const setOwnerOnlyVisibility = () => {
+          const canShow = isOwner && !isProfileLoading && !isProfileError;
+          document.querySelectorAll("[data-owner-only]").forEach((el) => {
+            el.style.display = canShow ? "" : "none";
+          });
+        };
+        const avatarEnabled = false;
+        const setAdminOnlyVisibility = () => {
+          const canEditAvatar = Boolean(isOwner && isAdmin && avatarEnabled && !isProfileLoading && !isProfileError);
+          document.querySelectorAll("[data-admin-only]").forEach((el) => {
+            el.style.display = canEditAvatar ? "" : "none";
+          });
+        };
+
+        const loadStories = () => {
+          try {
+            const raw = localStorage.getItem(getStoriesKey());
+            const parsed = raw ? JSON.parse(raw) : [];
+            if (!Array.isArray(parsed)) return [];
+            return parsed
+              .filter((item) => item && item.src && typeof item.src === "string")
+              .map((item) => ({
+                slot: Number(item.slot) || 0,
+                title: String(item.title || ""),
+                date: item.date || "",
+                type: item.type === "video" ? "video" : "image",
+                src: item.src,
+              }));
+          } catch (e) {
+            return [];
+          }
+        };
+
+        const saveStories = (list) => {
+          try {
+            const payload = list
+              .filter(Boolean)
+              .map((item) => ({
+                slot: item.slot,
+                title: item.title,
+                date: item.date,
+                type: item.type,
+                src: item.type === "image" ? item.src : "",
+              }));
+            localStorage.setItem(getStoriesKey(), JSON.stringify(payload));
+          } catch (e) {
+            notify(t("profile.public.toast.saveFail", "Unable to save featured posts."));
+          }
+        };
+
+        const normalizeStoryList = (list) =>
+          (Array.isArray(list) ? list : []).map((item) => {
+            const rawSlot = Number(item.slot);
+            const slot =
+              Number.isFinite(rawSlot) && rawSlot >= 1 && rawSlot <= 4
+                ? rawSlot - 1
+                : Number.isFinite(rawSlot)
+                  ? rawSlot
+                  : 0;
+            const url = item.mediaUrl || item.url || item.src || "";
+            const thumbUrl = item.thumbUrl || item.thumb_url || item.thumb || "";
+            const key = item.mediaKey || item.key || item.media_key || "";
+            return {
+              slot,
+              title: String(item.title || ""),
+              date: item.createdAt || item.created_at || item.date || "",
+              type: item.type === "video" ? "video" : "image",
+              src: url,
+              thumbUrl,
+              mediaId: item.mediaId || item.media_id || "",
+              mediaKey: key,
+            };
+          });
+
+        let stories = useRemote ? [] : loadStories();
+        let visibleStories = stories
+          .filter((story) => within30Days(story.date))
+          .sort((a, b) => new Date(b.date) - new Date(a.date))
+          .slice(0, 4);
+
+        const STORY_PREFETCH_LIMIT = 4;
+        let storyObserver = null;
+        const teardownStoryObserver = () => {
+          if (storyObserver) {
+            storyObserver.disconnect();
+            storyObserver = null;
+          }
+        };
+        const renderStorySkeleton = () => {
+          grid.innerHTML = Array.from({ length: 4 })
+            .map(
+              () => `
+                <div class="story-card is-skeleton" aria-hidden="true">
+                  <div class="story-media skeleton"></div>
+                  <div class="story-meta">
+                    <div class="story-line skeleton"></div>
+                    <div class="story-line skeleton short"></div>
+                  </div>
+                </div>
+              `
+            )
+            .join("");
+        };
+        const renderStoryError = () => {
+          grid.innerHTML = `
+            <div class="empty-state story-empty" style="grid-column: 1 / -1;">
+              <strong>${t("profile.public.featured.loadFail", "Không th? t?i tin dang chú ý.")}</strong>
+              ${t("profile.public.featured.retry", "Vui lòng th? l?i.")}
+            </div>
+          `;
+        };
+        const setupStoryPrefetch = () => {
+          teardownStoryObserver();
+          const targets = Array.from(grid.querySelectorAll("img[data-src]"));
+          if (!targets.length) return;
+          if (typeof IntersectionObserver === "undefined") {
+            targets.forEach((img) => {
+              const src = img.dataset.src;
+              if (src) {
+                img.src = src;
+                img.removeAttribute("data-src");
+              }
+            });
+            return;
+          }
+          const limit = Math.min(STORY_PREFETCH_LIMIT, targets.length);
+          let loaded = 0;
+          storyObserver = new IntersectionObserver(
+            (entries) => {
+              entries.forEach((entry) => {
+                if (!entry.isIntersecting) return;
+                const img = entry.target;
+                const src = img.dataset.src;
+                if (src) {
+                  img.src = src;
+                  img.removeAttribute("data-src");
+                }
+                if (storyObserver) storyObserver.unobserve(img);
+                loaded += 1;
+                if (loaded >= limit && storyObserver) {
+                  storyObserver.disconnect();
+                  storyObserver = null;
+                }
+              });
+            },
+            { rootMargin: "120px 0px", threshold: 0.1 }
+          );
+          targets.slice(0, limit).forEach((img) => storyObserver.observe(img));
+        };
+
+        const renderStories = () => {
+          teardownStoryObserver();
+          if (isProfileLoading) {
+            renderStorySkeleton();
+            return;
+          }
+          if (isProfileError) {
+            renderStoryError();
+            return;
+          }
+          if (!visibleStories.length) {
+            grid.innerHTML = `
+              <div class="empty-state story-empty" style="grid-column: 1 / -1;">
+                <strong>${t("profile.public.featured.emptyTitle", "This user hasn't posted any featured items yet.")}</strong>
+                ${t("profile.public.featured.emptyDesc", "New posts will auto-hide after 30 days.")}
+              </div>
+            `;
+            return;
+          }
+
+          const slots = visibleStories.slice();
+          const placeholders = Math.max(0, 4 - slots.length);
+          const items = slots.concat(Array.from({ length: placeholders }, () => null));
+
+          grid.innerHTML = items
+            .map((story, index) => {
+              if (!story) {
+                return `
+                  <div class="story-card is-placeholder" aria-hidden="true">
+                    <div class="story-media">
+                      <div class="story-placeholder">${t("profile.public.story.empty", "Empty")}</div>
+                    </div>
+                    <div class="story-meta">
+                      <strong>${t("profile.public.story.emptyTitle", "No post")}</strong>
+                      <span>--/--/----</span>
+                    </div>
+                  </div>
+                `;
+              }
+              const safeTitle = story.title || t("profile.public.story.defaultTitle", `Post #${index + 1}`, { index: index + 1 });
+              const thumbSrc = story.type === "video" ? story.thumbUrl || storyFallback : story.src;
+              const media =
+                story.type === "video"
+                  ? `<img data-src="${thumbSrc}" alt="${safeTitle}" loading="lazy" decoding="async" /><span class="story-badge">${t(
+                      "profile.public.story.type.video",
+                      "Video"
+                    )}</span>`
+                  : `<img data-src="${story.src}" alt="${safeTitle}" loading="lazy" decoding="async" />`;
+              return `
+                <article class="story-card" data-index="${index}" data-type="${story.type}" role="button" tabindex="0">
+                  <div class="story-media">
+                    ${media}
+                  </div>
+                  <div class="story-meta">
+                    <strong>${safeTitle}</strong>
+                    <span>${formatDate(story.date)}</span>
+                  </div>
+                </article>
+              `;
+            })
+            .join("");
+
+          grid.querySelectorAll("img").forEach((img) => {
+            img.addEventListener(
+              "error",
+              () => {
+                img.src = storyFallback;
+                img.removeAttribute("data-src");
+              },
+              { once: true }
+            );
+          });
+          setupStoryPrefetch();
+        };
+
+        const profileName = document.getElementById("profile-name");
+        const profileBadge = document.getElementById("profile-badge");
+        const resolveProfileUsername = () => {
+          const candidate =
+            (profileUser && profileUser.username ? String(profileUser.username).trim() : "") ||
+            profileUsername ||
+            rawUsername ||
+            "";
+          return candidate.trim();
+        };
+        const renderProfileHeader = () => {
+          if (isProfileLoading || isProfileError) return;
+          const fallbackName = "";
+          const userForDisplay = profileUser || (isOwner && auth && auth.user ? auth.user : null);
+          if (!userForDisplay) return;
+          const displayName =
+            typeof getUserDisplayName === "function" ? getUserDisplayName(userForDisplay, fallbackName) : fallbackName;
+          const role = userForDisplay && typeof userForDisplay.role === "string" ? userForDisplay.role.trim().toLowerCase() : "";
+          const isAdminValue =
+            typeof isAdminUser === "function"
+              ? isAdminUser(userForDisplay)
+              : role === "admin" ||
+                userForDisplay.is_admin === true ||
+                userForDisplay.is_admin === 1 ||
+                userForDisplay.is_admin === "1" ||
+                String(userForDisplay.username || "").trim().toLowerCase() === "admin";
+          if (profileName) {
+            if (applyNameWithBadge) {
+              applyNameWithBadge(profileName, { name: displayName, isAdmin: isAdminValue });
+            } else {
+              profileName.textContent = displayName || "";
+            }
+          }
+          const fallbackBadge = t("profile.public.badgeNone", "Kh\u00f4ng c\u00f3");
+          const badgeLabel =
+            typeof getUserBadgeLabel === "function" ? getUserBadgeLabel(userForDisplay, currentLanguage) : "";
+          const isAdminBadge = role === "admin" || badgeLabel.trim().toLowerCase() === "admin";
+          if (profileBadge) {
+            profileBadge.textContent = badgeLabel || fallbackBadge;
+            profileBadge.classList.toggle("is-admin", isAdminBadge);
+          }
+
+          if (profileJoined) {
+            const joinedValue =
+              userForDisplay && (userForDisplay.created_at || userForDisplay.createdAt)
+                ? userForDisplay.created_at || userForDisplay.createdAt
+                : "";
+            profileJoined.textContent = joinedValue ? formatJoinedDate(joinedValue) : "";
+          }
+          if (profileOnlineText) {
+            const isOnline = Boolean(
+              userForDisplay && (userForDisplay.is_online || userForDisplay.isOnline || (isOwner && auth && auth.loggedIn))
+            );
+            const lastSeen =
+              userForDisplay && (userForDisplay.last_seen_at || userForDisplay.lastSeenAt)
+                ? userForDisplay.last_seen_at || userForDisplay.lastSeenAt
+                : null;
+            profileOnlineText.textContent = isOnline
+              ? t("profile.public.online.now", "\u0110ang online")
+              : formatLastSeen(lastSeen);
+            if (profileOnlineDot) profileOnlineDot.classList.toggle("is-online", isOnline);
+          }
+          if (profileAvatar) {
+            const avatarValue =
+              typeof getAvatarUrl === "function"
+                ? getAvatarUrl(userForDisplay, fallback)
+                : userForDisplay && (userForDisplay.avatar || userForDisplay.avatar_url)
+                  ? userForDisplay.avatar || userForDisplay.avatar_url
+                  : "";
+            profileAvatar.src = avatarValue || fallback;
+          }
+        };
+        if (!useRemote) renderProfileHeader();
+        const setAvatarLoading = (isLoading) => {
+          if (profileAvatarWrap) {
+            profileAvatarWrap.classList.toggle("is-loading", isLoading);
+          }
+          if (avatarUploadBtn) avatarUploadBtn.disabled = isLoading;
+          if (avatarRemoveBtn) avatarRemoveBtn.disabled = isLoading;
+          if (avatarInput) avatarInput.disabled = isLoading;
+        };
+        const syncAuthAvatar = (avatarUrl) => {
+          if (!auth || !auth.user) return;
+          const nextUser = { ...auth.user, avatar: avatarUrl, avatar_url: avatarUrl };
+          auth.user = nextUser;
+          if (window.BKAuth && typeof window.BKAuth.set === "function") {
+            window.BKAuth.set(nextUser);
+          }
+        };
+        const uploadAvatar = async (file) => {
+          if (!avatarEnabled) return;
+          if (!file || !useRemote || !uploadApiUrl) return;
+          if (!file.type || !file.type.startsWith("image/")) {
+            notify(t("profile.public.toast.imageOnly", "Only images are supported."));
+            return;
+          }
+          if (file.size > 2 * 1024 * 1024) {
+            notify(t("media.imageTooLarge", "Image exceeds 2MB."));
+            return;
+          }
+          const ownerId = getOwnerRef();
+          if (!ownerId) {
+            notify(t("profile.public.toast.loginRequired", "Please log in to follow."));
+            return;
+          }
+          setAvatarLoading(true);
+          try {
+            const form = new FormData();
+            form.append("userId", ownerId);
+            form.append("ownerId", ownerId);
+            form.append("kind", "avatar");
+            form.append("file", file);
+            const response = await fetch(uploadApiUrl, { method: "POST", body: form });
+            const data = await response.json().catch(() => null);
+            if (!response.ok || !data || !data.ok || !data.avatar) {
+              throw new Error("upload_failed");
+            }
+            const avatarUrl = data.avatar.url || "";
+            const nextUser = profileUser ? { ...profileUser, avatar_url: avatarUrl, avatar: avatarUrl } : { avatar_url: avatarUrl, avatar: avatarUrl };
+            const resolvedAvatar =
+              typeof getAvatarUrl === "function" ? getAvatarUrl(nextUser, fallback) : avatarUrl || fallback;
+            if (profileAvatar && resolvedAvatar) {
+              profileAvatar.src = resolvedAvatar;
+            }
+            if (profileUser) {
+              profileUser = nextUser;
+            }
+            syncAuthAvatar(avatarUrl);
+          } catch (error) {
+            notify(t("profile.public.toast.uploadFail", "Upload failed."));
+          } finally {
+            setAvatarLoading(false);
+            if (avatarInput) avatarInput.value = "";
+          }
+        };
+        const removeAvatar = async () => {
+          if (!avatarEnabled) return;
+          if (!useRemote || !apiUrl) return;
+          const ownerId = getOwnerRef();
+          if (!ownerId) {
+            notify(t("profile.public.toast.loginRequired", "Please log in to follow."));
+            return;
+          }
+          setAvatarLoading(true);
+          try {
+            const response = await fetch(apiUrl, {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ userId: ownerId, avatar: { remove: true } }),
+            });
+            const data = await response.json().catch(() => null);
+            if (!response.ok || !data || !data.ok) {
+              throw new Error("remove_failed");
+            }
+            const nextUser = profileUser ? { ...profileUser, avatar_url: "", avatar: "" } : profileUser;
+            const resolvedAvatar =
+              typeof getAvatarUrl === "function" ? getAvatarUrl(nextUser || {}, fallback) : fallback;
+            if (profileAvatar && resolvedAvatar) {
+              profileAvatar.src = resolvedAvatar;
+            }
+            if (profileUser) {
+              profileUser = nextUser;
+            }
+            syncAuthAvatar("");
+          } catch (error) {
+            notify(t("profile.public.toast.removeFail", "Unable to remove avatar."));
+          } finally {
+            setAvatarLoading(false);
+          }
+        };
+        if (avatarUploadBtn && avatarInput) {
+          avatarUploadBtn.addEventListener("click", () => {
+            if (!isOwner || !isAdmin) return;
+            avatarInput.click();
+          });
+          avatarInput.addEventListener("change", () => {
+            const file = avatarInput.files && avatarInput.files[0];
+            if (!file) return;
+            uploadAvatar(file);
+          });
+        }
+        if (avatarRemoveBtn) {
+          avatarRemoveBtn.addEventListener("click", () => {
+            if (!isOwner || !isAdmin) return;
+            removeAvatar();
+          });
+        }
+          const buildAuthHeaders = (user) => {
+            if (!user) return {};
+            const headers = {};
+            if (user.id != null && String(user.id).trim()) headers["x-user-id"] = String(user.id).trim();
+            if (user.username) headers["x-user-username"] = String(user.username);
+            if (user.email) headers["x-user-email"] = String(user.email);
+            if (user.name) headers["x-user-name"] = String(user.name);
+            if (user.avatar_url || user.avatar) headers["x-user-avatar"] = String(user.avatar_url || user.avatar);
+            if (user.role) headers["x-user-role"] = String(user.role);
+            return headers;
+          };
+          if (profileMessageBtn) {
+            profileMessageBtn.addEventListener("click", async () => {
+              const targetUsername =
+                profileUser && profileUser.username ? String(profileUser.username) : profileUsername || "";
+              const targetId = profileUser && profileUser.id ? String(profileUser.id) : legacyId || "";
+              const authState = window.BKAuth && typeof window.BKAuth.read === "function" ? window.BKAuth.read() : null;
+              const authUser = authState && authState.user ? authState.user : null;
+              if (!authState || !authState.loggedIn || !authUser) {
+                const loginUrl = typeof getLoginUrl === "function" ? getLoginUrl() : `${root}login/`;
+                window.location.href = loginUrl;
+                return;
+              }
+              const authId = authUser.id != null ? String(authUser.id).trim() : "";
+              const authUsername = authUser.username ? String(authUser.username).trim() : "";
+              const isSelf =
+                isOwner ||
+                (authId && targetId && authId === String(targetId).trim()) ||
+                (authUsername && targetUsername && normalizeId(authUsername) === normalizeId(targetUsername));
+              if (isSelf) {
+                const selfUrl = buildMessagesUrl("", "", "");
+                window.location.href = selfUrl || "/profile/messages";
+                return;
+              }
+              if (!targetUsername && !targetId) {
+                notify("Không tìm th?y ngu?i dùng.");
+                return;
+              }
+              if (!isFile) {
+                try {
+                  const response = await fetch("/api/conversations/get-or-create", {
+                    method: "POST",
+                    headers: {
+                      "content-type": "application/json",
+                      ...buildAuthHeaders(authUser),
+                    },
+                    body: JSON.stringify({
+                      targetUserId: targetId || undefined,
+                      targetUsername: targetUsername || undefined,
+                    }),
+                  });
+                  const data = await response.json().catch(() => null);
+                  if (response.ok && data && data.ok && data.conversationId) {
+                    const nextUrl = buildMessagesUrl("", "", data.conversationId);
+                    if (nextUrl) {
+                      window.location.href = nextUrl;
+                      return;
+                    }
+                  }
+                } catch (error) {}
+              }
+              const fallbackUrl = buildMessagesUrl(targetUsername, targetId);
+              if (!fallbackUrl) return;
+              window.location.href = fallbackUrl;
+            });
+          }
+
+        const followersEl = document.getElementById("profile-followers");
+        const followingEl = document.getElementById("profile-following");
+        let followers = profileUser && profileUser.followers ? Number(profileUser.followers) : 0;
+        let following = profileUser && profileUser.following ? Number(profileUser.following) : 0;
+        const updateCounts = () => {
+          if (isProfileLoading || isProfileError) return;
+          if (followersEl) followersEl.textContent = followers.toLocaleString(getLocale());
+          if (followingEl) followingEl.textContent = following.toLocaleString(getLocale());
+        };
+        if (!useRemote) updateCounts();
+
+        const followBtn = document.getElementById("profile-follow-btn");
+        let isFollowing = false;
+        let isFollowBusy = false;
+        let followCooldownUntil = 0;
+        let followCooldownTimer = null;
+        let followSnapshot = null;
+        const FOLLOW_DEBOUNCE_MS = 600;
+        const setFollowLabel = (isFollowing) => {
+          if (!followBtn) return;
+          followBtn.textContent = isFollowing
+            ? t("profile.public.following", "Following")
+            : t("profile.public.follow", "Follow");
+        };
+        const scheduleFollowCooldown = () => {
+          if (!followBtn) return;
+          if (followCooldownTimer) {
+            clearTimeout(followCooldownTimer);
+            followCooldownTimer = null;
+          }
+          const delay = followCooldownUntil - Date.now();
+          if (delay <= 0) return;
+          followCooldownTimer = setTimeout(() => {
+            refreshFollowState();
+          }, delay + 20);
+        };
+        const applyFollowSnapshot = (snapshot) => {
+          if (!snapshot) return;
+          if (typeof snapshot.isFollowing === "boolean") {
+            isFollowing = snapshot.isFollowing;
+          }
+          if (Number.isFinite(snapshot.followers)) followers = snapshot.followers;
+          if (Number.isFinite(snapshot.following)) following = snapshot.following;
+          updateCounts();
+          refreshFollowState();
+        };
+        const refreshFollowState = () => {
+          if (!followBtn) return;
+          if (isOwner) {
+            followBtn.style.display = "none";
+            return;
+          }
+          if (!useRemote || !followApiUrl) {
+            followBtn.style.display = "none";
+            return;
+          }
+          followBtn.style.display = "";
+          setFollowLabel(isFollowing);
+          followBtn.classList.toggle("is-active", isFollowing);
+          followBtn.disabled = isFollowBusy || Date.now() < followCooldownUntil;
+          scheduleFollowCooldown();
+        };
+        const fetchFollowState = async (targetRef, options = {}) => {
+          if (!useRemote || !followApiUrl) return null;
+          const targetValue =
+            targetRef || (profileUser && profileUser.id != null ? String(profileUser.id) : "");
+          if (!targetValue) return null;
+          const viewerId = auth && auth.user && auth.user.id != null ? String(auth.user.id) : "";
+          const query =
+            viewerId && viewerId !== targetValue
+              ? `userId=${encodeURIComponent(viewerId)}&targetId=${encodeURIComponent(targetValue)}`
+              : `userId=${encodeURIComponent(targetValue)}`;
+          try {
+            const response = await fetch(`${followApiUrl}?${query}`, {
+              cache: "no-store",
+              signal: options.signal,
+            });
+            const data = await response.json().catch(() => null);
+            if (!response.ok || !data || !data.ok) return;
+            const snapshot = {
+              isFollowing: typeof data.isFollowing === "boolean" ? data.isFollowing : isFollowing,
+              followers: data.counts ? Number(data.counts.followers) : Number.NaN,
+              following: data.counts ? Number(data.counts.following) : Number.NaN,
+            };
+            followSnapshot = snapshot;
+            applyFollowSnapshot(snapshot);
+            return snapshot;
+          } catch (error) {
+            return null;
+          }
+        };
+        if (followBtn && followBtn.dataset.bound !== "true") {
+          followBtn.dataset.bound = "true";
+          refreshFollowState();
+          followBtn.addEventListener("click", async () => {
+            if (isFollowBusy || Date.now() < followCooldownUntil) return;
+            if (isOwner) return;
+            if (!auth || !auth.loggedIn) {
+              if (window.BKAuth && typeof window.BKAuth.redirectToLogin === "function") {
+                window.BKAuth.redirectToLogin(t("profile.public.toast.loginRequired", "Please log in to follow."));
+              } else {
+                notify(t("profile.public.toast.loginRequired", "Please log in to follow."));
+              }
+              return;
+            }
+            if (!useRemote || !followApiUrl || !profileUser) return;
+            const targetId = profileUser.id != null ? String(profileUser.id) : "";
+            const viewerId = auth && auth.user && auth.user.id != null ? String(auth.user.id) : "";
+            if (!targetId || !viewerId) return;
+            isFollowBusy = true;
+            followCooldownUntil = Date.now() + FOLLOW_DEBOUNCE_MS;
+            refreshFollowState();
+            const previousState = isFollowing;
+            isFollowing = !previousState;
+            refreshFollowState();
+            const action = previousState ? "unfollow" : "follow";
+            try {
+              const response = await fetch(followApiUrl, {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ userId: viewerId, targetId, action }),
+              });
+              const data = await response.json().catch(() => null);
+              if (!response.ok || !data || !data.ok) {
+                notify(t("profile.public.toast.followFail", "Unable to update follow status."));
+                isFollowing = previousState;
+                return;
+              }
+              const snapshot = {
+                isFollowing: Boolean(data.isFollowing),
+                followers: data.counts ? Number(data.counts.followers) : Number.NaN,
+                following: data.counts ? Number(data.counts.following) : Number.NaN,
+              };
+              followSnapshot = snapshot;
+              applyFollowSnapshot(snapshot);
+            } finally {
+              isFollowBusy = false;
+              refreshFollowState();
+            }
+          });
+        }
+
+        const applyProfilePayload = (data) => {
+          if (!data) return;
+          if (data.user) {
+            profileUser = data.user;
+            if (data.user.username) {
+              profileRef = String(data.user.username);
+              profileKey = normalizeId(profileRef);
+            }
+            isOwner = resolveIsOwner(profileUser);
+            canUploadVideo = resolveCanUploadVideo(profileUser);
+            maxSlots = 4;
+            const nextFollowers = Number(data.user.followers);
+            const nextFollowing = Number(data.user.following);
+            if (Number.isFinite(nextFollowers)) followers = nextFollowers;
+            if (Number.isFinite(nextFollowing)) following = nextFollowing;
+          }
+          if (Array.isArray(data.stories)) {
+            stories = normalizeStoryList(data.stories);
+            visibleStories = stories
+              .filter((story) => within30Days(story.date))
+              .sort((a, b) => new Date(b.date) - new Date(a.date))
+              .slice(0, 4);
+          }
+          if (data.stats) {
+            updateStats(data.stats);
+          }
+          renderProfileHeader();
+          renderStories();
+          setOwnerOnlyVisibility();
+          setAdminOnlyVisibility();
+          updateCounts();
+          refreshFollowState();
+          applyFollowSnapshot(followSnapshot);
+          renderManageGrid();
+        };
+
+        const loadRemoteProfile = async () => {
+          if (!useRemote || !apiUrl) {
+            setProfileLoading(false);
+            renderProfileHeader();
+            renderStories();
+            return;
+          }
+          setProfileError("");
+          let usedCache = false;
+          try {
+            abortProfileFetch();
+            profileFetchController = new AbortController();
+            const { signal } = profileFetchController;
+            const hasNumericRef = profileRef && /^\d+$/.test(profileRef);
+            const queryKey = profileUsername ? "u" : legacyId ? "id" : hasNumericRef ? "id" : "u";
+            const queryValue = profileUsername || legacyId || profileRef || "";
+            if (!queryValue) {
+              setProfileLoading(false);
+              return;
+            }
+            const cached = readProfileCache(profileKey);
+            if (cached) {
+              usedCache = true;
+              setProfileLoading(false);
+              applyProfilePayload(cached);
+            } else {
+              setProfileLoading(true);
+              renderStories();
+              setOwnerOnlyVisibility();
+              setAdminOnlyVisibility();
+            }
+            const followPromise = fetchFollowState(queryValue, { signal });
+            const params = new URLSearchParams();
+            params.set(queryKey, queryValue);
+            params.set("view", "public");
+            const response = await fetch(`${apiUrl}?${params.toString()}`, { cache: "no-store", signal });
+            await followPromise;
+            const data = await response.json().catch(() => null);
+            if (!response.ok || !data || !data.ok) {
+              throw new Error((data && data.error) || "LOAD_FAILED");
+            }
+            if (data.user) {
+              if (legacyId && data.user.username) {
+                const target = buildProfileUrl(String(data.user.username));
+                if (!isFile && target) {
+                  window.location.replace(target);
+                  return;
+                }
+              }
+            }
+            setProfileLoading(false);
+            applyProfilePayload(data);
+            writeProfileCache(profileKey, data);
+          } catch (err) {
+            console.error("PROFILE_LOAD_ERROR", err);
+            if (usedCache) {
+              notify(t("profile.public.loadFail", "Khong the tai ho so, thu lai."));
+              return;
+            }
+            setProfileLoading(false);
+            setProfileError(t("profile.public.loadFail", "Khong the tai ho so, thu lai."));
+            renderStories();
+            setOwnerOnlyVisibility();
+            setAdminOnlyVisibility();
+          }
+        };
+
+        renderStories();
+        setOwnerOnlyVisibility();
+        setAdminOnlyVisibility();
+        if (profileRetryBtn) {
+          profileRetryBtn.addEventListener("click", () => {
+            setProfileError("");
+            loadRemoteProfile();
+          });
+        }
+
+        const storyPreviewModal = document.getElementById("story-preview-modal");
+        const storyPreviewBody = document.getElementById("story-preview-body");
+        const storyPreviewTitle = document.getElementById("story-preview-title");
+        const storyPreviewDate = document.getElementById("story-preview-date");
+        const storyPreviewType = document.getElementById("story-preview-type");
+        const closePreviewBtn = document.getElementById("story-preview-close");
+
+        const openPreview = (story) => {
+          if (!storyPreviewModal || !storyPreviewBody) return;
+          if (storyPreviewTitle) {
+            storyPreviewTitle.textContent = story.title || t("profile.public.story.titleFallback", "Featured post");
+          }
+          if (storyPreviewDate) storyPreviewDate.textContent = formatDate(story.date);
+          if (storyPreviewType) {
+            storyPreviewType.textContent =
+              story.type === "video"
+                ? t("profile.public.story.type.video", "Video")
+                : t("profile.public.story.type.image", "Image");
+          }
+          storyPreviewBody.innerHTML =
+            story.type === "video"
+              ? `<div class="story-video-wrap">
+                  <video
+                    src="${story.src}"
+                    poster="${story.thumbUrl || storyFallback}"
+                    class="story-preview-video"
+                    autoplay
+                    loop
+                    muted
+                    playsinline
+                    controlslist="nodownload noplaybackrate nofullscreen noremoteplayback"
+                    disablepictureinpicture
+                    disableremoteplayback
+                  ></video>
+                  <div class="story-video-controls">
+                    <div class="story-video-audio">
+                      <button class="story-volume-toggle" type="button" aria-label="Volume">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path
+                            d="M11 5.5L7.2 8.6H4.5c-.6 0-1 .4-1 1v4.8c0 .6.4 1 1 1h2.7L11 18.5c.7.5 1.7 0 1.7-.9V6.4c0-.9-1-1.4-1.7-.9zm6.3 1.7c-.4-.3-1-.3-1.4.1-.4.4-.4 1 0 1.4 1.3 1.3 2 3 2 4.8s-.7 3.5-2 4.8c-.4.4-.4 1 0 1.4.2.2.5.3.7.3s.5-.1.7-.3c1.7-1.7 2.6-4 2.6-6.2s-.9-4.5-2.6-6.2z"
+                          />
+                        </svg>
+                      </button>
+                      <div class="story-volume-pop">
+                        <input
+                          class="story-volume"
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.05"
+                          value="1"
+                          aria-label="Volume"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>`
+              : `<img src="${story.src}" alt="${story.title || t("profile.public.story.alt", "Story")}" />`;
+          let mediaErrorShown = false;
+          let mediaRetry = false;
+          const renderMediaError = (message) => {
+            if (!storyPreviewBody) return;
+            storyPreviewBody.innerHTML = `<div class="story-media-error">${message}</div>`;
+          };
+          const resolveMediaErrorMessage = async (src) => {
+            let message = t("profile.public.toast.mediaUnavailable", "Khong the tai noi dung.");
+            if (!useRemote || !src) return message;
+            try {
+              const response = await fetch(src, { method: "GET", headers: { range: "bytes=0-0" } });
+              if (response.body && typeof response.body.cancel === "function") {
+                response.body.cancel();
+              }
+              if (response.status === 401 || response.status === 403) {
+                return t("profile.public.toast.mediaDenied", "Media bi tu choi.");
+              }
+              if (response.status === 404) {
+                return t("profile.public.toast.mediaMissing", "Media khong ton tai.");
+              }
+            } catch (error) {}
+            return message;
+          };
+          const handleMediaError = async (src) => {
+            if (mediaErrorShown) return;
+            mediaErrorShown = true;
+            const message = await resolveMediaErrorMessage(src);
+            notify(message);
+            renderMediaError(message);
+          };
+          const mediaEl = storyPreviewBody.querySelector("video, img");
+          if (mediaEl) {
+            mediaEl.addEventListener("error", () => {
+              const src = mediaEl.currentSrc || mediaEl.src || story.src || "";
+              if (useRemote && src && !mediaRetry) {
+                mediaRetry = true;
+                const retrySrc = `${src}${src.includes("?") ? "&" : "?"}v=${Date.now()}`;
+                if (mediaEl.tagName.toLowerCase() === "video") {
+                  mediaEl.src = retrySrc;
+                  mediaEl.load();
+                  mediaEl.play().catch(() => {});
+                } else {
+                  mediaEl.src = retrySrc;
+                }
+                return;
+              }
+              handleMediaError(src);
+            });
+          }
+          storyPreviewModal.classList.add("open");
+          storyPreviewModal.setAttribute("aria-hidden", "false");
+          document.body.classList.add("modal-open");
+          const video = storyPreviewBody.querySelector("video");
+          if (video) {
+            const volume = storyPreviewBody.querySelector(".story-volume");
+            if (volume) {
+              const setVolume = () => {
+                const rawValue = Number(volume.value);
+                const value = Number.isFinite(rawValue) ? rawValue : 1;
+                volume.value = String(value);
+                video.volume = value;
+                video.muted = value <= 0;
+              };
+              volume.addEventListener("input", setVolume);
+              setVolume();
+            }
+            video.addEventListener("contextmenu", (event) => event.preventDefault());
+            video.play().catch(() => {});
+          }
+        };
+
+        const closePreview = () => {
+          if (!storyPreviewModal) return;
+          storyPreviewModal.classList.remove("open");
+          storyPreviewModal.setAttribute("aria-hidden", "true");
+          document.body.classList.remove("modal-open");
+          if (storyPreviewBody) storyPreviewBody.innerHTML = "";
+        };
+
+        if (storyPreviewModal) {
+          storyPreviewModal.addEventListener("click", (event) => {
+            if (event.target === storyPreviewModal) closePreview();
+          });
+        }
+        if (closePreviewBtn) closePreviewBtn.addEventListener("click", closePreview);
+
+        grid.addEventListener("click", (event) => {
+          const card = event.target.closest(".story-card");
+          if (!card) return;
+          const index = Number(card.dataset.index);
+          const story = visibleStories[index];
+          if (story) openPreview(story);
+        });
+
+        grid.addEventListener("keydown", (event) => {
+          if (event.key !== "Enter") return;
+          const card = event.target.closest(".story-card");
+          if (!card) return;
+          const index = Number(card.dataset.index);
+          const story = visibleStories[index];
+          if (story) openPreview(story);
+        });
+
+        const manageBtn = document.getElementById("story-manage-btn");
+        const manageModal = document.getElementById("story-manage-modal");
+        const manageClose = document.getElementById("story-manage-close");
+        const manageCancel = document.getElementById("story-manage-cancel");
+        const manageSave = document.getElementById("story-manage-save");
+        const manageGrid = document.getElementById("story-manage-grid");
+        const storyLimitNote = document.getElementById("story-limit-note");
+
+        const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
+        const MAX_VIDEO_SIZE = 25 * 1024 * 1024;
+        const MAX_THUMB_SIZE = 512 * 1024;
+        const MAX_DURATION = 60;
+        const THUMB_WIDTH = 420;
+        const THUMB_QUALITY = 0.72;
+        const TARGET_RATIO = 9 / 16;
+        const RATIO_TOLERANCE = 0.02;
+        let canUploadVideo = resolveCanUploadVideo(profileUser);
+        const imageTooLargeMessage = t("media.imageTooLarge", "Image exceeds 2MB.");
+        let maxSlots = 4;
+        const emptySlots = () => Array.from({ length: 4 }, () => null);
+
+        let draftStories = emptySlots();
+        const loadingSlots = new Set();
+
+        const setSlotLoading = (slot, isLoading) => {
+          if (!Number.isFinite(slot)) return;
+          if (isLoading) {
+            loadingSlots.add(slot);
+          } else {
+            loadingSlots.delete(slot);
+          }
+          renderManageGrid();
+        };
+        const clearPendingThumb = (item) => {
+          if (!item) return;
+          if (item.pendingThumbUrl && item.pendingThumbUrl.startsWith("blob:")) {
+            URL.revokeObjectURL(item.pendingThumbUrl);
+          }
+          item.pendingThumbUrl = "";
+          item.pendingThumbFile = null;
+        };
+        const handleThumbFile = (file, slot) => {
+          if (!file) return;
+          const item = draftStories[slot];
+          if (!item || item.type !== "video") {
+            notify(t("profile.public.toast.thumbRequiresVideo", "Vui lòng ch?n video tru?c."));
+            return;
+          }
+          if (!canUploadVideo) {
+            notify(t("profile.public.toast.videoNotEligible", "Video is only available for eligible accounts."));
+            return;
+          }
+          if (!file.type || !file.type.startsWith("image/")) {
+            notify(t("profile.public.toast.thumbInvalid", "?nh bìa ph?i là hình ?nh."));
+            return;
+          }
+          if (!isAdmin && file.size > MAX_THUMB_SIZE) {
+            notify(t("profile.public.toast.thumbTooLarge", "?nh bìa vu?t quá 512KB."));
+            return;
+          }
+          const previewUrl = URL.createObjectURL(file);
+          clearPendingThumb(item);
+          item.pendingThumbFile = file;
+          item.pendingThumbUrl = previewUrl;
+          renderManageGrid();
+        };
+
+        const hydrateStories = (list) => {
+          const slots = emptySlots();
+          list.forEach((item, idx) => {
+            const slot = Number.isFinite(item.slot) ? Math.min(3, Math.max(0, item.slot)) : idx;
+            slots[slot] = { ...item, slot };
+          });
+          return slots;
+        };
+
+        const toList = (slots) => slots.filter(Boolean);
+
+        const openManageModal = () => {
+          if (!manageModal || !manageGrid) return;
+          draftStories = hydrateStories(visibleStories);
+          renderManageGrid();
+          manageModal.classList.add("open");
+          manageModal.setAttribute("aria-hidden", "false");
+          document.body.classList.add("modal-open");
+        };
+
+        const closeManageModal = () => {
+          if (!manageModal) return;
+          manageModal.classList.remove("open");
+          manageModal.setAttribute("aria-hidden", "true");
+          document.body.classList.remove("modal-open");
+        };
+
+        const renderManageGrid = () => {
+          if (!manageGrid) return;
+          manageGrid.querySelectorAll(".story-manage-card").forEach((card) => {
+            const slot = Number(card.dataset.slot);
+            const item = draftStories[slot];
+            const preview = card.querySelector(".story-manage-preview");
+            const titleInput = card.querySelector(".story-title-input");
+            const uploadBtn = card.querySelector(".story-upload");
+            const removeBtn = card.querySelector(".story-remove");
+            const thumbBtn = card.querySelector(".story-thumb-btn");
+            const thumbInput = card.querySelector(".story-thumb-input");
+            const fileInput = card.querySelector(".story-file-input");
+            const isLocked = slot >= maxSlots;
+            const isLoading = loadingSlots.has(slot);
+
+            card.classList.toggle("is-locked", isLocked);
+            card.classList.toggle("is-loading", isLoading);
+            if (uploadBtn) {
+              if (!uploadBtn.dataset.label) {
+                uploadBtn.dataset.label = uploadBtn.textContent || "";
+              }
+              uploadBtn.textContent = isLoading
+                ? t("profile.public.manage.uploading", "Uploading...")
+                : uploadBtn.dataset.label || uploadBtn.textContent || "";
+              uploadBtn.disabled = isLocked || isLoading;
+            }
+            if (removeBtn) removeBtn.disabled = isLocked || isLoading;
+            if (fileInput) {
+              fileInput.disabled = isLocked || isLoading;
+              fileInput.setAttribute("accept", canUploadVideo ? "image/*,video/*" : "image/*");
+            }
+            if (titleInput) titleInput.disabled = isLocked || isLoading;
+            const canShowThumb = Boolean(canUploadVideo && item && item.type === "video" && !isLocked);
+            if (thumbBtn) {
+              thumbBtn.style.display = canShowThumb ? "" : "none";
+              thumbBtn.disabled = isLoading;
+            }
+            if (thumbInput) thumbInput.disabled = isLoading || !canShowThumb;
+
+            if (preview) {
+              if (item && item.src) {
+                const previewUrl =
+                  item.type === "video" ? item.pendingThumbUrl || item.thumbUrl || storyFallback : item.src;
+                preview.innerHTML =
+                  item.type === "video"
+                    ? `<img src="${previewUrl}" alt="${item.title || t("profile.public.story.alt", "Story")}" loading="lazy" decoding="async" /><span class="story-badge">${t(
+                        "profile.public.story.type.video",
+                        "Video"
+                      )}</span>`
+                    : `<img src="${previewUrl}" alt="${item.title || t("profile.public.story.alt", "Story")}" loading="lazy" decoding="async" />`;
+              } else {
+                preview.innerHTML = `<div class="story-manage-empty">${t(
+                  "profile.public.manage.slotLabel",
+                  `Slot ${slot + 1}`,
+                  { index: slot + 1 }
+                )}</div>`;
+              }
+            }
+            if (titleInput) titleInput.value = item ? item.title : "";
+          });
+
+          if (storyLimitNote) {
+            storyLimitNote.textContent = canUploadVideo
+              ? t("profile.public.manage.limit.pro", "T?i da 4 bài, h? tr? video.")
+              : t("profile.public.manage.limit.basic", "T?i da 4 bài, ch? ?nh.");
+          }
+        };
+
+        const validateImage = (file) =>
+          new Promise((resolve, reject) => {
+            if (!isAdmin && file.size > MAX_IMAGE_SIZE) {
+              reject(new Error(imageTooLargeMessage));
+              return;
+            }
+            try {
+              const url = URL.createObjectURL(file);
+              resolve(url);
+            } catch (error) {
+              reject(new Error(t("profile.public.toast.imageReadFail", "Cannot read image.")));
+            }
+          });
+
+        const validateVideo = (file) =>
+          new Promise((resolve, reject) => {
+            if (!canUploadVideo) {
+              reject(new Error(t("profile.public.toast.videoNotEligible", "Video is only available for eligible accounts.")));
+              return;
+            }
+            if (!isAdmin && file.size > MAX_VIDEO_SIZE) {
+              reject(new Error(t("profile.public.toast.videoTooLarge", "Video exceeds 25MB.")));
+              return;
+            }
+            const url = URL.createObjectURL(file);
+            const video = document.createElement("video");
+            video.preload = "metadata";
+            video.onloadedmetadata = () => {
+              const ratio = video.videoWidth / video.videoHeight;
+              const duration = video.duration;
+              if (Math.abs(ratio - TARGET_RATIO) > RATIO_TOLERANCE) {
+                URL.revokeObjectURL(url);
+                reject(new Error(t("profile.public.toast.videoRatio", "Video must be 9:16.")));
+                return;
+              }
+              if (duration > MAX_DURATION) {
+                URL.revokeObjectURL(url);
+                reject(new Error(t("profile.public.toast.videoDuration", "Video exceeds 60 seconds.")));
+                return;
+              }
+              resolve(url);
+            };
+            video.onerror = () => {
+              URL.revokeObjectURL(url);
+              reject(new Error(t("profile.public.toast.videoReadFail", "Cannot read video.")));
+            };
+            video.src = url;
+          });
+
+        const createVideoThumbnail = (videoUrl) =>
+          new Promise((resolve, reject) => {
+            if (!videoUrl) {
+              reject(new Error(t("profile.public.toast.thumbFail", "Cannot create thumbnail.")));
+              return;
+            }
+            const video = document.createElement("video");
+            video.preload = "metadata";
+            video.muted = true;
+            video.playsInline = true;
+            let captured = false;
+
+            const cleanup = () => {
+              video.removeAttribute("src");
+              video.load();
+            };
+            const fail = (message) => {
+              cleanup();
+              reject(new Error(message || t("profile.public.toast.thumbFail", "Cannot create thumbnail.")));
+            };
+            const capture = () => {
+              if (captured) return;
+              captured = true;
+              const width = video.videoWidth || 0;
+              const height = video.videoHeight || 0;
+              if (!width || !height) {
+                fail(t("profile.public.toast.thumbFail", "Cannot create thumbnail."));
+                return;
+              }
+              const ratio = width / height;
+              const canvas = document.createElement("canvas");
+              const targetWidth = THUMB_WIDTH;
+              const targetHeight = Math.round(targetWidth / ratio);
+              canvas.width = targetWidth;
+              canvas.height = targetHeight;
+              const ctx = canvas.getContext("2d");
+              if (!ctx) {
+                fail(t("profile.public.toast.thumbFail", "Cannot create thumbnail."));
+                return;
+              }
+              ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
+              canvas.toBlob(
+                (blob) => {
+                  if (!blob) {
+                    fail(t("profile.public.toast.thumbFail", "Cannot create thumbnail."));
+                    return;
+                  }
+                  const thumbFile = new File([blob], `thumb-${Date.now()}.jpg`, { type: "image/jpeg" });
+                  const thumbUrl = URL.createObjectURL(blob);
+                  cleanup();
+                  resolve({ file: thumbFile, url: thumbUrl });
+                },
+                "image/jpeg",
+                THUMB_QUALITY
+              );
+            };
+
+            video.addEventListener(
+              "loadeddata",
+              () => {
+                const duration = Number(video.duration || 0);
+                if (Number.isFinite(duration) && duration > 0) {
+                  const targetTime = Math.min(Math.max(duration * 0.3, 0.1), Math.min(duration, 0.6));
+                  try {
+                    video.currentTime = targetTime;
+                  } catch (error) {
+                    capture();
+                  }
+                } else {
+                  capture();
+                }
+              },
+              { once: true }
+            );
+            video.addEventListener("seeked", capture, { once: true });
+            video.addEventListener(
+              "error",
+              () => {
+                fail(t("profile.public.toast.thumbFail", "Cannot create thumbnail."));
+              },
+              { once: true }
+            );
+            video.src = videoUrl;
+          });
+
+        const uploadStoryMedia = async (file, slot, thumbFile) => {
+          if (!useRemote || !uploadApiUrl) return null;
+          const ownerId = getOwnerRef();
+          if (!ownerId) {
+            throw new Error(t("profile.public.toast.loginRequired", "Please log in to follow."));
+          }
+          const mediaType = file && file.type && file.type.startsWith("video/") ? "video" : "image";
+          const form = new FormData();
+          form.append("userId", ownerId);
+          form.append("ownerId", ownerId);
+          form.append("slot", String(slot + 1));
+          form.append("title", draftStories[slot] && draftStories[slot].title ? draftStories[slot].title : "");
+          form.append("action", "upload");
+          form.append("type", mediaType);
+          form.append("file", file);
+          if (thumbFile) form.append("thumb", thumbFile);
+          const response = await fetch(uploadApiUrl, { method: "POST", body: form });
+          const data = await response.json().catch(() => null);
+          const payload = data && data.data ? data.data : data && data.media ? data.media : null;
+          if (!response.ok || !data || !data.ok || !payload) {
+            const errorCode = data && data.error ? String(data.error) : "UPLOAD_FAILED";
+            const hint = data && data.hint ? ` - ${data.hint}` : "";
+            const message = data && data.message ? ` - ${data.message}` : "";
+            throw new Error(`${errorCode}${hint}${message}`);
+          }
+          if (!hasRequiredStoryFields(payload)) {
+            throw new Error(t("profile.public.toast.uploadFail", "Upload failed."));
+          }
+          return payload;
+        };
+        const uploadStoryThumb = async (slot, thumbFile) => {
+          if (!useRemote || !uploadApiUrl) return null;
+          const ownerId = getOwnerRef();
+          if (!ownerId) {
+            throw new Error(t("profile.public.toast.loginRequired", "Please log in to follow."));
+          }
+          const form = new FormData();
+          form.append("userId", ownerId);
+          form.append("ownerId", ownerId);
+          form.append("slot", String(slot + 1));
+          form.append("action", "thumb");
+          form.append("thumb", thumbFile);
+          const response = await fetch(uploadApiUrl, { method: "POST", body: form });
+          const data = await response.json().catch(() => null);
+          if (!response.ok || !data || !data.ok) {
+            const errorCode = data && data.error ? String(data.error) : "THUMB_FAILED";
+            const hint = data && data.hint ? ` - ${data.hint}` : "";
+            const message = data && data.message ? ` - ${data.message}` : "";
+            throw new Error(`${errorCode}${hint}${message}`);
+          }
+          const payload = data && data.data ? data.data : data;
+          return payload;
+        };
+        const applyPendingThumbs = async () => {
+          const pendingItems = draftStories.filter((item) => item && item.pendingThumbFile);
+          if (!pendingItems.length) return;
+          if (!useRemote) {
+            pendingItems.forEach((item) => {
+              if (item.pendingThumbUrl) {
+                item.thumbUrl = item.pendingThumbUrl;
+              }
+              clearPendingThumb(item);
+            });
+            return;
+          }
+          for (const item of pendingItems) {
+            const slot = Number(item.slot);
+            if (!Number.isFinite(slot)) continue;
+            setSlotLoading(slot, true);
+            try {
+              const uploaded = await uploadStoryThumb(slot, item.pendingThumbFile);
+              const uploadedThumbUrl = uploaded && (uploaded.thumbUrl || uploaded.thumb_url) ? uploaded.thumbUrl || uploaded.thumb_url : "";
+              if (!uploadedThumbUrl) {
+                throw new Error(t("profile.public.toast.uploadFail", "Upload failed."));
+              }
+              if (item.pendingThumbUrl && item.pendingThumbUrl.startsWith("blob:")) {
+                URL.revokeObjectURL(item.pendingThumbUrl);
+              }
+              item.thumbUrl = uploadedThumbUrl;
+              clearPendingThumb(item);
+            } catch (error) {
+              clearPendingThumb(item);
+              throw error;
+            } finally {
+              setSlotLoading(slot, false);
+            }
+          }
+        };
+
+        const isInlineMediaUrl = (value) => {
+          const raw = String(value || "");
+          return raw.startsWith("data:") || raw.startsWith("blob:");
+        };
+        const hasRequiredStoryFields = (item) => {
+          if (!item) return false;
+          const mediaKey = item.mediaKey || item.key || item.media_key || "";
+          const url = item.mediaUrl || item.url || item.src || "";
+          const createdAt = item.createdAt || item.created_at || item.date || "";
+          if (!mediaKey || !url || !createdAt) return false;
+          if (isInlineMediaUrl(url)) return false;
+          return true;
+        };
+
+        const saveStoriesRemote = async (list) => {
+          if (!useRemote || !apiUrl) return list;
+          const ownerId = getOwnerRef();
+          if (!ownerId) {
+            throw new Error(t("profile.public.toast.loginRequired", "Please log in to follow."));
+          }
+          const payloadStories = [];
+          for (const item of Array.isArray(list) ? list : []) {
+            if (!item) continue;
+            const rawSlot = Number(item.slot);
+            const slotValue = Number.isFinite(rawSlot) ? rawSlot + 1 : 1;
+            const key = item && (item.mediaKey || item.key) ? item.mediaKey || item.key : "";
+            const mediaId = item && (item.mediaId || item.media_id) ? item.mediaId || item.media_id : "";
+            const url = item && (item.mediaUrl || item.url || item.src) ? item.mediaUrl || item.url || item.src : "";
+            const safeUrl = isInlineMediaUrl(url) ? "" : url;
+            if (!key && !safeUrl && !mediaId) {
+              throw new Error(t("profile.public.toast.uploadFail", "Upload failed."));
+            }
+            payloadStories.push({
+              slot: slotValue,
+              title: item && item.title ? item.title : "",
+              type: item && item.type ? item.type : "image",
+              key,
+              url: safeUrl,
+              mediaId,
+              size: item && item.size ? item.size : 0,
+            });
+          }
+          const payload = {
+            userId: ownerId,
+            ownerId,
+            action: "save",
+            stories: payloadStories,
+          };
+          const response = await fetch(apiUrl, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const data = await response.json().catch(() => null);
+          if (!response.ok || !data || !data.ok) {
+            const errorCode = data && data.error ? String(data.error) : "SAVE_FAILED";
+            const hint = data && data.hint ? ` - ${data.hint}` : "";
+            const message = data && data.message ? ` - ${data.message}` : "";
+            throw new Error(`${errorCode}${hint}${message}`);
+          }
+          const stories = data && data.data && Array.isArray(data.data.stories) ? data.data.stories : data.stories;
+          if (!Array.isArray(stories)) return [];
+          if (stories.some((item) => !hasRequiredStoryFields(item))) {
+            throw new Error(t("profile.public.toast.saveFail", "Unable to save featured posts."));
+          }
+          return stories;
+        };
+
+        const handleFile = async (file, slot) => {
+          if (!file) return;
+          const isVideo = file.type.startsWith("video/");
+          const isImage = file.type.startsWith("image/");
+          if (!isVideo && !isImage) {
+            notify(t("profile.public.toast.imageOrVideoOnly", "Only images or videos are supported."));
+            return;
+          }
+          if (!canUploadVideo && isVideo) {
+            notify(t("profile.public.toast.notEligible", "B?n chua du?c c?p quy?n t?i video."));
+            return;
+          }
+          clearPendingThumb(draftStories[slot]);
+          setSlotLoading(slot, true);
+          try {
+            let previewSrc = "";
+            let thumbFile = null;
+            let thumbPreviewUrl = "";
+            let type = isVideo ? "video" : "image";
+            if (isVideo) {
+              previewSrc = await validateVideo(file);
+              const thumbResult = await createVideoThumbnail(previewSrc);
+              thumbFile = thumbResult.file;
+              thumbPreviewUrl = thumbResult.url;
+            } else {
+              previewSrc = await validateImage(file);
+            }
+            let mediaId = "";
+            let mediaKey = "";
+            let createdAt = new Date().toISOString();
+            let finalSrc = previewSrc;
+            let finalThumbUrl = thumbPreviewUrl;
+            if (useRemote) {
+              const uploaded = await uploadStoryMedia(file, slot, thumbFile);
+              if (!uploaded) {
+                throw new Error(t("profile.public.toast.uploadFail", "Upload failed."));
+              }
+              const uploadedUrl = uploaded.mediaUrl || uploaded.url || "";
+              const uploadedThumbUrl = uploaded.thumbUrl || uploaded.thumb_url || "";
+              if (!uploadedUrl) {
+                throw new Error(t("profile.public.toast.uploadFail", "Upload failed."));
+              }
+              if (isVideo && !uploadedThumbUrl) {
+                throw new Error(t("profile.public.toast.uploadFail", "Upload failed."));
+              }
+              if (previewSrc && previewSrc.startsWith("blob:")) {
+                URL.revokeObjectURL(previewSrc);
+              }
+              if (thumbPreviewUrl && thumbPreviewUrl.startsWith("blob:")) {
+                URL.revokeObjectURL(thumbPreviewUrl);
+              }
+              mediaId = uploaded.media_id || uploaded.mediaId || uploaded.id || "";
+              mediaKey = uploaded.mediaKey || uploaded.key || (mediaId && mediaId.startsWith("story/") ? mediaId : "");
+              finalSrc = uploadedUrl;
+              finalThumbUrl = uploadedThumbUrl || "";
+              createdAt = uploaded.createdAt || createdAt;
+              type = uploaded.type || type;
+            }
+            draftStories[slot] = {
+              slot,
+              title: draftStories[slot] ? draftStories[slot].title : "",
+              date: createdAt,
+              type,
+              src: finalSrc,
+              thumbUrl: finalThumbUrl,
+              pendingThumbUrl: "",
+              pendingThumbFile: null,
+              mediaId,
+              mediaKey,
+            };
+          } catch (err) {
+            notify(err && err.message ? err.message : t("profile.public.toast.uploadFail", "Upload failed."));
+          } finally {
+            setSlotLoading(slot, false);
+          }
+        };
+
+        if (manageGrid) {
+          manageGrid.addEventListener("click", (event) => {
+            const upload = event.target.closest(".story-upload");
+            const remove = event.target.closest(".story-remove");
+            const thumb = event.target.closest(".story-thumb-btn");
+            if (upload) {
+              const slot = Number(upload.dataset.slot);
+              const input = manageGrid.querySelector(`.story-file-input[data-slot="${slot}"]`);
+              if (input) input.click();
+            }
+            if (thumb) {
+              const slot = Number(thumb.dataset.slot);
+              const input = manageGrid.querySelector(`.story-thumb-input[data-slot="${slot}"]`);
+              if (input) input.click();
+            }
+            if (remove) {
+              const slot = Number(remove.dataset.slot);
+              clearPendingThumb(draftStories[slot]);
+              draftStories[slot] = null;
+              renderManageGrid();
+            }
+          });
+
+          manageGrid.addEventListener("change", (event) => {
+            const thumbInput = event.target.closest(".story-thumb-input");
+            if (thumbInput) {
+              const slot = Number(thumbInput.dataset.slot);
+              const file = thumbInput.files && thumbInput.files[0];
+              thumbInput.value = "";
+              if (file) handleThumbFile(file, slot);
+              return;
+            }
+            const input = event.target.closest(".story-file-input");
+            if (!input) return;
+            const slot = Number(input.dataset.slot);
+            const file = input.files && input.files[0];
+            input.value = "";
+            if (file) handleFile(file, slot);
+          });
+
+          manageGrid.addEventListener("input", (event) => {
+            const input = event.target.closest(".story-title-input");
+            if (!input) return;
+            const slot = Number(input.dataset.slot);
+            if (!draftStories[slot]) {
+              draftStories[slot] = {
+                slot,
+                title: input.value,
+                date: new Date().toISOString(),
+                type: "image",
+                src: "",
+              };
+            } else {
+              draftStories[slot].title = input.value;
+            }
+          });
+        }
+
+        if (manageBtn) {
+          manageBtn.addEventListener("click", () => {
+            if (!isOwner) return;
+            openManageModal();
+          });
+        }
+        if (manageClose) manageClose.addEventListener("click", closeManageModal);
+        if (manageCancel) manageCancel.addEventListener("click", closeManageModal);
+        if (manageModal) {
+          manageModal.addEventListener("click", (event) => {
+            if (event.target === manageModal) closeManageModal();
+          });
+        }
+        if (manageSave) {
+          manageSave.addEventListener("click", async () => {
+            const nextStories = toList(draftStories).filter((item) => item && item.src);
+            if (useRemote) {
+              try {
+                await applyPendingThumbs();
+                const saved = await saveStoriesRemote(nextStories);
+                const mapped = normalizeStoryList(saved);
+                stories = mapped;
+                visibleStories = mapped
+                  .filter((story) => within30Days(story.date))
+                  .sort((a, b) => new Date(b.date) - new Date(a.date))
+                  .slice(0, 4);
+              } catch (err) {
+                notify(err && err.message ? err.message : t("profile.public.toast.saveFail", "Unable to save featured posts."));
+                return;
+              }
+            } else {
+              await applyPendingThumbs();
+              saveStories(nextStories);
+              visibleStories = nextStories
+                .filter((story) => within30Days(story.date))
+                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                .slice(0, 4);
+            }
+            renderStories();
+            closeManageModal();
+          });
+        }
+
+        loadRemoteProfile();
+
+        document.addEventListener("bk:i18n", (event) => {
+          currentLanguage =
+            (event && event.detail && event.detail.language) ||
+            (typeof getCurrentLanguage === "function" ? getCurrentLanguage() : currentLanguage);
+          renderStories();
+          renderProfileHeader();
+          updateCounts();
+          updateStats(profileStats);
+          refreshFollowState();
+          renderManageGrid();
+        });
+
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape" && storyPreviewModal && storyPreviewModal.classList.contains("open")) {
+            closePreview();
+          }
+          if (event.key === "Escape" && manageModal && manageModal.classList.contains("open")) {
+            closeManageModal();
+          }
+        });
+      });
+    </script>
+
+  </body>
+</html>
+
+
+
+
+
+
+

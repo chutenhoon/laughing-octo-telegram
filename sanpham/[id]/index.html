@@ -1,0 +1,253 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title data-i18n-key="product.detail.pageTitle">Product detail | polyflux.xyz</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="../../apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="../../favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="../../favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="../../android-chrome-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="../../android-chrome-512x512.png" />
+    <link rel="manifest" href="../../site.webmanifest" />
+    <link rel="icon" href="../../favicon.ico" />
+    <meta name="description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta property="og:title" content="polyflux.xyz" />
+    <meta property="og:description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta property="og:image" content="../../asset/logo-preview.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="vi_VN" />
+    <meta property="og:site_name" content="polyflux.xyz" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="polyflux.xyz" />
+    <meta name="twitter:description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta name="twitter:image" content="../../asset/logo-preview.png" />
+<link rel="stylesheet" href="../../asset/base.css" />
+    <link rel="stylesheet" href="../../asset/catalog.css" />
+  </head>
+  <body>
+    <video class="video-bg" autoplay muted loop playsinline preload="metadata">
+      <source src="../../asset/bg-donut.mp4" type="video/mp4" />
+    </video>
+    <div class="video-overlay"></div>
+
+    <!-- Navbar -->
+    <header class="wrap">
+      <nav class="nav glass">
+        <a href="/" class="brand" style="display: flex; align-items: center; gap: 12px; text-decoration: none;">
+          <img src="../../asset/logo.png" alt="PolyFlux" />
+          <span>polyflux<b>.xyz</b></span>
+        </a>
+        <div class="nav-links">
+          <a href="/products/" data-nav="sanpham">S&#7843;n Ph&#7849;m <span class="badge">HOT</span></a>
+          <a href="/dichvu/" data-nav="dichvu">D&#7883;ch V&#7909;</a>
+          <a href="/nhiemvu/" data-nav="nhiemvu">Nhi&#7879;m V&#7909;</a>
+          <a href="/profile/topups/" data-nav="topups">N&#7841;p ti&#7873;n</a>
+        </div>
+        <div class="nav-actions">
+                    <button class="btn balance-btn" data-balance type="button">0 VND</button>
+          <a class="btn login-btn" href="/login/">Login</a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="wrap">
+      <section class="product-detail">
+        <div class="detail-breadcrumb">
+          <a href="/" id="crumb-home" data-i18n-key="breadcrumb.home">Home</a>
+          <span>/</span>
+          <a href="/products/" id="crumb-category" data-i18n-key="nav.products">Products</a>
+          <span>/</span>
+          <span id="crumb-title" data-i18n-key="breadcrumb.detail">Detail</span>
+        </div>
+
+        <div class="detail-grid">
+          <div class="card detail-media-card">
+            <div class="detail-image" id="detail-image"></div>
+            <div class="detail-actions">
+              <button class="btn ghost" id="detail-share" type="button" data-i18n-key="product.detail.share">Share</button>
+              <button class="btn ghost" id="detail-favorite" type="button" data-i18n-key="product.detail.favorite">Favorite</button>
+            </div>
+          </div>
+
+          <div class="card detail-panel">
+            <h1 class="detail-title" id="detail-title">--</h1>
+            <p class="detail-short" id="detail-short"></p>
+
+            <div class="detail-meta">
+              <div class="meta-col meta-stats">
+                <div class="meta-row">
+                  <span class="meta-label" data-i18n-key="label.stock">Stock</span>
+                  <strong id="detail-stock">--</strong>
+                </div>
+                <div class="meta-row">
+                  <span class="meta-label" data-i18n-key="label.sold">Sold</span>
+                  <strong id="detail-sold">--</strong>
+                </div>
+                <div class="meta-row">
+                  <span class="meta-label" data-i18n-key="label.rating">Rating</span>
+                  <strong id="detail-rating">--</strong>
+                </div>
+                <div class="meta-row">
+                  <span class="meta-label" data-i18n-key="label.type">Type</span>
+                  <strong id="detail-type">--</strong>
+                </div>
+              </div>
+              <div class="meta-col meta-seller">
+                <span class="seller-line">
+                  <span class="seller-label" data-i18n-key="label.seller">Seller</span>:
+                  <span class="seller-value"><strong class="seller-name"><a id="detail-seller-link" href="#">--</a></strong><span id="detail-seller-badge"></span></span>
+                </span>
+                <span><span data-i18n-key="product.detail.shopIdLabel">Shop ID</span>: <strong id="detail-shop-id">--</strong></span>
+                <span><span data-i18n-key="label.rating">Rating</span>: <strong id="detail-rating-note" class="rating-note"></strong></span>
+                <div class="seller-actions">
+                  <a class="shop-link" id="detail-shop-link" href="#">Gian h&#224;ng</a>
+                </div>
+              </div>
+            </div>
+
+            <div class="detail-price" id="detail-price">--</div>
+
+            <div class="detail-other">
+              <h4 data-i18n-key="product.detail.otherTitle">Other items from this shop</h4>
+              <div class="detail-other-list" id="detail-other-list"></div>
+            </div>
+
+            <div class="detail-cta">
+              <button class="btn primary" id="detail-order" type="button" data-requires-login data-auth-action="checkout" data-i18n-key="product.detail.order">Place order</button>
+              <button class="btn" id="detail-preorder" type="button" data-requires-login data-auth-action="checkout" data-i18n-key="product.detail.preorder">Preorder</button>
+              <a class="btn ghost" id="detail-message" href="/profile/messages/" target="_blank" rel="noreferrer" data-i18n-key="product.detail.message">Message</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="card detail-tabs">
+          <div class="tabs-head">
+            <button class="tab active" type="button" data-tab="shop" data-i18n-key="product.detail.tab.shop">Shop description</button>
+            <button class="tab" type="button" data-tab="reviews" data-i18n-key="product.detail.tab.reviews">Reviews</button>
+          </div>
+          <div class="tabs-body">
+            <div class="tab-panel active" data-tab="shop" id="detail-shop-desc"></div>
+            <div class="tab-panel" data-tab="reviews" id="detail-reviews"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+      <div class="footer-grid">
+        <div>
+          <h4>About polyflux.xyz</h4>
+          <p>
+            The #1 trusted marketplace for digital assets on polyflux.xyz. Buy accounts, emails, tools and more with
+            instant delivery.
+          </p>
+        </div>
+        <div>
+          <h4>&#272;i&#7873;u h&#432;&#7899;ng</h4>
+          <p><a href="/products/">S&#7843;n ph&#7849;m</a></p>
+          <p><a href="/dichvu/">D&#7883;ch v&#7909;</a></p>
+          <p><a href="/nhiemvu/">Nhi&#7879;m v&#7909; marketplace</a></p>
+          <p><a href="/profile/">T&#224;i kho&#7843;n c&#7911;a t&#244;i</a></p>
+        </div>
+        <div>
+          <h4>Thanh to&#225;n &amp; b&#7843;o m&#7853;t</h4>
+          <p>20+ ph&#432;&#417;ng th&#7913;c thanh to&#225;n, x&#7917; l&#253; t&#7921; &#273;&#7897;ng.</p>
+          <p>L&#7883;ch s&#7917; &#273;&#417;n h&#224;ng minh b&#7841;ch.</p>
+          <p>2FA &amp; c&#7843;nh b&#225;o &#273;&#259;ng nh&#7853;p kh&#7843; nghi.</p>
+        </div>
+        <div>
+          <h4>Tham gia b&#225;n h&#224;ng</h4>
+          <p>Mu&#7889;n m&#7903; gian h&#224;ng tr&#234;n polyflux.xyz?</p>
+          <a
+            href="/seller/join/"
+            class="btn primary"
+            style="margin-top: 8px; display: inline-flex; align-items: center; gap: 6px;"
+          >
+            Tham gia b&#225;n h&#224;ng
+          </a>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Mobile nav -->
+    <nav class="mobile-nav">
+      <div class="mobile-nav-top">
+        <a href="/" class="mobile-brand" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+          <img src="../../asset/logo.png" alt="PolyFlux" />
+          <span>polyflux<b>.xyz</b></span>
+        </a>
+        <div class="mobile-actions">
+                    <button class="btn balance-btn" data-balance type="button">0 VND</button>
+          <a class="btn login-btn" href="/login/">Login</a>
+        
+          <button class="menu-btn" id="mobile-menu" type="button" aria-label="Menu">
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="mobile-links">
+        <a href="/products/" data-nav="sanpham">S&#7843;n Ph&#7849;m</a>
+        <a href="/dichvu/" data-nav="dichvu">D&#7883;ch V&#7909;</a>
+        <a href="/nhiemvu/" data-nav="nhiemvu">Nhi&#7879;m V&#7909;</a>
+        <a href="/profile/topups/" data-nav="topups">N&#7841;p ti&#7873;n</a>
+      </div>
+    </nav>
+
+    <div class="modal-backdrop order-modal" id="order-modal" aria-hidden="true">
+      <div class="modal-card order-modal-card" role="dialog" aria-modal="true" aria-labelledby="order-modal-title">
+        <div class="order-modal-head">
+          <h3 id="order-modal-title" data-i18n-key="product.detail.modal.title">Confirm order</h3>
+          <button class="btn ghost order-modal-close" id="order-modal-close" type="button" aria-label="Close" data-i18n-aria="support.close">
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+        <div class="order-modal-body">
+          <div class="order-modal-product">
+            <strong id="order-modal-name">--</strong>
+            <span class="order-modal-price" id="order-modal-price">--</span>
+          </div>
+          <div class="order-modal-qty">
+            <span data-i18n-key="product.detail.modal.quantity">Quantity</span>
+            <div class="order-qty-control">
+              <button class="btn ghost qty-btn" id="order-qty-minus" type="button">-</button>
+              <input id="order-qty-input" type="number" min="1" step="1" value="1" inputmode="numeric" />
+              <button class="btn ghost qty-btn" id="order-qty-plus" type="button">+</button>
+            </div>
+            <span id="order-qty-note"></span>
+          </div>
+          <div class="order-modal-total">
+            <span data-i18n-key="product.detail.modal.subtotal">Subtotal</span>
+            <strong id="order-modal-total">--</strong>
+          </div>
+          <div class="order-modal-error" id="order-modal-error"></div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn ghost" id="order-modal-cancel" type="button" data-i18n-key="product.detail.modal.cancel">Cancel</button>
+          <button class="btn primary" id="order-modal-confirm" type="button" data-i18n-key="product.detail.modal.confirm">Confirm order</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="../../asset/render.js"></script>
+    <script src="../../asset/products/detail.js"></script>
+  </body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+

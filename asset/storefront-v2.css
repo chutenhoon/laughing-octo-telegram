@@ -1,0 +1,67 @@
+.shop-hero {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+  border-radius: 20px;
+  border: 1px solid var(--stroke);
+  background: rgba(12, 12, 18, 0.7);
+  box-shadow: var(--shadow);
+}
+
+.shop-hero-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.shop-title {
+  font-family: "Outfit", sans-serif;
+  font-size: clamp(20px, 2.6vw, 26px);
+  margin: 0;
+}
+
+.shop-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.shop-meta strong {
+  color: #ffffff;
+}
+
+.shop-hero-desc {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.shop-products-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.shop-products-head h2 {
+  font-family: "Outfit", sans-serif;
+  font-size: 20px;
+}
+
+.shop-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 18px;
+}
+
+@media (max-width: 860px) {
+  .shop-products-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
