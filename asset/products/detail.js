@@ -53,6 +53,16 @@
     return "";
   };
 
+  const resolveCategoryLabel = (categoryId) => {
+    const key = String(categoryId || "").trim().toLowerCase();
+    if (!key) return "";
+    if (key === "email") return translate("product.category.email", "Email");
+    if (key === "tool") return translate("product.category.tool", "Ph\u1ea7n m\u1ec1m");
+    if (key === "account") return translate("product.category.account", "T\u00e0i kho\u1ea3n");
+    if (key === "other") return translate("product.category.other", "Kh\u00e1c");
+    return categoryId;
+  };
+
   const resolveShopRef = (product) => {
     if (!product) return "";
     if (product.shop && product.shop.slug) return String(product.shop.slug).trim();
@@ -147,7 +157,11 @@
       return;
     }
 
-    const response = await fetch(`/api/products/${encodeURIComponent(productId)}`);
+    const authHeaders = buildAuthHeaders();
+    const response = await fetch(
+      `/api/products/${encodeURIComponent(productId)}`,
+      Object.keys(authHeaders).length ? { headers: authHeaders } : undefined
+    );
     const data = await response.json();
     if (!response.ok || !data || data.ok === false) {
       setHTML("detail-title", translate("product.detail.notFound", "Product not found"));
@@ -169,6 +183,13 @@
     setText("detail-type", product.subcategory || product.category || "--");
     setText("detail-price", priceLabel);
     setText("crumb-title", product.title || "");
+    const crumbCategory = document.getElementById("crumb-category");
+    if (crumbCategory) {
+      const label = resolveCategoryLabel(product.category || "");
+      if (label) {
+        crumbCategory.textContent = label;
+      }
+    }
     if (product.title) document.title = `${product.title} | polyflux.xyz`;
 
     const sellerLink = document.getElementById("detail-seller-link");
@@ -187,6 +208,10 @@
         shopLink.href = "#";
         shopLink.style.display = "none";
       }
+    }
+    const messageLink = document.getElementById("detail-message");
+    if (messageLink) {
+      messageLink.href = "/profile/messages/";
     }
     setText("detail-rating-note", product.rating != null ? product.rating : "--");
     const ratingNote = document.getElementById("detail-rating-note");

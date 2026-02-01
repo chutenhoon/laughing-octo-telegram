@@ -165,9 +165,11 @@ export async function onRequestGet(context) {
     }));
 
     const payload = { ok: true, product, others };
+    const hasViewer = session && session.id;
+    const publicView = productActive && shopActive && !hasViewer;
     return jsonCachedResponse(context.request, payload, {
-      cacheControl: "private, max-age=0, must-revalidate",
-      vary: "Cookie",
+      cacheControl: publicView ? "public, max-age=120, stale-while-revalidate=300" : "private, max-age=0, must-revalidate",
+      vary: publicView ? "Accept-Encoding" : "x-user-id, x-user-email, x-user-username",
     });
   } catch (error) {
     return jsonResponse({ ok: false, error: "INTERNAL" }, 500);
