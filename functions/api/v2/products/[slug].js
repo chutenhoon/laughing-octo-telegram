@@ -1,5 +1,5 @@
-import { jsonCachedResponse, getSessionUser, findUserByRef, createSignedMediaToken, buildMediaUrl } from "../_catalog.js";
-import { jsonResponse } from "../auth/_utils.js";
+import { jsonCachedResponse, getSessionUser, findUserByRef, createSignedMediaToken, buildMediaUrl } from "../../_catalog.js";
+import { jsonResponse } from "../../auth/_utils.js";
 
 function normalizeParam(value) {
   const raw = String(value || "").trim();

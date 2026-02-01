@@ -1,5 +1,5 @@
-﻿import { jsonCachedResponse, createSignedMediaToken, buildMediaUrl } from "../_catalog.js";
-import { jsonResponse } from "../auth/_utils.js";
+import { jsonCachedResponse, createSignedMediaToken, buildMediaUrl } from "../../_catalog.js";
+import { jsonResponse } from "../../auth/_utils.js";
 
 const PAGE_SIZE_DEFAULT = 12;
 const PAGE_SIZE_MAX = 40;
