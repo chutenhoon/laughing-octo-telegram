@@ -129,7 +129,6 @@ export async function onRequestGet(context) {
       },
     };
 
-    const soldCondition = SOLD_STATUSES.map(() => "?").join(", ");
     const otherSql = `
       SELECT p.id, p.name, p.price, p.price_max, p.stock_count, p.thumbnail_media_id,
              p.description_short, p.description, p.category, p.subcategory,
