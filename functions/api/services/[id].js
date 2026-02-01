@@ -1,19 +1,6 @@
 import { jsonResponse } from "../auth/_utils.js";
 import { getSessionUser, findUserByRef, toSafeHtml, toPlainText, jsonCachedResponse } from "../_catalog.js";
 
-function buildMediaProxyUrl(requestUrl, mediaId) {
-  const id = String(mediaId || "").trim();
-  if (!id) return "";
-  try {
-    const url = new URL(requestUrl);
-    url.pathname = "/api/media";
-    url.search = `id=${encodeURIComponent(id)}`;
-    return url.toString();
-  } catch (error) {
-    return `/api/media?id=${encodeURIComponent(id)}`;
-  }
-}
-
 function isApprovedStatus(status) {
   const value = String(status || "").toLowerCase();
   return value === "approved" || value === "active" || value === "published" || value === "pending_update";
@@ -28,7 +15,7 @@ function isTruthyFlag(value) {
 function isVisibleProductStatus(status) {
   const value = String(status || "").trim().toLowerCase();
   if (!value) return true;
-  return value !== "disabled" && value !== "blocked" && value !== "banned" && value !== "deleted";
+  return value !== "disabled" && value !== "blocked" && value !== "banned";
 }
 
 export async function onRequestGet(context) {
@@ -86,7 +73,6 @@ export async function onRequestGet(context) {
       }
     }
 
-    const thumbnailId = row.thumbnail_media_id || "";
     const service = {
       id: row.id,
       shopId: row.shop_id,
@@ -102,8 +88,7 @@ export async function onRequestGet(context) {
       rating: Number(row.shop_rating || 0),
       status: row.status || "draft",
       createdAt: row.created_at || null,
-      thumbnailId,
-      thumbnailUrl: thumbnailId ? buildMediaProxyUrl(context.request.url, thumbnailId) : "",
+      thumbnailId: row.thumbnail_media_id || "",
       seller: {
         name: row.store_name || "",
         slug: row.store_slug || "",

@@ -581,18 +581,10 @@
   const buildPreviewUrl = (store) => {
     if (!store) return "";
     const root = window.location.protocol === "file:" && typeof getProjectRoot === "function" ? getProjectRoot() : "/";
-    const isFile = window.location.protocol === "file:";
-    const base = isFile ? "gian-hang/[slug]/index.html" : "gian-hang/";
-    const slug = store.slug ? String(store.slug) : "";
-    const id = store.id ? String(store.id) : "";
-    if (isFile) {
-      const ref = slug || id;
-      if (!ref) return "";
-      return `${root}${base}?id=${encodeURIComponent(ref)}&preview=1`;
-    }
-    if (slug) return `${root}gian-hang/${encodeURIComponent(slug)}?preview=1`;
-    if (id) return `${root}gian-hang/?id=${encodeURIComponent(id)}&preview=1`;
-    return "";
+    const base = window.location.protocol === "file:" ? "seller/[id]/index.html" : "seller/[id]/";
+    const ref = store.slug || store.id || "";
+    if (!ref) return "";
+    return `${root}${base}?id=${encodeURIComponent(ref)}&preview=1`;
   };
 
   const openPreviewPage = (store) => {

@@ -271,12 +271,12 @@ export const getRouteKeyForPath = (pathname) => {
   }
   const path = rawPath.replace(/\\/g, "/").toLowerCase();
   if (!path || path === "/" || path === "/index.html") return "home";
-  if (path.startsWith("/products") || path.startsWith("/sanpham")) return "products";
+  if (path.startsWith("/sanpham")) return "products";
   if (path.startsWith("/dichvu")) return "services";
   if (path.startsWith("/nhiemvu/tao")) return "task_posting";
   if (path.startsWith("/nhiemvu")) return "tasks_market";
   if (path.startsWith("/seller/panel") || path.startsWith("/seller/tasks") || path.startsWith("/seller/join")) return "seller_panel";
-  if (path.startsWith("/shop") || path.startsWith("/gian-hang") || path.startsWith("/seller/")) return "seller_public";
+  if (path.startsWith("/seller/")) return "seller_public";
   if (path.startsWith("/checkout") || path.startsWith("/proof")) return "payments";
   if (path.startsWith("/profile/messages")) return "profile.chat";
   if (path.startsWith("/profile/orders")) return "profile.orders";

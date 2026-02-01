@@ -201,16 +201,6 @@
         notify();
         return item;
       },
-      delete: async (productId) => {
-        if (!productId) return null;
-        const data = await fetchJson(`${API_ROOT}/seller/products/${encodeURIComponent(productId)}`, {
-          method: "DELETE",
-          headers: getAuthHeaders(),
-        });
-        productCache = productCache.filter((product) => product.productId !== productId);
-        notify();
-        return data;
-      },
       update: async (productId, updates) => {
         return services.products.create({ ...(updates || {}), id: productId });
       },

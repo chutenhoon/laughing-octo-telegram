@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
   "use strict";
 
   const PAGE_SIZE = 12;
@@ -108,18 +108,8 @@
   const storeLongDesc = document.getElementById("store-long-desc");
   const itemsTitle = document.getElementById("store-items-title");
   const itemsSub = document.getElementById("store-items-sub");
-  const itemsTabs = document.getElementById("store-items-tabs");
-  const itemTabButtons = itemsTabs ? Array.from(itemsTabs.querySelectorAll("button[data-type]")) : [];
   const itemsGrid = document.getElementById("store-items-grid");
   const pagination = document.getElementById("store-items-pagination");
-  const filterList = document.getElementById("store-filter-list");
-  const filterSearch = document.getElementById("store-filter-search");
-  const filterApply = document.getElementById("store-filter-apply");
-  const filterPanel = document.getElementById("store-filter-panel");
-  const filterToggle = document.getElementById("store-filter-toggle");
-  const sortTabs = document.getElementById("store-sort-tabs");
-  const storeSection = document.querySelector(".store-page");
-  const storeState = document.getElementById("store-state");
 
   const state = {
     shop: null,
@@ -127,50 +117,17 @@
     page: 1,
     totalPages: 1,
     preview: false,
-    activeType: "product",
-    counts: { product: 0, service: 0 },
-    filterCounts: { product: {}, service: {} },
-    sort: "popular",
-    search: "",
-    subcategories: new Set(),
-  };
-
-  const getPathRef = () => {
-    const parts = window.location.pathname.split("/").filter(Boolean);
-    if (!parts.length) return "";
-    let last = parts[parts.length - 1];
-    if (last === "index.html") last = parts[parts.length - 2] || "";
-    if (!last) return "";
-    const invalid = new Set(["gian-hang", "nguoi-ban", "seller", "shop", "[slug]", "[id]"]);
-    if (invalid.has(last)) return "";
-    return String(last).trim();
-  };
-
-  const isTemplatePath = () => {
-    const parts = window.location.pathname.split("/").filter(Boolean);
-    if (!parts.length) return false;
-    let last = parts[parts.length - 1];
-    if (last === "index.html") last = parts[parts.length - 2] || "";
-    return last === "[id]" || last === "[slug]";
   };
 
   const getStoreRef = () => {
     const params = new URLSearchParams(window.location.search);
-    const direct = params.get("id") || params.get("shop") || "";
-    const cleaned = String(direct || "").trim();
-    if (cleaned) return cleaned;
-    return getPathRef();
-  };
-
-  const isUuid = (value) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(value || ""));
-
-  const maybeRedirectToSlug = (shop) => {
-    if (!shop || !shop.slug) return;
-    const currentRef = getPathRef();
-    if (!currentRef || currentRef === shop.slug) return;
-    if (!isUuid(currentRef)) return;
-    const next = `/gian-hang/${encodeURIComponent(shop.slug)}${window.location.search || ""}`;
-    window.location.replace(next);
+    let id = params.get("id");
+    if (!id) {
+      const parts = window.location.pathname.split("/").filter(Boolean);
+      const last = parts[parts.length - 1];
+      if (last && last !== "[id]") id = last;
+    }
+    return id ? String(id).trim() : "";
   };
 
   const isPreviewMode = () => {
@@ -189,49 +146,6 @@
     } catch (error) {
       return null;
     }
-  };
-
-  const getUserHeaders = () => {
-    if (!window.BKAuth || typeof window.BKAuth.read !== "function") return null;
-    const auth = window.BKAuth.read();
-    if (!auth || !auth.loggedIn) return null;
-    const user = auth.user || {};
-    const headers = {};
-    if (user.id != null) headers["x-user-id"] = String(user.id);
-    if (user.email) headers["x-user-email"] = String(user.email);
-    if (user.username) headers["x-user-username"] = String(user.username);
-    return Object.keys(headers).length ? headers : null;
-  };
-
-  const mergeHeaders = (...sources) => {
-    const merged = {};
-    sources.forEach((source) => {
-      if (!source) return;
-      Object.entries(source).forEach(([key, value]) => {
-        if (value != null && value !== "") merged[key] = value;
-      });
-    });
-    return Object.keys(merged).length ? merged : null;
-  };
-
-  const buildFetchOptions = () => {
-    const headers = mergeHeaders(getUserHeaders(), state.preview ? getAdminHeaders() : null);
-    return headers ? { headers } : undefined;
-  };
-
-  const getAuthUser = () => {
-    if (!window.BKAuth || typeof window.BKAuth.read !== "function") return null;
-    const auth = window.BKAuth.read();
-    if (!auth || !auth.loggedIn) return null;
-    return auth.user || null;
-  };
-
-  const buildShopRedirectUrl = (slug, id) => {
-    const safeSlug = String(slug || "").trim();
-    if (safeSlug) return `/gian-hang/${encodeURIComponent(safeSlug)}`;
-    const safeId = String(id || "").trim();
-    if (safeId) return `/gian-hang/?id=${encodeURIComponent(safeId)}`;
-    return "";
   };
 
   const loadCategories = async () => {
@@ -329,25 +243,6 @@
     }
   };
 
-  const setStoreState = (status, message) => {
-    if (storeSection) {
-      storeSection.classList.toggle("is-not-found", status === "not-found" || status === "invalid");
-    }
-    if (!storeState) return;
-    if (status === "not-found" || status === "invalid") {
-      storeState.classList.remove("is-hidden");
-      const title =
-        message ||
-        (status === "invalid"
-          ? translate("store.invalidLink", "LiÃªn káº¿t gian hÃ ng khÃ´ng há»£p lá»‡.")
-          : translate("store.notFound", "Gian hÃ ng khÃ´ng tá»“n táº¡i"));
-      storeState.innerHTML = `<strong>${escapeHtml(title)}</strong>`;
-      return;
-    }
-    storeState.classList.add("is-hidden");
-    storeState.innerHTML = "";
-  };
-
   const renderShop = async (shop) => {
     const categories = await loadCategories();
     const type = resolveType(shop, categories);
@@ -411,193 +306,20 @@
     if (storeShortDesc) storeShortDesc.textContent = shop.descriptionShort || "";
     if (storeLongDesc) storeLongDesc.innerHTML = toSafeHtml(shop.descriptionLong || "");
 
+    if (itemsTitle) itemsTitle.textContent = type === "service" ? "D\u1ecbch v\u1ee5" : "S\u1ea3n ph\u1ea9m";
+    if (itemsSub) {
+      itemsSub.textContent =
+        type === "service"
+          ? "Danh s\u00e1ch d\u1ecbch v\u1ee5 t\u1eeb gian h\u00e0ng."
+          : "Danh s\u00e1ch s\u1ea3n ph\u1ea9m t\u1eeb gian h\u00e0ng.";
+    }
+
     state.shop = { ...shop, storeType: type };
     try {
       window.BKStoreShop = state.shop;
       document.dispatchEvent(new CustomEvent("store:loaded", { detail: state.shop }));
     } catch (error) {}
     setHeroLoading(false);
-  };
-
-  const updateItemsHeading = () => {
-    if (!itemsTitle || !itemsSub) return;
-    const categories = state.categories || { products: [], services: [] };
-    const type = state.activeType === "service" ? "service" : "product";
-    let label = "";
-    if (state.shop && state.shop.category) {
-      label = formatCategoryLabel(type, state.shop.category, categories);
-    }
-    if (!label) {
-      label = type === "service" ? "D\u1ecbch v\u1ee5" : "S\u1ea3n ph\u1ea9m";
-    }
-    itemsTitle.textContent = label;
-    itemsSub.textContent =
-      type === "service"
-        ? "S\u1eafp x\u1ebfp theo nhu c\u1ea7u v\u00e0 ch\u1ecdn nhanh d\u1ecbch v\u1ee5 ph\u00f9 h\u1ee3p."
-        : "S\u1eafp x\u1ebfp theo nhu c\u1ea7u v\u00e0 ch\u1ecdn nhanh s\u1ea3n ph\u1ea9m ph\u00f9 h\u1ee3p.";
-  };
-
-  const updateTabs = () => {
-    if (!itemsTabs) return;
-    const hasProduct = Number(state.counts.product || 0) > 0;
-    const hasService = Number(state.counts.service || 0) > 0;
-    const showTabs = hasProduct && hasService;
-    itemsTabs.style.display = showTabs ? "flex" : "none";
-    itemTabButtons.forEach((btn) => {
-      const type = btn.getAttribute("data-type");
-      btn.classList.toggle("active", type === state.activeType);
-      btn.disabled = !showTabs;
-    });
-  };
-
-  const updateSortTabs = () => {
-    if (!sortTabs) return;
-    sortTabs.querySelectorAll("button[data-sort]").forEach((btn) => {
-      const key = btn.getAttribute("data-sort");
-      btn.classList.toggle("active", key === state.sort);
-    });
-  };
-
-  const setFilterOpen = (open) => {
-    if (!filterPanel || !filterToggle) return;
-    filterPanel.classList.toggle("open", open);
-    filterToggle.setAttribute("aria-expanded", open ? "true" : "false");
-  };
-
-  const buildFilterHint = () => {
-    const parts = [];
-    if (state.search) {
-      parts.push(`${translate("label.search", "T\u1eeb kh\u00f3a")}: &quot;${escapeHtml(state.search)}&quot;`);
-    }
-    if (state.subcategories.size) {
-      const tags = Array.from(state.subcategories).join(", ");
-      parts.push(`${translate("label.filters", "B\u1ed9 l\u1ecdc")}: ${escapeHtml(tags)}`);
-    }
-    return parts.length ? `<div class="empty-state-meta">${parts.join(" \u2022 ")}</div>` : "";
-  };
-
-  const renderFilters = async () => {
-    if (!filterList) return;
-    const categories = await loadCategories();
-    const type = state.activeType === "service" ? "service" : "product";
-    const list = type === "service" ? categories.services || [] : categories.products || [];
-    const shopCategory = state.shop && state.shop.category ? String(state.shop.category) : "";
-    let category = list.find((item) => String(item.id) === shopCategory);
-    if (!category) {
-      category = list.find((item) => Array.isArray(item.subcategories) && item.subcategories.length) || list[0];
-    }
-    const options = category && Array.isArray(category.subcategories) ? category.subcategories : [];
-    const counts = (state.filterCounts && state.filterCounts[type]) || {};
-    const usedIds = new Set();
-    const rows = [];
-
-    options.forEach((option) => {
-      const id = String(option.id || "").trim();
-      if (!id) return;
-      usedIds.add(id);
-      const label = option.labelKey ? translate(option.labelKey, option.label || id) : option.label || id;
-      const count = Number(counts[id] || 0);
-      const checked = state.subcategories.has(id) ? "checked" : "";
-      rows.push(`
-        <label class="filter-item">
-          <input type="checkbox" value="${escapeHtml(id)}" ${checked} />
-          <span>${escapeHtml(label)}</span>
-          <em>(${count})</em>
-        </label>
-      `);
-    });
-
-    Object.keys(counts)
-      .filter((key) => key && !usedIds.has(String(key)))
-      .sort()
-      .forEach((key) => {
-        const label = String(key);
-        const count = Number(counts[key] || 0);
-        const checked = state.subcategories.has(key) ? "checked" : "";
-        rows.push(`
-          <label class="filter-item">
-            <input type="checkbox" value="${escapeHtml(key)}" ${checked} />
-            <span>${escapeHtml(label)}</span>
-            <em>(${count})</em>
-          </label>
-        `);
-      });
-
-    if (!rows.length) {
-      filterList.innerHTML = `<div class="empty-state">${translate("empty.noData", "Kh\u00f4ng c\u00f3 d\u1eef li\u1ec7u")}</div>`;
-      return;
-    }
-    filterList.innerHTML = rows.join("");
-  };
-
-  const resetFilters = () => {
-    state.subcategories = new Set();
-    state.search = "";
-    if (filterSearch) filterSearch.value = "";
-    if (filterList) {
-      filterList.querySelectorAll("input[type=checkbox]").forEach((input) => {
-        input.checked = false;
-      });
-    }
-  };
-
-  const applyCounts = (counts) => {
-    if (!counts || typeof counts !== "object") return false;
-    const product = counts.product || {};
-    const service = counts.service || {};
-    state.counts = { product: Number(product.total || 0), service: Number(service.total || 0) };
-    state.filterCounts = { product: product.filters || {}, service: service.filters || {} };
-    if (state.counts.product && state.counts.service) {
-      if (state.activeType !== "product" && state.activeType !== "service") {
-        state.activeType = state.shop && state.shop.storeType === "service" ? "service" : "product";
-      }
-    } else if (state.counts.service) {
-      state.activeType = "service";
-    } else {
-      state.activeType = "product";
-    }
-    updateTabs();
-    updateItemsHeading();
-    renderFilters();
-    return true;
-  };
-
-  const fetchProfileStats = async () => {
-    const user = getAuthUser();
-    if (!user) return null;
-    const ref = user.id != null && user.id !== "" ? String(user.id) : user.username || user.email || "";
-    const cleaned = String(ref || "").trim();
-    if (!cleaned) return null;
-    const params = new URLSearchParams();
-    params.set("view", "public");
-    params.set("id", cleaned);
-    try {
-      const headers = getUserHeaders();
-      const response = await fetch(`/api/profile?${params.toString()}`, headers ? { headers } : undefined);
-      const data = await response.json();
-      if (!response.ok || !data || data.ok === false) return null;
-      return data.stats || null;
-    } catch (error) {
-      return null;
-    }
-  };
-
-  const attemptRecovery = async () => {
-    const user = getAuthUser();
-    if (!user) {
-      setHeroLoading(false);
-      setStoreState("invalid");
-      return;
-    }
-    setHeroLoading(true);
-    const stats = await fetchProfileStats();
-    const redirectUrl = buildShopRedirectUrl(stats && stats.shopSlug, stats && stats.shopId);
-    if (redirectUrl) {
-      window.location.replace(redirectUrl);
-      return;
-    }
-    setHeroLoading(false);
-    setStoreState("invalid");
   };
 
   const renderSkeleton = () => {
@@ -643,10 +365,7 @@
   const buildCard = (item, type) => {
     const seller = item.seller || {};
     const sellerBadge = renderSellerBadge(seller);
-    const sellerName = String(seller.displayName || seller.username || seller.name || "").trim() || "Seller";
     const ratingLabel = item.rating != null ? item.rating : "--";
-    const tags = Array.isArray(item.tags) ? item.tags : [];
-    const isHot = tags.some((tag) => normalizeLabel(tag) === "hot");
     const fallbackMap = type === "service" ? categoryFallbackService : categoryFallbackProduct;
     const subLabel = item.subcategory || fallbackMap[item.category] || (type === "service" ? "DV" : "BK");
     const media = item.thumbnailUrl
@@ -660,14 +379,14 @@
     const detailUrl =
       type === "service"
         ? `/dichvu/[id]/?id=${encodeURIComponent(item.id)}`
-        : `/products/[id]/?id=${encodeURIComponent(item.id)}`;
+        : `/sanpham/[id]/?id=${encodeURIComponent(item.id)}`;
     return `
       <a class="product-card" href="${detailUrl}">
         <div class="product-media">${media}</div>
         <div class="product-body">
           <div class="product-price" ${priceAttrs}>${priceLabel}</div>
           <h3 class="product-title">
-            ${escapeHtml(item.title)}${isHot ? ` <span class="product-tag">HOT</span>` : ""}
+            ${escapeHtml(item.title)}
           </h3>
           <div class="product-meta">
             <div class="meta-col">
@@ -678,7 +397,7 @@
             <div class="meta-col meta-right">
               <span class="seller-line">
                 <span class="seller-label">${translate("label.seller", "Seller")}:</span>
-                <span class="seller-value"><strong class="seller-name">${escapeHtml(sellerName)}</strong>${sellerBadge}</span>
+                <span class="seller-value"><strong class="seller-name">${escapeHtml(seller.name || "Shop")}</strong>${sellerBadge}</span>
               </span>
             </div>
           </div>
@@ -692,21 +411,10 @@
   const renderItems = (items, type) => {
     if (!itemsGrid) return;
     if (!items.length) {
-      const isFiltered = Boolean(state.search) || state.subcategories.size > 0;
-      const totalAvailable = Number(state.counts[state.activeType] || 0);
-      const emptyTitle =
-        !isFiltered && totalAvailable === 0
-          ? translate("store.empty.noProducts", "Gian h\u00e0ng ch\u01b0a c\u00f3 s\u1ea3n ph\u1ea9m.")
-          : translate("empty.noData", "Kh\u00f4ng c\u00f3 d\u1eef li\u1ec7u");
-      const emptyHint =
-        !isFiltered && totalAvailable === 0
-          ? translate("store.empty.comeback", "H\u00e3y quay l\u1ea1i sau \u0111\u1ec3 xem c\u00e1c m\u1eb7t h\u00e0ng m\u1edbi.")
-          : translate("empty.adjustCategory", "H\u00e3y th\u1eed thay \u0111\u1ed5i b\u1ed9 l\u1ecdc ho\u1eb7c t\u00ecm ki\u1ebfm.");
       itemsGrid.innerHTML = `
         <div class="card empty-state product-empty" style="grid-column: 1 / -1;">
-          <strong>${emptyTitle}</strong>
-          <div style="margin-top:4px;">${emptyHint}</div>
-          ${isFiltered ? buildFilterHint() : ""}
+          <strong>${translate("empty.noData", "Kh\u00f4ng c\u00f3 d\u1eef li\u1ec7u")}</strong>
+          <div style="margin-top:4px;">${translate("empty.adjustCategory", "H\u00e3y th\u1eed thay \u0111\u1ed5i b\u1ed9 l\u1ecdc ho\u1eb7c t\u00ecm ki\u1ebfm.")}</div>
         </div>
       `;
       if (pagination) pagination.innerHTML = "";
@@ -726,97 +434,47 @@
     params.set("shopId", state.shop.id);
     params.set("page", String(state.page));
     params.set("perPage", String(PAGE_SIZE));
-    params.set("sort", state.sort || "popular");
-    if (state.search) params.set("search", state.search);
-    if (state.subcategories.size) {
-      params.set("subcategory", Array.from(state.subcategories).join(","));
-    }
+    params.set("sort", "custom");
     if (state.preview) params.set("preview", "1");
-    const endpoint = state.activeType === "service" ? "/api/services" : "/api/products";
+    const endpoint = state.shop.storeType === "service" ? "/api/services" : "/api/products";
     try {
-      const fetchOptions = buildFetchOptions();
-      const response = await fetch(`${endpoint}?${params.toString()}`, fetchOptions);
+      const headers = state.preview ? getAdminHeaders() : null;
+      const response = await fetch(`${endpoint}?${params.toString()}`, headers ? { headers } : undefined);
       const data = await response.json();
       if (!response.ok || !data || data.ok === false) {
-        renderItems([], state.activeType);
+        renderItems([], state.shop.storeType);
         return;
       }
       state.totalPages = data.totalPages || 1;
-      renderItems(Array.isArray(data.items) ? data.items : [], state.activeType);
+      renderItems(Array.isArray(data.items) ? data.items : [], state.shop.storeType);
     } catch (error) {
-      renderItems([], state.activeType);
+      renderItems([], state.shop.storeType);
     }
-  };
-
-  const loadCounts = async () => {
-    if (!state.shop) return;
-    const fetchOptions = buildFetchOptions();
-    const query = new URLSearchParams();
-    query.set("shopId", state.shop.id);
-    query.set("page", "1");
-    query.set("perPage", "1");
-    query.set("sort", "custom");
-    if (state.preview) query.set("preview", "1");
-    const productRequest = fetch(`/api/products?${query.toString()}`, fetchOptions)
-      .then((res) => res.json().then((data) => (res.ok && data && data.ok !== false ? data.total || 0 : 0)))
-      .catch(() => 0);
-    const serviceRequest = fetch(`/api/services?${query.toString()}`, fetchOptions)
-      .then((res) => res.json().then((data) => (res.ok && data && data.ok !== false ? data.total || 0 : 0)))
-      .catch(() => 0);
-    const [productCount, serviceCount] = await Promise.all([productRequest, serviceRequest]);
-    state.counts = { product: Number(productCount || 0), service: Number(serviceCount || 0) };
-    if (state.counts.product && state.counts.service) {
-      if (state.activeType !== "product" && state.activeType !== "service") {
-        state.activeType = state.shop && state.shop.storeType === "service" ? "service" : "product";
-      }
-    } else if (state.counts.service) {
-      state.activeType = "service";
-    } else {
-      state.activeType = "product";
-    }
-    updateTabs();
-    updateItemsHeading();
-    renderFilters();
   };
 
   const init = async () => {
     const storeId = getStoreRef();
     if (!storeId) {
-      if (isTemplatePath()) {
-        await attemptRecovery();
-      } else {
-        setHeroLoading(false);
-        setStoreState("invalid");
-      }
+      if (storeName) storeName.textContent = translate("store.notFound", "Gian h\u00e0ng kh\u00f4ng t\u1ed3n t\u1ea1i");
+      setHeroLoading(false);
       return;
     }
     try {
       setHeroLoading(true);
-      setStoreState("loading");
       state.preview = isPreviewMode();
-      const fetchOptions = buildFetchOptions();
-      const response = await fetch(`/api/shops/${encodeURIComponent(storeId)}`, fetchOptions);
+      const headers = state.preview ? getAdminHeaders() : null;
+      const response = await fetch(`/api/shops/${encodeURIComponent(storeId)}`, headers ? { headers } : undefined);
       const data = await response.json();
       if (!response.ok || !data || data.ok === false || !data.shop) {
         if (storeName) storeName.textContent = translate("store.notFound", "Gian h\u00e0ng kh\u00f4ng t\u1ed3n t\u1ea1i");
         setHeroLoading(false);
-        setStoreState("not-found");
         return;
       }
-      state.shop = data.shop;
-      maybeRedirectToSlug(data.shop);
       await renderShop(data.shop);
-      const applied = applyCounts(data.counts);
-      if (!applied) {
-        await loadCounts();
-      }
-      updateSortTabs();
       await loadItems();
-      setStoreState("ready");
     } catch (error) {
       if (storeName) storeName.textContent = translate("store.notFound", "Gian h\u00e0ng kh\u00f4ng t\u1ed3n t\u1ea1i");
       setHeroLoading(false);
-      setStoreState("not-found");
     }
   };
 
@@ -831,82 +489,5 @@
     });
   }
 
-  if (sortTabs) {
-    sortTabs.addEventListener("click", (event) => {
-      const button = event.target.closest("button[data-sort]");
-      if (!button) return;
-      const nextSort = button.getAttribute("data-sort");
-      if (!nextSort || nextSort === state.sort) return;
-      state.sort = nextSort;
-      state.page = 1;
-      updateSortTabs();
-      loadItems();
-    });
-  }
-
-  if (filterList) {
-    filterList.addEventListener("change", (event) => {
-      const target = event.target;
-      if (!target || target.tagName !== "INPUT") return;
-      const value = target.value;
-      if (target.checked) state.subcategories.add(value);
-      else state.subcategories.delete(value);
-    });
-  }
-
-  if (filterApply) {
-    filterApply.addEventListener("click", () => {
-      state.search = filterSearch ? filterSearch.value.trim() : "";
-      state.page = 1;
-      loadItems();
-      setFilterOpen(false);
-    });
-  }
-
-  if (filterSearch) {
-    filterSearch.addEventListener("input", () => {
-      state.search = filterSearch.value.trim();
-    });
-    filterSearch.addEventListener("keydown", (event) => {
-      if (event.key !== "Enter") return;
-      state.search = filterSearch.value.trim();
-      state.page = 1;
-      loadItems();
-      setFilterOpen(false);
-    });
-  }
-
-  if (filterPanel && filterToggle) {
-    const filterCard = filterPanel.querySelector(".filter-card");
-    filterToggle.addEventListener("click", () => {
-      setFilterOpen(!filterPanel.classList.contains("open"));
-    });
-    filterPanel.addEventListener("click", (event) => {
-      if (event.target === filterPanel) setFilterOpen(false);
-    });
-    if (filterCard) {
-      filterCard.addEventListener("click", (event) => {
-        event.stopPropagation();
-      });
-    }
-  }
-
-  if (itemsTabs) {
-    itemsTabs.addEventListener("click", (event) => {
-      const button = event.target.closest("button[data-type]");
-      if (!button) return;
-      const nextType = button.getAttribute("data-type");
-      if (!nextType || nextType === state.activeType) return;
-      state.activeType = nextType;
-      state.page = 1;
-      updateTabs();
-      updateItemsHeading();
-      resetFilters();
-      renderFilters();
-      loadItems();
-    });
-  }
-
   document.addEventListener("DOMContentLoaded", init);
 })();
-

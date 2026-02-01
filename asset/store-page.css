@@ -152,34 +152,11 @@
   color: rgba(255, 255, 255, 0.85);
 }
 
-.store-state {
-  margin-top: 6px;
-}
-
-.store-browse {
-  display: grid;
-  gap: 18px;
-}
-
 .store-items-head {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 12px;
-}
-
-.store-items-tabs {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 6px;
-}
-
-.store-page.is-not-found .store-gallery,
-.store-page.is-not-found .store-desc,
-.store-page.is-not-found .store-browse {
-  display: none;
 }
 
 @media (max-width: 900px) {

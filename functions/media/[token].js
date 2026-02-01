@@ -81,16 +81,7 @@ function timingSafeEqual(a, b) {
 
 function isSafeMediaKey(value) {
   const key = String(value || "");
-  if (
-    !(
-      key.startsWith("story/") ||
-      key.startsWith("messages/") ||
-      key.startsWith("store-avatar/") ||
-      key.startsWith("store-image/") ||
-      key.startsWith("product-image/")
-    )
-  )
-    return false;
+  if (!(key.startsWith("story/") || key.startsWith("messages/") || key.startsWith("store-avatar/") || key.startsWith("store-image/"))) return false;
   if (key.includes("..") || key.includes("\\") || key.startsWith("/")) return false;
   return true;
 }
@@ -213,19 +204,15 @@ export async function onRequestGet(context) {
     const isMessageKey = verified.key.startsWith("messages/");
     const isStoreAvatarKey = verified.key.startsWith("store-avatar/");
     const isStoreImageKey = verified.key.startsWith("store-image/");
-    const isProductImageKey = verified.key.startsWith("product-image/");
     const storeAvatarBucket = context?.env?.R2_STORE_AVATARS || context?.env?.R2_BUCKET;
     const storeImageBucket = context?.env?.R2_STORE_IMAGES || context?.env?.R2_STORE_AVATARS || context?.env?.R2_BUCKET;
-    const productImageBucket = context?.env?.R2_PRODUCT_IMAGES || context?.env?.R2_STORE_IMAGES || context?.env?.R2_BUCKET;
     const bucket = isMessageKey
       ? context?.env?.R2_MESSAGES
       : isStoreAvatarKey
         ? storeAvatarBucket
         : isStoreImageKey
           ? storeImageBucket
-          : isProductImageKey
-            ? productImageBucket
-            : context?.env?.R2_PROFILE;
+          : context?.env?.R2_PROFILE;
     if (!bucket) {
       return errorResponse("R2_NOT_CONFIGURED", 500, {
         hint: isMessageKey
@@ -234,9 +221,7 @@ export async function onRequestGet(context) {
             ? "Set R2_STORE_AVATARS or R2_BUCKET binding"
             : isStoreImageKey
               ? "Set R2_STORE_IMAGES or R2_BUCKET binding"
-              : isProductImageKey
-                ? "Set R2_PRODUCT_IMAGES or R2_BUCKET binding"
-                : "Set R2_PROFILE binding",
+              : "Set R2_PROFILE binding",
       });
     }
 

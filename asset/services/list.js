@@ -8,36 +8,36 @@
   const translate = (key, fallback, vars) =>
     typeof formatI18n === "function" ? formatI18n(getLanguage(), key, fallback, vars) : fallback || key;
 
+  const formatVnd = (value) => {
+    if (typeof formatPrice === "function") return formatPrice(value);
+    return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(value);
+  };
+
+  const formatPriceRange = (item) => {
+    const price = Number(item.price || 0);
+    const priceMax = item.priceMax != null ? Number(item.priceMax || 0) : null;
+    if (priceMax && priceMax > price) {
+      return `${formatVnd(price)} - ${formatVnd(priceMax)}`;
+    }
+    return formatVnd(price);
+  };
+
   const escapeHtml = (value) =>
     String(value || "").replace(/[&<>"']/g, (char) => {
       const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
       return map[char] || char;
     });
 
-  const resolveSellerName = (seller) => {
-    if (!seller) return "";
-    const display = String(seller.displayName || "").trim();
-    if (display) return display;
-    const username = String(seller.username || "").trim();
-    if (username) return username;
+  const resolveShopRef = (item) => {
+    if (!item) return "";
+    if (item.shopId != null && item.shopId !== "") return String(item.shopId).trim();
+    const seller = item.seller || {};
+    if (seller.storeId != null && seller.storeId !== "") return String(seller.storeId).trim();
+    if (seller.id != null && seller.id !== "") return String(seller.id).trim();
     return "";
   };
 
-  const buildShopUrl = (slug, id) => {
-    const safeSlug = String(slug || "").trim();
-    if (safeSlug) return `/gian-hang/${encodeURIComponent(safeSlug)}`;
-    const safeId = String(id || "").trim();
-    if (safeId) return `/gian-hang/?id=${encodeURIComponent(safeId)}`;
-    return "";
-  };
-
-  const getInitials = (value) => {
-    const text = String(value || "").trim();
-    if (!text) return "BK";
-    const parts = text.split(/\s+/).filter(Boolean);
-    if (parts.length >= 2) return `${parts[0][0] || ""}${parts[1][0] || ""}`.toUpperCase();
-    return text.slice(0, 2).toUpperCase();
-  };
+  const buildShopUrl = (shopRef) => (shopRef ? `/gian-hang/${encodeURIComponent(shopRef)}` : "");
 
   const isPreviewMode = () => {
     const params = new URLSearchParams(window.location.search);
@@ -233,42 +233,50 @@
     return root + base + suffix;
   };
 
-  const buildCard = (shop) => {
-    const owner = shop.owner || {};
-    const sellerBadge = renderSellerBadge(owner);
-    const sellerName = resolveSellerName(owner) || "Seller";
-    const shopName = shop.name || "Gian hàng";
-    const shopSlug = shop.slug || "";
-    const shopId = shop.id || "";
-    const shopUrl = buildShopUrl(shopSlug, shopId);
-    const mediaUrl = shop.coverUrl || shop.avatarUrl || "";
-    const media = mediaUrl
-      ? `<img src="${mediaUrl}" alt="${escapeHtml(shopName)}" loading="lazy" />`
-      : `<div class="product-fallback">${getInitials(shopName)}</div>`;
-    const ratingLabel = Number(shop.rating || 0).toFixed(1);
-    const orderLabel = Number(shop.totalOrders || 0).toLocaleString("vi-VN");
-    const countLabel = Number(shop.itemCount || 0).toLocaleString("vi-VN");
+  const buildCard = (item) => {
+    const seller = item.seller || {};
+    const sellerBadge = renderSellerBadge(seller);
+    const ratingLabel = item.rating != null ? item.rating : "--";
+    const subLabel = item.subcategory || categoryFallback[item.category] || "DV";
+    const media = item.thumbnailUrl
+      ? `<img src="${item.thumbnailUrl}" alt="${item.title}" loading="lazy" />`
+      : `<div class="product-fallback">${String(subLabel || "DV").slice(0, 2)}</div>`;
+    const priceLabel = formatPriceRange(item);
+    const priceAttrs =
+      item.priceMax != null && item.priceMax > item.price
+        ? `data-base-min="${item.price}" data-base-max="${item.priceMax}" data-base-currency="VND"`
+        : `data-base-amount="${item.price}" data-base-currency="VND"`;
+    const shopRef = resolveShopRef(item);
+    const shopUrl = buildShopUrl(shopRef);
+    const previewBadges = buildPreviewBadges(item);
+    const actions = [];
+    if (previewBadges) actions.push(`<div class="card-badges">${previewBadges}</div>`);
+    if (shopUrl) actions.push(`<a class="shop-link" href="${shopUrl}">Gian h\u00e0ng</a>`);
     return `
-      <a class="product-card shop-card" href="${shopUrl}">
+      <div class="product-card">
+        <a class="product-card-link" href="${getServiceDetailPath(item.id)}">
           <div class="product-media">${media}</div>
           <div class="product-body">
-            <h3 class="product-title">${escapeHtml(shopName)}</h3>
+            <div class="product-price" ${priceAttrs}>${priceLabel}</div>
+            <h3 class="product-title">${item.title}</h3>
             <div class="product-meta">
               <div class="meta-col">
-                <span>${translate("label.rating", "Đánh giá")}: <strong>${ratingLabel}</strong></span>
-                <span>${translate("label.orders", "Đơn hàng")}: <strong>${orderLabel}</strong></span>
-                <span>${translate("label.services", "Dịch vụ")}: <strong>${countLabel}</strong></span>
+                <span>${translate("label.rating", "Rating")}: <strong>${ratingLabel}</strong></span>
+                <span>${translate("label.sold", "Requests")}: <strong>${item.requestCount ?? "--"}</strong></span>
               </div>
               <div class="meta-col meta-right">
                 <span class="seller-line">
                   <span class="seller-label">${translate("label.seller", "Seller")}:</span>
-                  <span class="seller-value"><strong class="seller-name">${escapeHtml(sellerName)}</strong>${sellerBadge}</span>
+                  <span class="seller-value"><strong class="seller-name">${seller.name || "Shop"}</strong>${sellerBadge}</span>
                 </span>
               </div>
             </div>
-            ${shop.descriptionShort ? `<p class="product-desc">${escapeHtml(shop.descriptionShort)}</p>` : ""}
+            ${subLabel ? `<div class="product-type">${translate("label.type", "Type")}: <strong>${subLabel}</strong></div>` : ""}
+            <p class="product-desc">${item.descriptionShort || ""}</p>
           </div>
-      </a>
+        </a>
+        ${actions.length ? `<div class="product-card-actions">${actions.join("")}</div>` : ""}
+      </div>
     `;
   };
 
@@ -277,8 +285,8 @@
     if (!items.length) {
       grid.innerHTML = `
         <div class="card empty-state product-empty" style="grid-column: 1 / -1;">
-          <strong>${translate("empty.noShops", "Chưa có gian hàng")}</strong>
-          <div style="margin-top:4px;">${translate("empty.adjustCategory", "Hãy thử thay đổi bộ lọc hoặc tìm kiếm khác.")}</div>
+          <strong>${translate("empty.noData", "No data")}</strong>
+          <div style="margin-top:4px;">${translate("empty.adjustCategory", "Adjust filters and try again.")}</div>
           ${buildEmptyHint()}
         </div>
       `;
@@ -303,8 +311,7 @@
     params.set("perPage", String(PAGE_SIZE));
     if (state.preview) params.set("preview", "1");
     try {
-      params.set("type", "service");
-      const response = await fetch(`/api/marketplace/shops?${params.toString()}`);
+      const response = await fetch(`/api/services?${params.toString()}`);
       const data = await response.json();
       if (!response.ok || !data || data.ok === false) {
         renderServices([]);

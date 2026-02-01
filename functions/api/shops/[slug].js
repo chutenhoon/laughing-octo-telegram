@@ -8,19 +8,6 @@ import {
 } from "../_catalog.js";
 import { jsonResponse } from "../auth/_utils.js";
 
-function buildMediaProxyUrl(requestUrl, mediaId) {
-  const id = String(mediaId || "").trim();
-  if (!id) return "";
-  try {
-    const url = new URL(requestUrl);
-    url.pathname = "/api/media";
-    url.search = `id=${encodeURIComponent(id)}`;
-    return url.toString();
-  } catch (error) {
-    return `/api/media?id=${encodeURIComponent(id)}`;
-  }
-}
-
 async function getShopBySlug(db, slug) {
   const sql = `
     SELECT s.id, s.user_id, s.store_name, s.store_slug, s.store_type, s.category, s.subcategory, s.tags_json,
@@ -61,17 +48,6 @@ function isApproved(shop) {
   const status = String(shop.status || "").toLowerCase();
   const active = isTruthyFlag(shop.is_active);
   return active && (status === "approved" || status === "active" || status === "published" || status === "pending_update");
-}
-
-function flagTrueOrNull(column) {
-  return `(${column} IS NULL OR ${column} = 1 OR lower(${column}) IN ('true','yes'))`;
-}
-
-function buildKindClause(kind) {
-  if (kind === "service") {
-    return "(lower(trim(p.kind)) = 'service' OR (p.kind IS NULL AND lower(trim(coalesce(p.type,''))) = 'service'))";
-  }
-  return "(lower(trim(p.kind)) = 'product' OR (p.kind IS NULL AND (p.type IS NULL OR lower(trim(p.type)) <> 'service')))";
 }
 
 async function ensureShopImagesTable(db) {
@@ -132,57 +108,6 @@ async function loadShopImages(db, shopId, secret, requestUrl) {
   return items;
 }
 
-async function loadItemCounts(db, shopId) {
-  const kinds = ["product", "service"];
-  const empty = { product: { total: 0, filters: {} }, service: { total: 0, filters: {} } };
-  if (!db || !shopId) return empty;
-  const result = { product: { total: 0, filters: {} }, service: { total: 0, filters: {} } };
-  for (const kind of kinds) {
-    try {
-      const clauses = [
-        "p.shop_id = ?",
-        buildKindClause(kind),
-        flagTrueOrNull("p.is_active"),
-        flagTrueOrNull("p.is_published"),
-        "lower(trim(coalesce(p.status,''))) <> 'deleted'",
-      ];
-      const sql = `
-        SELECT p.subcategory, p.category, p.tags_json
-          FROM products p
-         WHERE ${clauses.join(" AND ")}
-      `;
-      const rows = await db.prepare(sql).bind(shopId).all();
-      const list = rows && Array.isArray(rows.results) ? rows.results : [];
-      const filters = {};
-      list.forEach((row) => {
-        const keys = new Set();
-        const sub = row.subcategory || row.category || "";
-        if (sub) keys.add(String(sub));
-        if (row.tags_json) {
-          try {
-            const tags = JSON.parse(row.tags_json) || [];
-            if (Array.isArray(tags)) {
-              tags.forEach((tag) => {
-                const cleaned = String(tag || "").trim();
-                if (cleaned) keys.add(cleaned);
-              });
-            }
-          } catch (error) {
-            // ignore tag parse errors
-          }
-        }
-        keys.forEach((key) => {
-          filters[key] = (filters[key] || 0) + 1;
-        });
-      });
-      result[kind] = { total: list.length, filters };
-    } catch (error) {
-      result[kind] = { total: 0, filters: {} };
-    }
-  }
-  return result;
-}
-
 export async function onRequestGet(context) {
   const db = context?.env?.DB;
   if (!db) return jsonResponse({ ok: false, error: "DB_NOT_CONFIGURED" }, 500);
@@ -211,8 +136,6 @@ export async function onRequestGet(context) {
     return jsonResponse({ ok: false, error: "NOT_FOUND" }, 404);
   }
 
-  const counts = await loadItemCounts(db, shop.id);
-
   const secret =
     context?.env && typeof context.env.MEDIA_SIGNING_SECRET === "string" ? context.env.MEDIA_SIGNING_SECRET.trim() : "";
   let avatarUrl = "";
@@ -220,9 +143,6 @@ export async function onRequestGet(context) {
     const exp = Math.floor(Date.now() / 1000) + 24 * 60 * 60;
     const token = await createSignedMediaToken(secret, shop.avatar_r2_key, exp, "store-avatar");
     avatarUrl = token ? buildMediaUrl(context.request.url, token) : "";
-  }
-  if (!avatarUrl && shop.avatar_media_id) {
-    avatarUrl = buildMediaProxyUrl(context.request.url, shop.avatar_media_id);
   }
   const images = await loadShopImages(db, shop.id, secret, context.request.url);
   let tags = [];
@@ -266,13 +186,10 @@ export async function onRequestGet(context) {
         role: shop.role || "",
       },
     },
-    counts,
   };
 
-  const hasViewer = session && session.id;
-  const publicView = isApproved(shop) && !isOwner && !isAdmin && !hasViewer;
   return jsonCachedResponse(context.request, payload, {
-    cacheControl: publicView ? "public, max-age=120, stale-while-revalidate=300" : "private, max-age=0, must-revalidate",
-    vary: publicView ? "Accept-Encoding" : "x-user-id, x-user-email, x-user-username",
+    cacheControl: "private, max-age=0, must-revalidate",
+    vary: "Cookie",
   });
 }

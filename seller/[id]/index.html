@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
@@ -40,7 +40,7 @@
           <span>polyflux<b>.xyz</b></span>
         </a>
         <div class="nav-links">
-          <a href="/products/" data-nav="sanpham">S&#7843;n Ph&#7849;m <span class="badge">HOT</span></a>
+          <a href="/sanpham/" data-nav="sanpham">S&#7843;n Ph&#7849;m <span class="badge">HOT</span></a>
           <a href="/dichvu/" data-nav="dichvu">D&#7883;ch V&#7909;</a>
           <a href="/nhiemvu/" data-nav="nhiemvu">Nhi&#7879;m V&#7909;</a>
           <a href="/profile/topups/" data-nav="topups">N&#7841;p ti&#7873;n</a>
@@ -87,60 +87,15 @@
 
         <div class="store-desc glass" id="store-long-desc"></div>
 
-        <div class="store-state card empty-state is-hidden" id="store-state"></div>
-
-        <div class="store-browse">
-          <div class="product-layout store-layout">
-            <aside class="product-sidebar" id="store-filter-panel">
-              <div class="card filter-card">
-                <div class="filter-head">
-                  <h3 data-i18n-key="filter.title">L&#7885;c</h3>
-                  <p data-i18n-key="filter.descSubcategories">Ch&#7885;n 1 ho&#7863;c nhi&#7873;u danh m&#7909;c con</p>
-                </div>
-                <div class="filter-list" id="store-filter-list"></div>
-                <div class="form-field" style="margin-top: 14px;">
-                  <label for="store-filter-search" data-i18n-key="filter.searchLabel">T&#236;m ki&#7871;m</label>
-                  <input
-                    id="store-filter-search"
-                    placeholder="Nh&#7853;p t&#234;n s&#7843;n ph&#7849;m..."
-                    data-i18n-placeholder="filter.searchPlaceholder.product"
-                  />
-                </div>
-                <button class="btn primary" id="store-filter-apply" type="button" data-i18n-key="filter.apply">T&#236;m ki&#7871;m</button>
-              </div>
-            </aside>
-
-            <div class="product-main">
-              <div class="mobile-filter-bar">
-                <button class="btn filter-toggle" id="store-filter-toggle" type="button" aria-expanded="false" aria-controls="store-filter-panel">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M4 6h16l-5.5 6.2v4.9l-5 2.7v-7.6L4 6z" fill="currentColor" />
-                  </svg>
-                  <span data-i18n-key="filter.title">L&#7885;c</span>
-                </button>
-              </div>
-
-              <div class="product-head">
-                <div>
-                  <h2 id="store-items-title">S&#7843;n ph&#7849;m</h2>
-                  <p class="hero-sub" id="store-items-sub">S&#7855;p x&#7871;p theo nhu c&#7847;u v&#224; ch&#7885;n nhanh s&#7843;n ph&#7849;m ph&#249; h&#7907;p.</p>
-                </div>
-                <div class="sort-tabs" id="store-sort-tabs" role="tablist">
-                  <button class="sort-pill active" data-sort="popular" type="button" data-i18n-key="sort.popular">Ph&#7893; bi&#7871;n</button>
-                  <button class="sort-pill" data-sort="rating" type="button" data-i18n-key="sort.rating">&#272;&#225;nh gi&#225;</button>
-                </div>
-              </div>
-
-              <div class="store-items-tabs" id="store-items-tabs">
-                <button class="sort-pill active" type="button" data-type="product">S&#7843;n ph&#7849;m</button>
-                <button class="sort-pill" type="button" data-type="service">D&#7883;ch v&#7909;</button>
-              </div>
-
-              <div class="product-grid-luxe" id="store-items-grid"></div>
-              <div class="table-pagination" id="store-items-pagination"></div>
-            </div>
+        <div class="store-items-head">
+          <div>
+            <h2 id="store-items-title">S&#7843;n ph&#7849;m</h2>
+            <p class="hero-sub" id="store-items-sub">Danh s&#225;ch s&#7843;n ph&#7849;m t&#7915; gian h&#224;ng.</p>
           </div>
         </div>
+
+        <div class="product-grid-luxe" id="store-items-grid"></div>
+        <div class="table-pagination" id="store-items-pagination"></div>
       </section>
 
       <footer>
@@ -154,7 +109,7 @@
           </div>
           <div>
             <h4>Quick links</h4>
-            <a href="/products/">S&#7843;n ph&#7849;m</a>
+            <a href="/sanpham/">S&#7843;n ph&#7849;m</a>
             <a href="/dichvu/">D&#7883;ch v&#7909;</a>
             <a href="/nhiemvu/">Nhi&#7879;m v&#7909;</a>
           </div>
@@ -172,4 +127,3 @@
     <script src="../../asset/store-gallery.js"></script>
   </body>
 </html>
-

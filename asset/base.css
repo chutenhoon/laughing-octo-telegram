@@ -3792,20 +3792,8 @@ body.modal-open {
 .detail-meta .meta-col > span {
   display: flex;
   align-items: center;
-  gap: 6px;
-  justify-content: flex-start;
-  flex-wrap: wrap;
-}
-
-.detail-meta .meta-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.detail-meta .meta-label::after {
-  content: ":";
-  margin-left: 2px;
+  gap: 10px;
+  justify-content: space-between;
 }
 
 .detail-meta strong {
@@ -3909,8 +3897,7 @@ body.modal-open {
 
 .detail-other-list {
   display: grid;
-  gap: 16px;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
 }
 
 .detail-other-item {

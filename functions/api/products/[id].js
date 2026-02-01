@@ -3,19 +3,6 @@ import { getSessionUser, findUserByRef, toSafeHtml, toPlainText, jsonCachedRespo
 
 const SOLD_STATUSES = ["delivered", "completed", "success"];
 
-function buildMediaProxyUrl(requestUrl, mediaId) {
-  const id = String(mediaId || "").trim();
-  if (!id) return "";
-  try {
-    const url = new URL(requestUrl);
-    url.pathname = "/api/media";
-    url.search = `id=${encodeURIComponent(id)}`;
-    return url.toString();
-  } catch (error) {
-    return `/api/media?id=${encodeURIComponent(id)}`;
-  }
-}
-
 function isApprovedStatus(status) {
   const value = String(status || "").toLowerCase();
   return value === "approved" || value === "active" || value === "published" || value === "pending_update";
@@ -30,7 +17,7 @@ function isTruthyFlag(value) {
 function isVisibleProductStatus(status) {
   const value = String(status || "").trim().toLowerCase();
   if (!value) return true;
-  return value !== "disabled" && value !== "blocked" && value !== "banned" && value !== "deleted";
+  return value !== "disabled" && value !== "blocked" && value !== "banned";
 }
 
 export async function onRequestGet(context) {
@@ -90,7 +77,6 @@ export async function onRequestGet(context) {
       }
     }
 
-    const thumbnailId = row.thumbnail_media_id || "";
     const product = {
       id: row.id,
       shopId: row.shop_id,
@@ -107,8 +93,7 @@ export async function onRequestGet(context) {
       rating: Number(row.shop_rating || 0),
       status: row.status || "draft",
       createdAt: row.created_at || null,
-      thumbnailId,
-      thumbnailUrl: thumbnailId ? buildMediaProxyUrl(context.request.url, thumbnailId) : "",
+      thumbnailId: row.thumbnail_media_id || "",
       seller: {
         name: row.store_name || "",
         slug: row.store_slug || "",
@@ -130,46 +115,31 @@ export async function onRequestGet(context) {
     };
 
     const otherSql = `
-      SELECT p.id, p.name, p.price, p.price_max, p.stock_count, p.thumbnail_media_id,
-             p.description_short, p.description, p.category, p.subcategory,
-             (
-               SELECT COALESCE(SUM(oi.quantity), 0)
-                 FROM order_items oi
-                WHERE oi.product_id = p.id
-                  AND oi.fulfillment_status IN (${soldCondition})
-             ) AS sold_count
-        FROM products p
-       WHERE p.shop_id = ?
-         AND p.kind = 'product'
-         AND p.id != ?
-         AND p.is_active = 1
-         AND p.is_published = 1
-         AND p.status IN ('approved','active','published')
+      SELECT id, name, price, price_max, stock_count, thumbnail_media_id
+        FROM products
+       WHERE shop_id = ?
+         AND kind = 'product'
+         AND id != ?
+         AND is_active = 1
+         AND is_published = 1
+         AND status IN ('approved','active','published')
        ORDER BY created_at DESC
-       LIMIT 6
+       LIMIT 4
     `;
-    const otherRows = await db.prepare(otherSql).bind(...SOLD_STATUSES, row.shop_id, row.id).all();
+    const otherRows = await db.prepare(otherSql).bind(row.shop_id, row.id).all();
     const others = (otherRows && Array.isArray(otherRows.results) ? otherRows.results : []).map((item) => ({
       id: item.id,
       title: item.name,
-      descriptionShort: item.description_short || toPlainText(item.description || ""),
-      category: item.category || "",
-      subcategory: item.subcategory || "",
       price: Number(item.price || 0),
       priceMax: item.price_max != null ? Number(item.price_max || 0) : null,
       stockCount: Number(item.stock_count || 0),
-      soldCount: Number(item.sold_count || 0),
-      rating: Number(row.shop_rating || 0),
       thumbnailId: item.thumbnail_media_id || "",
-      thumbnailUrl: item.thumbnail_media_id ? buildMediaProxyUrl(context.request.url, item.thumbnail_media_id) : "",
     }));
 
     const payload = { ok: true, product, others };
-    const hasViewer = session && session.id;
-    const publicView = productActive && shopActive && !hasViewer;
     return jsonCachedResponse(context.request, payload, {
-      cacheControl: publicView ? "public, max-age=120, stale-while-revalidate=300" : "private, max-age=0, must-revalidate",
-      vary: publicView ? "Accept-Encoding" : "x-user-id, x-user-email, x-user-username",
+      cacheControl: "private, max-age=0, must-revalidate",
+      vary: "Cookie",
     });
   } catch (error) {
     return jsonResponse({ ok: false, error: "INTERNAL" }, 500);

@@ -1103,7 +1103,6 @@ async function getProfileStats(db, userId) {
     sold: null,
     shopCount: null,
     shopId: null,
-    shopSlug: null,
     topups: null,
     rank: null,
     totalBuys: null,
@@ -1158,10 +1157,6 @@ async function getProfileStats(db, userId) {
       }
     }
     stats.shopId = shopId;
-    if (shopId && shopsColumns.has("store_slug")) {
-      const slugRow = await db.prepare("SELECT store_slug FROM shops WHERE id = ? LIMIT 1").bind(shopId).first();
-      stats.shopSlug = slugRow && slugRow.store_slug ? String(slugRow.store_slug) : null;
-    }
 
     const orderItemSuccessFilters = [];
     if (orderItemsColumns.has("fulfillment_status")) {
@@ -1307,7 +1302,6 @@ function formatStats(stats, view) {
       rank: stats.rank,
       shopCount: stats.shopCount,
       shopId: stats.shopId,
-      shopSlug: stats.shopSlug,
     };
   }
   return stats;

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
@@ -37,7 +37,7 @@
           <span>polyflux<b>.xyz</b></span>
         </a>
         <div class="nav-links">
-          <a href="/products/" data-nav="sanpham">Products <span class="badge">HOT</span></a>
+          <a href="/sanpham/" data-nav="sanpham">Products <span class="badge">HOT</span></a>
           <a href="/dichvu/" data-nav="dichvu">Services</a>
           <a href="/nhiemvu/" data-nav="nhiemvu">Tasks</a>
           <a href="/profile/topups/" data-nav="topups">Top up</a>
@@ -53,7 +53,7 @@
       <section class="hero">
         <h1 class="hero-title" data-i18n-key="profile.topups.title">Top up your account</h1>
         <p class="hero-sub" data-i18n-key="profile.topups.subtitle">
-          Enter the amount to top up: minimum 10,000Ä‘ and maximum 499,000,000Ä‘. A QR code will be generated per transaction.
+          Enter the amount to top up: minimum 10,000đ and maximum 499,000,000đ. A QR code will be generated per transaction.
         </p>
       </section>
 
@@ -89,7 +89,7 @@
                     placeholder="e.g. 100000"
                     data-i18n-placeholder="profile.topups.bank.amountPlaceholder"
                   />
-                  <div class="form-hint" data-i18n-key="profile.topups.bank.amountHint">Minimum 10,000Ä‘, maximum 499,000,000Ä‘.</div>
+                  <div class="form-hint" data-i18n-key="profile.topups.bank.amountHint">Minimum 10,000đ, maximum 499,000,000đ.</div>
                 </div>
                 <button class="btn primary" id="generate-qr" type="button" data-i18n-key="profile.topups.bank.generate">Generate QR</button>
               </div>
@@ -126,7 +126,7 @@
               <div class="card">
                 <h3 data-i18n-key="profile.topups.withdraw.title">Withdraw funds</h3>
                 <p class="hero-sub" data-i18n-key="profile.topups.withdraw.desc">
-                  Enter the amount to withdraw based on your current balance. Minimum 50,000Ä‘, maximum 499,000,000Ä‘.
+                  Enter the amount to withdraw based on your current balance. Minimum 50,000đ, maximum 499,000,000đ.
                 </p>
                 <div class="form-hint"><span data-i18n-key="profile.topups.withdraw.balanceLabel">Available balance:</span> <strong>0&#273;</strong></div>
                 <div class="form-grid" style="margin-top: 12px;">
@@ -141,7 +141,7 @@
                       placeholder="e.g. 500000"
                       data-i18n-placeholder="profile.topups.withdraw.amountPlaceholder"
                     />
-                    <div class="form-hint" data-i18n-key="profile.topups.withdraw.amountHint">Minimum 50,000Ä‘, maximum 499,000,000Ä‘.</div>
+                    <div class="form-hint" data-i18n-key="profile.topups.withdraw.amountHint">Minimum 50,000đ, maximum 499,000,000đ.</div>
                   </div>
                   <div class="form-field">
                     <label for="withdraw-bank" data-i18n-key="profile.topups.withdraw.bankLabel">Bank</label>
@@ -192,7 +192,7 @@
           </div>
           <div>
             <h4>Navigation</h4>
-            <p><a href="/products/">Products</a></p>
+            <p><a href="/sanpham/">Products</a></p>
             <p><a href="/dichvu/">Services</a></p>
             <p><a href="/nhiemvu/">Tasks</a></p>
             <p><a href="/profile/">My account</a></p>
@@ -235,7 +235,7 @@
         </div>
       </div>
       <div class="mobile-links">
-        <a href="/products/" data-nav="sanpham">Products</a>
+        <a href="/sanpham/" data-nav="sanpham">Products</a>
         <a href="/dichvu/" data-nav="dichvu">Services</a>
         <a href="/nhiemvu/" data-nav="nhiemvu">Tasks</a>
         <a href="/profile/topups/" data-nav="topups">Top up</a>
@@ -301,7 +301,7 @@
           }
           if (amount < min || amount > max) {
             toast(
-              t("profile.topups.bank.toast.range", "Amount must be between {min} and {max} Ž'.", {
+              t("profile.topups.bank.toast.range", "Amount must be between {min} and {max} �'.", {
                 min: format(min),
                 max: format(max),
               })
@@ -489,7 +489,6 @@
     </script>
   </body>
 </html>
-
 
 
 

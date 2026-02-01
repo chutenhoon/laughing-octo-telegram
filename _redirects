@@ -6,8 +6,8 @@
 /dichvu/ /dichvu/index.html 200
 /dichvu/* /dichvu/[id]/index.html 200
 
-/gian-hang/nguoi-ban/* /gian-hang/[slug]/index.html 200
-/gian-hang/* /gian-hang/[slug]/index.html 200
+/gian-hang/nguoi-ban/* /seller/[id]/index.html 200
+/gian-hang/* /seller/[id]/index.html 200
 
 /u /profile/public/ 200
 /u/ /profile/public/ 200
