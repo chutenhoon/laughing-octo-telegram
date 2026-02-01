@@ -30,11 +30,24 @@
 
   const resolveShopRef = (item) => {
     if (!item) return "";
-    if (item.shopId != null && item.shopId !== "") return String(item.shopId).trim();
+    if (item.shopSlug) return String(item.shopSlug).trim();
+    if (item.shop && item.shop.slug) return String(item.shop.slug).trim();
     const seller = item.seller || {};
+    if (seller.slug) return String(seller.slug).trim();
+    if (item.shopId != null && item.shopId !== "") return String(item.shopId).trim();
     if (seller.storeId != null && seller.storeId !== "") return String(seller.storeId).trim();
     if (seller.id != null && seller.id !== "") return String(seller.id).trim();
     return "";
+  };
+
+  const resolveSellerName = (seller) => {
+    if (!seller) return "";
+    const display = String(seller.displayName || "").trim();
+    if (display) return display;
+    const username = String(seller.username || "").trim();
+    if (username) return username;
+    const fallback = String(seller.name || "").trim();
+    return fallback;
   };
 
   const buildShopUrl = (shopRef) => (shopRef ? `/gian-hang/${encodeURIComponent(shopRef)}` : "");
@@ -236,6 +249,7 @@
   const buildCard = (item) => {
     const seller = item.seller || {};
     const sellerBadge = renderSellerBadge(seller);
+    const sellerName = resolveSellerName(seller) || "Seller";
     const ratingLabel = item.rating != null ? item.rating : "--";
     const subLabel = item.subcategory || categoryFallback[item.category] || "DV";
     const media = item.thumbnailUrl
@@ -267,7 +281,7 @@
               <div class="meta-col meta-right">
                 <span class="seller-line">
                   <span class="seller-label">${translate("label.seller", "Seller")}:</span>
-                  <span class="seller-value"><strong class="seller-name">${seller.name || "Shop"}</strong>${sellerBadge}</span>
+                  <span class="seller-value"><strong class="seller-name">${sellerName}</strong>${sellerBadge}</span>
                 </span>
               </div>
             </div>

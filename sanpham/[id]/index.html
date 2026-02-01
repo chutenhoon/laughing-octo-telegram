@@ -76,10 +76,22 @@
 
             <div class="detail-meta">
               <div class="meta-col meta-stats">
-                <span><span data-i18n-key="label.stock">Stock</span>: <strong id="detail-stock">--</strong></span>
-                <span><span data-i18n-key="label.sold">Sold</span>: <strong id="detail-sold">--</strong></span>
-                <span><span data-i18n-key="label.rating">Rating</span>: <strong id="detail-rating">--</strong></span>
-                <span><span data-i18n-key="label.type">Type</span>: <strong id="detail-type">--</strong></span>
+                <div class="meta-row">
+                  <span class="meta-label" data-i18n-key="label.stock">Stock</span>
+                  <strong id="detail-stock">--</strong>
+                </div>
+                <div class="meta-row">
+                  <span class="meta-label" data-i18n-key="label.sold">Sold</span>
+                  <strong id="detail-sold">--</strong>
+                </div>
+                <div class="meta-row">
+                  <span class="meta-label" data-i18n-key="label.rating">Rating</span>
+                  <strong id="detail-rating">--</strong>
+                </div>
+                <div class="meta-row">
+                  <span class="meta-label" data-i18n-key="label.type">Type</span>
+                  <strong id="detail-type">--</strong>
+                </div>
               </div>
               <div class="meta-col meta-seller">
                 <span class="seller-line">
@@ -113,12 +125,10 @@
           <div class="tabs-head">
             <button class="tab active" type="button" data-tab="shop" data-i18n-key="product.detail.tab.shop">Shop description</button>
             <button class="tab" type="button" data-tab="reviews" data-i18n-key="product.detail.tab.reviews">Reviews</button>
-            <button class="tab" type="button" data-tab="api" data-i18n-key="product.detail.tab.api">T&#7921; &#273;&#7897;ng</button>
           </div>
           <div class="tabs-body">
             <div class="tab-panel active" data-tab="shop" id="detail-shop-desc"></div>
             <div class="tab-panel" data-tab="reviews" id="detail-reviews"></div>
-            <div class="tab-panel" data-tab="api" id="detail-api"></div>
           </div>
         </div>
       </section>

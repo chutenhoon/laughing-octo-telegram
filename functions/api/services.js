@@ -34,6 +34,19 @@ function normalizeCategory(value) {
   return trimmed ? trimmed.toLowerCase() : "";
 }
 
+function buildMediaProxyUrl(requestUrl, mediaId) {
+  const id = String(mediaId || "").trim();
+  if (!id) return "";
+  try {
+    const url = new URL(requestUrl);
+    url.pathname = "/api/media";
+    url.search = `id=${encodeURIComponent(id)}`;
+    return url.toString();
+  } catch (error) {
+    return `/api/media?id=${encodeURIComponent(id)}`;
+  }
+}
+
 function buildWhere(params, binds, options = {}) {
   const clauses = [
     "(lower(trim(p.kind)) = 'service' OR (p.kind IS NULL AND lower(trim(coalesce(p.type,''))) = 'service'))",
@@ -134,7 +147,7 @@ export async function onRequestGet(context) {
              p.price, p.price_max, p.thumbnail_media_id, p.status, p.created_at,
              p.is_active, p.is_published, p.kind, p.type,
              s.store_name, s.store_slug, s.rating AS shop_rating, s.category AS store_category, s.subcategory AS store_subcategory, s.tags_json AS store_tags_json,
-             u.badge, u.role, u.display_name, u.title, u.rank,
+             u.badge, u.role, u.display_name, u.username, u.title, u.rank,
              (
                SELECT COUNT(1)
                  FROM service_requests sr
@@ -149,6 +162,8 @@ export async function onRequestGet(context) {
     `;
     const rows = await db.prepare(listSql).bind(...binds, params.perPage, offset).all();
     const items = (rows && Array.isArray(rows.results) ? rows.results : []).map((row) => {
+      const thumbnailId = row.thumbnail_media_id || "";
+      const thumbnailUrl = thumbnailId ? buildMediaProxyUrl(context.request.url, thumbnailId) : "";
       let tags = [];
       const tagsSource = row.tags_json || row.store_tags_json;
       if (tagsSource) {
@@ -176,13 +191,15 @@ export async function onRequestGet(context) {
         kind: row.kind || "",
         type: row.type || "",
         createdAt: row.created_at || null,
-        thumbnailId: row.thumbnail_media_id || "",
+        thumbnailId,
+        thumbnailUrl,
         seller: {
           name: row.store_name || "",
           slug: row.store_slug || "",
           badge: row.badge || "",
           role: row.role || "",
           displayName: row.display_name || "",
+          username: row.username || "",
           title: row.title || "",
           rank: row.rank || "",
         },

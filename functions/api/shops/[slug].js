@@ -8,6 +8,19 @@ import {
 } from "../_catalog.js";
 import { jsonResponse } from "../auth/_utils.js";
 
+function buildMediaProxyUrl(requestUrl, mediaId) {
+  const id = String(mediaId || "").trim();
+  if (!id) return "";
+  try {
+    const url = new URL(requestUrl);
+    url.pathname = "/api/media";
+    url.search = `id=${encodeURIComponent(id)}`;
+    return url.toString();
+  } catch (error) {
+    return `/api/media?id=${encodeURIComponent(id)}`;
+  }
+}
+
 async function getShopBySlug(db, slug) {
   const sql = `
     SELECT s.id, s.user_id, s.store_name, s.store_slug, s.store_type, s.category, s.subcategory, s.tags_json,
@@ -143,6 +156,9 @@ export async function onRequestGet(context) {
     const exp = Math.floor(Date.now() / 1000) + 24 * 60 * 60;
     const token = await createSignedMediaToken(secret, shop.avatar_r2_key, exp, "store-avatar");
     avatarUrl = token ? buildMediaUrl(context.request.url, token) : "";
+  }
+  if (!avatarUrl && shop.avatar_media_id) {
+    avatarUrl = buildMediaProxyUrl(context.request.url, shop.avatar_media_id);
   }
   const images = await loadShopImages(db, shop.id, secret, context.request.url);
   let tags = [];

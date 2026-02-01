@@ -49,12 +49,25 @@
 
   const resolveShopRef = (service) => {
     if (!service) return "";
+    if (service.shop && service.shop.slug) return String(service.shop.slug).trim();
+    if (service.shopSlug) return String(service.shopSlug).trim();
     if (service.shopId != null && service.shopId !== "") return String(service.shopId).trim();
     if (service.shop && service.shop.id != null && service.shop.id !== "") return String(service.shop.id).trim();
     const seller = service.seller || {};
+    if (seller.slug) return String(seller.slug).trim();
     if (seller.storeId != null && seller.storeId !== "") return String(seller.storeId).trim();
     if (seller.id != null && seller.id !== "") return String(seller.id).trim();
     return "";
+  };
+
+  const resolveSellerName = (seller) => {
+    if (!seller) return "";
+    const display = String(seller.displayName || "").trim();
+    if (display) return display;
+    const username = String(seller.username || "").trim();
+    if (username) return username;
+    const fallback = String(seller.name || "").trim();
+    return fallback;
   };
 
   const buildAuthHeaders = () => {
@@ -108,7 +121,7 @@
     const shop = service.shop || {};
     const shopRef = resolveShopRef(service);
     const shopUrl = shopRef ? `/gian-hang/${encodeURIComponent(shopRef)}` : "";
-    setText("service-seller-name", seller.name || shop.name || "Shop");
+    setText("service-seller-name", resolveSellerName(seller) || "Seller");
     const badgeEl = document.getElementById("service-seller-badge");
     if (badgeEl) badgeEl.innerHTML = renderSellerBadge(seller);
     const shopLink = document.getElementById("service-shop-link");

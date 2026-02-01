@@ -104,15 +104,41 @@ async function ensureShopSchema(db) {
   return cols;
 }
 
-async function ensureUniqueSlug(db, slug, shopId) {
-  if (!slug) return "";
-  let next = slug;
-  for (let i = 0; i < 5; i += 1) {
-    const row = await db.prepare("SELECT id FROM shops WHERE store_slug = ? LIMIT 1").bind(next).first();
-    if (!row || (shopId && row.id === shopId)) return next;
-    next = `${slug}-${Math.random().toString(36).slice(2, 6)}`;
+async function ensureUniqueSlug(db, slug, shopId, options = {}) {
+  const base = String(slug || "").trim().toLowerCase();
+  if (!base) return "";
+  const preferNumeric = options && options.preferNumeric === true;
+  const exists = async (candidate) => {
+    const row = await db.prepare("SELECT id FROM shops WHERE lower(store_slug) = lower(?) LIMIT 1").bind(candidate).first();
+    if (!row) return false;
+    if (shopId && String(row.id) === String(shopId)) return false;
+    return true;
+  };
+
+  if (!preferNumeric) {
+    if (!(await exists(base))) return base;
+    let counter = 2;
+    let candidate = `${base}-${counter}`;
+    while (await exists(candidate)) {
+      counter += 1;
+      if (counter > 200) break;
+      candidate = `${base}-${counter}`;
+    }
+    return candidate;
   }
-  return `${slug}-${Date.now().toString(36).slice(-4)}`;
+
+  let counter = 1;
+  let candidate = `${base}-${counter}`;
+  while (await exists(candidate)) {
+    counter += 1;
+    if (counter > 200) break;
+    candidate = `${base}-${counter}`;
+  }
+  return candidate;
+}
+
+function buildFallbackSlug() {
+  return `store-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function mapShop(row) {
@@ -180,14 +206,28 @@ function normalizeTags(input, category) {
   return tags;
 }
 
-async function buildAvatarUrl(requestUrl, env, key) {
+function buildMediaProxyUrl(requestUrl, mediaId) {
+  const id = String(mediaId || "").trim();
+  if (!id) return "";
+  try {
+    const url = new URL(requestUrl);
+    url.pathname = "/api/media";
+    url.search = `id=${encodeURIComponent(id)}`;
+    return url.toString();
+  } catch (error) {
+    return `/api/media?id=${encodeURIComponent(id)}`;
+  }
+}
+
+async function buildAvatarUrl(requestUrl, env, key, mediaId) {
   const r2Key = String(key || "").trim();
-  if (!r2Key) return "";
+  if (!r2Key) return mediaId ? buildMediaProxyUrl(requestUrl, mediaId) : "";
   const secret = env && typeof env.MEDIA_SIGNING_SECRET === "string" ? env.MEDIA_SIGNING_SECRET.trim() : "";
-  if (!secret) return "";
+  if (!secret) return mediaId ? buildMediaProxyUrl(requestUrl, mediaId) : "";
   const exp = Math.floor(Date.now() / 1000) + 24 * 60 * 60;
   const token = await createSignedMediaToken(secret, r2Key, exp, "store-avatar");
-  return token ? buildMediaUrl(requestUrl, token) : "";
+  if (token) return buildMediaUrl(requestUrl, token);
+  return mediaId ? buildMediaProxyUrl(requestUrl, mediaId) : "";
 }
 
 function parsePendingChange(raw) {
@@ -252,7 +292,7 @@ export async function onRequestGet(context) {
           mapped.tags = [];
         }
       }
-      mapped.avatarUrl = await buildAvatarUrl(context.request.url, context.env, row.avatar_r2_key);
+      mapped.avatarUrl = await buildAvatarUrl(context.request.url, context.env, row.avatar_r2_key, row.avatar_media_id);
       mapped.pendingChange = parsePendingChange(row.pending_change_json);
       return mapped;
     })
@@ -285,7 +325,7 @@ export async function onRequestPost(context) {
   let existingRow = null;
   if (shopId) {
     const row = await db
-      .prepare("SELECT id, user_id, status, store_type, category, subcategory, tags_json FROM shops WHERE id = ? LIMIT 1")
+      .prepare("SELECT id, user_id, status, store_type, store_slug, category, subcategory, tags_json FROM shops WHERE id = ? LIMIT 1")
       .bind(shopId)
       .first();
     if (!row || String(row.user_id) !== String(userId)) {
@@ -296,7 +336,7 @@ export async function onRequestPost(context) {
   }
 
   let slug = String(body.slug || body.store_slug || body.storeSlug || "").trim();
-  if (!slug) slug = buildSlug(name);
+  const hasExplicitSlug = Boolean(slug);
 
   if (!shopId) {
     const storeType = requestedType;
@@ -309,8 +349,9 @@ export async function onRequestPost(context) {
       return jsonResponse({ ok: false, error: "INVALID_TAG" }, 400);
     }
     shopId = generateId();
-    if (!slug) slug = `store-${shopId.slice(0, 8)}`;
-    slug = await ensureUniqueSlug(db, slug, shopId);
+    if (!slug) slug = buildSlug(name);
+    if (!slug) slug = buildFallbackSlug();
+    slug = await ensureUniqueSlug(db, slug, shopId, { preferNumeric: !hasExplicitSlug });
     const description = toPlainText(longDescRaw);
     const columns = ["id", "user_id", "store_name"];
     const values = [shopId, userId, name];
@@ -350,8 +391,11 @@ export async function onRequestPost(context) {
     const tags = normalizeTags(tagsInput, categoryInfo);
     const primaryTag = tags.length ? tags[0] : subcategoryInput || "";
 
-    if (!slug) slug = `store-${shopId.slice(0, 8)}`;
-    slug = await ensureUniqueSlug(db, slug, shopId);
+    const existingSlug = row.store_slug ? String(row.store_slug).trim() : "";
+    if (!slug) slug = existingSlug;
+    if (!slug) slug = buildSlug(name);
+    if (!slug) slug = buildFallbackSlug();
+    slug = await ensureUniqueSlug(db, slug, shopId, { preferNumeric: !hasExplicitSlug && !existingSlug });
 
     const patch = {
       store_name: name,
@@ -408,7 +452,12 @@ export async function onRequestPost(context) {
       mapped.tags = [];
     }
   }
-  mapped.avatarUrl = await buildAvatarUrl(context.request.url, context.env, refreshed && refreshed.avatar_r2_key);
+  mapped.avatarUrl = await buildAvatarUrl(
+    context.request.url,
+    context.env,
+    refreshed && refreshed.avatar_r2_key,
+    refreshed && refreshed.avatar_media_id
+  );
   mapped.pendingChange = parsePendingChange(refreshed && refreshed.pending_change_json);
   return jsonResponse({ ok: true, shop: mapped });
 }

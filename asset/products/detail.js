@@ -19,6 +19,12 @@
     return formatVnd(price);
   };
 
+  const escapeHtml = (value) =>
+    String(value || "").replace(/[&<>"']/g, (char) => {
+      const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+      return map[char] || char;
+    });
+
   const renderSellerBadge = (data) => {
     if (!data) return "";
     let badgeValue = String(data.badge || "").trim();
@@ -49,13 +55,28 @@
 
   const resolveShopRef = (product) => {
     if (!product) return "";
+    if (product.shop && product.shop.slug) return String(product.shop.slug).trim();
+    if (product.shopSlug) return String(product.shopSlug).trim();
     if (product.shopId != null && product.shopId !== "") return String(product.shopId).trim();
     if (product.shop && product.shop.id != null && product.shop.id !== "") return String(product.shop.id).trim();
     const seller = product.seller || {};
+    if (seller.slug) return String(seller.slug).trim();
     if (seller.storeId != null && seller.storeId !== "") return String(seller.storeId).trim();
     if (seller.id != null && seller.id !== "") return String(seller.id).trim();
     return "";
   };
+
+  const resolveSellerName = (seller) => {
+    if (!seller) return "";
+    const display = String(seller.displayName || "").trim();
+    if (display) return display;
+    const username = String(seller.username || "").trim();
+    if (username) return username;
+    const fallback = String(seller.name || "").trim();
+    return fallback;
+  };
+
+  const buildShopUrl = (shopRef) => (shopRef ? `/gian-hang/${encodeURIComponent(shopRef)}` : "");
 
   const getProductId = () => {
     const params = new URLSearchParams(window.location.search);
@@ -138,7 +159,7 @@
     const shop = product.shop || {};
     const priceLabel = formatPriceRange(product);
     const shopRef = resolveShopRef(product);
-    const shopUrl = shopRef ? `/gian-hang/${encodeURIComponent(shopRef)}` : "";
+    const shopUrl = buildShopUrl(shopRef);
 
     setText("detail-title", product.title);
     setText("detail-short", product.descriptionShort || "");
@@ -147,10 +168,12 @@
     setText("detail-rating", product.rating ?? "--");
     setText("detail-type", product.subcategory || product.category || "--");
     setText("detail-price", priceLabel);
+    setText("crumb-title", product.title || "");
+    if (product.title) document.title = `${product.title} | polyflux.xyz`;
 
     const sellerLink = document.getElementById("detail-seller-link");
     if (sellerLink) {
-      sellerLink.textContent = seller.name || shop.name || "Shop";
+      sellerLink.textContent = resolveSellerName(seller) || "Seller";
       sellerLink.href = shopUrl || "#";
     }
     setHTML("detail-seller-badge", renderSellerBadge(seller));
@@ -187,13 +210,12 @@
     if (detailImage) {
       const fallbackLabel = String(product.subcategory || product.category || "BK").slice(0, 2);
       detailImage.innerHTML = product.thumbnailUrl
-        ? `<img src="${product.thumbnailUrl}" alt="${product.title}" loading="lazy" />`
+        ? `<img src="${product.thumbnailUrl}" alt="${escapeHtml(product.title)}" loading="lazy" />`
         : `<div class="product-fallback">${fallbackLabel}</div>`;
     }
 
     setHTML("detail-shop-desc", product.shop && product.shop.descriptionHtml ? product.shop.descriptionHtml : "");
     setHTML("detail-reviews", `<div class="empty-state">${translate("product.detail.review.empty", "No reviews yet.")}</div>`);
-    setHTML("detail-api", `<div class="empty-state">${translate("product.detail.api.empty", "API is coming soon.")}</div>`);
 
     const otherList = document.getElementById("detail-other-list");
     if (otherList) {
@@ -201,11 +223,50 @@
       if (!others.length) {
         otherList.innerHTML = `<div class="empty-state">${translate("product.detail.other.empty", "No other items.")}</div>`;
       } else {
+        const sellerName = resolveSellerName(seller) || "Seller";
+        const sellerBadge = renderSellerBadge(seller);
+        const actions = [];
+        if (shopUrl) actions.push(`<a class="shop-link" href="${shopUrl}">Gian h\u00e0ng</a>`);
         otherList.innerHTML = others
           .map((item) => {
-            const detailUrl = typeof getProductDetailPath === "function" ? getProductDetailPath(item.id) : `/sanpham/[id]/?id=${encodeURIComponent(item.id)}`;
-            const label = formatPriceRange(item);
-            return `<a class="detail-other-card" href="${detailUrl}"><strong>${item.title}</strong><span>${label}</span></a>`;
+            const detailUrl =
+              typeof getProductDetailPath === "function" ? getProductDetailPath(item.id) : `/sanpham/[id]/?id=${encodeURIComponent(item.id)}`;
+            const subLabel = item.subcategory || item.category || product.subcategory || product.category || "BK";
+            const media = item.thumbnailUrl
+              ? `<img src="${item.thumbnailUrl}" alt="${escapeHtml(item.title)}" loading="lazy" />`
+              : `<div class="product-fallback">${String(subLabel || "BK").slice(0, 2)}</div>`;
+            const priceText = formatPriceRange(item);
+            const priceAttrs =
+              item.priceMax != null && item.priceMax > item.price
+                ? `data-base-min="${item.price}" data-base-max="${item.priceMax}" data-base-currency="VND"`
+                : `data-base-amount="${item.price}" data-base-currency="VND"`;
+            return `
+              <div class="product-card">
+                <a class="product-card-link" href="${detailUrl}">
+                  <div class="product-media">${media}</div>
+                  <div class="product-body">
+                    <div class="product-price" ${priceAttrs}>${priceText}</div>
+                    <h3 class="product-title">${escapeHtml(item.title)}</h3>
+                    <div class="product-meta">
+                      <div class="meta-col">
+                        <span>${translate("label.stock", "Stock")}: <strong>${item.stockCount ?? "--"}</strong></span>
+                        <span>${translate("label.sold", "Sold")}: <strong>${item.soldCount ?? "--"}</strong></span>
+                        <span>${translate("label.rating", "Rating")}: <strong>${item.rating ?? "--"}</strong></span>
+                      </div>
+                      <div class="meta-col meta-right">
+                        <span class="seller-line">
+                          <span class="seller-label">${translate("label.seller", "Seller")}:</span>
+                          <span class="seller-value"><strong class="seller-name">${escapeHtml(sellerName)}</strong>${sellerBadge}</span>
+                        </span>
+                      </div>
+                    </div>
+                    ${subLabel ? `<div class="product-type">${translate("label.type", "Type")}: <strong>${escapeHtml(subLabel)}</strong></div>` : ""}
+                    <p class="product-desc">${escapeHtml(item.descriptionShort || "")}</p>
+                  </div>
+                </a>
+                ${actions.length ? `<div class="product-card-actions">${actions.join("")}</div>` : ""}
+              </div>
+            `;
           })
           .join("");
       }

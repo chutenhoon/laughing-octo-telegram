@@ -365,6 +365,7 @@
   const buildCard = (item, type) => {
     const seller = item.seller || {};
     const sellerBadge = renderSellerBadge(seller);
+    const sellerName = String(seller.displayName || seller.username || seller.name || "").trim() || "Seller";
     const ratingLabel = item.rating != null ? item.rating : "--";
     const fallbackMap = type === "service" ? categoryFallbackService : categoryFallbackProduct;
     const subLabel = item.subcategory || fallbackMap[item.category] || (type === "service" ? "DV" : "BK");
@@ -397,7 +398,7 @@
             <div class="meta-col meta-right">
               <span class="seller-line">
                 <span class="seller-label">${translate("label.seller", "Seller")}:</span>
-                <span class="seller-value"><strong class="seller-name">${escapeHtml(seller.name || "Shop")}</strong>${sellerBadge}</span>
+                <span class="seller-value"><strong class="seller-name">${escapeHtml(sellerName)}</strong>${sellerBadge}</span>
               </span>
             </div>
           </div>

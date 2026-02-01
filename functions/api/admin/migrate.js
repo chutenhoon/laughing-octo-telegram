@@ -1,4 +1,5 @@
 ﻿import { jsonResponse, readJsonBody } from "../auth/_utils.js";
+import { buildSlug } from "../_catalog.js";
 
 const DEFAULT_MIGRATION_ID = "2026-01-28-approvals";
 export const SCHEMA_USER_VERSION = 20260208;
@@ -974,6 +975,52 @@ async function backfillProductFlags(db, report) {
   }
 }
 
+async function ensureUniqueShopSlug(db, base) {
+  if (!base) return "";
+  let counter = 1;
+  let candidate = `${base}-${counter}`;
+  while (counter <= 500) {
+    const row = await db.prepare("SELECT id FROM shops WHERE lower(store_slug) = lower(?) LIMIT 1").bind(candidate).first();
+    if (!row) return candidate;
+    counter += 1;
+    candidate = `${base}-${counter}`;
+  }
+  return `${base}-${Date.now().toString(36).slice(-4)}`;
+}
+
+function buildFallbackSlug() {
+  return `store-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+async function backfillShopSlugs(db, report) {
+  const cols = await getColumns(db, "shops");
+  if (!cols.has("store_slug") || !cols.has("store_name")) return;
+  let rows = [];
+  try {
+    const result = await db.prepare("SELECT id, store_name FROM shops WHERE store_slug IS NULL OR store_slug = ''").all();
+    rows = result && Array.isArray(result.results) ? result.results : [];
+  } catch (error) {
+    report.errors.push({ table: "shops", action: "backfill", error: String(error) });
+    return;
+  }
+  if (!rows.length) return;
+  let updated = 0;
+  for (const row of rows) {
+    const name = String(row.store_name || "").trim();
+    let base = buildSlug(name);
+    if (!base) base = buildFallbackSlug();
+    const slug = await ensureUniqueShopSlug(db, base);
+    if (!slug) continue;
+    try {
+      await db.prepare("UPDATE shops SET store_slug = ? WHERE id = ?").bind(slug, row.id).run();
+      updated += 1;
+    } catch (error) {
+      report.errors.push({ table: "shops", action: "backfill", error: String(error) });
+    }
+  }
+  if (updated) report.backfills.push(`shops.store_slug:${updated}`);
+}
+
 async function backfillConversationPairKeys(db, report) {
   try {
     const convoCols = await getColumns(db, "conversations");
@@ -1440,6 +1487,7 @@ export async function runMigrations(db, options = {}) {
 
   await migrateSellerToShops(db, report);
   await backfillShopIds(db, report);
+  await backfillShopSlugs(db, report);
   await backfillProductFlags(db, report);
   await backfillUserIds(db, report);
   await backfillUsernames(db, report);
@@ -1543,3 +1591,5 @@ export async function onRequestPost(context) {
     return jsonResponse({ ok: false, error: "INTERNAL" }, 500);
   }
 }
+
+
