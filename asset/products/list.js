@@ -261,8 +261,7 @@
     const orderLabel = Number(shop.totalOrders || 0).toLocaleString("vi-VN");
     const countLabel = Number(shop.itemCount || 0).toLocaleString("vi-VN");
     return `
-      <div class="product-card shop-card">
-        <a class="product-card-link" href="${shopUrl}">
+      <a class="product-card shop-card" href="${shopUrl}">
           <div class="product-media">${media}</div>
           <div class="product-body">
             <h3 class="product-title">${escapeHtml(shopName)}</h3>
@@ -281,11 +280,7 @@
             </div>
             ${shop.descriptionShort ? `<p class="product-desc">${escapeHtml(shop.descriptionShort)}</p>` : ""}
           </div>
-        </a>
-        <div class="product-card-actions">
-          <a class="shop-link" href="${shopUrl}">Vào gian h\u00e0ng</a>
-        </div>
-      </div>
+      </a>
     `;
   };
 

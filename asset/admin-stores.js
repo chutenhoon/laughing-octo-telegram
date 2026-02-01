@@ -581,7 +581,7 @@
   const buildPreviewUrl = (store) => {
     if (!store) return "";
     const root = window.location.protocol === "file:" && typeof getProjectRoot === "function" ? getProjectRoot() : "/";
-    const base = window.location.protocol === "file:" ? "seller/[id]/index.html" : "seller/[id]/";
+    const base = window.location.protocol === "file:" ? "gian-hang/[slug]/index.html" : "gian-hang/";
     const ref = store.slug || store.id || "";
     if (!ref) return "";
     return `${root}${base}?id=${encodeURIComponent(ref)}&preview=1`;

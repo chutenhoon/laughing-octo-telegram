@@ -604,7 +604,7 @@
         label: "Seller",
         routes: [
           { key: "seller_panel", label: "Seller panel", paths: "/seller/panel, /seller/panel/create, /seller/tasks, /seller/join" },
-          { key: "seller_public", label: "Gian hàng công khai", paths: "/seller/[id]" },
+          { key: "seller_public", label: "Gian hàng công khai", paths: "/gian-hang" },
         ],
       },
       {
