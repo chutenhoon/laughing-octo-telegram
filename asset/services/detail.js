@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
   "use strict";
 
   const getLanguage = () => (typeof getCurrentLanguage === "function" ? getCurrentLanguage() : "vi");
@@ -125,9 +125,9 @@
     const shop = service.shop || {};
     const shopRef = resolveShopRefs(service);
     const shopUrl = shopRef.slug
-      ? `/shop/${encodeURIComponent(shopRef.slug)}`
+      ? `/gian-hang/${encodeURIComponent(shopRef.slug)}`
       : shopRef.id
-        ? `/shop/?id=${encodeURIComponent(shopRef.id)}`
+        ? `/gian-hang/?id=${encodeURIComponent(shopRef.id)}`
         : "";
     setText("service-seller-name", resolveSellerName(seller) || "Seller");
     const badgeEl = document.getElementById("service-seller-badge");
@@ -196,4 +196,3 @@
 
   document.addEventListener("DOMContentLoaded", init);
 })();
-

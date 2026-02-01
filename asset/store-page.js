@@ -169,7 +169,7 @@
     const currentRef = getPathRef();
     if (!currentRef || currentRef === shop.slug) return;
     if (!isUuid(currentRef)) return;
-    const next = `/shop/${encodeURIComponent(shop.slug)}${window.location.search || ""}`;
+    const next = `/gian-hang/${encodeURIComponent(shop.slug)}${window.location.search || ""}`;
     window.location.replace(next);
   };
 
@@ -228,9 +228,9 @@
 
   const buildShopRedirectUrl = (slug, id) => {
     const safeSlug = String(slug || "").trim();
-    if (safeSlug) return `/shop/${encodeURIComponent(safeSlug)}`;
+    if (safeSlug) return `/gian-hang/${encodeURIComponent(safeSlug)}`;
     const safeId = String(id || "").trim();
-    if (safeId) return `/shop/?id=${encodeURIComponent(safeId)}`;
+    if (safeId) return `/gian-hang/?id=${encodeURIComponent(safeId)}`;
     return "";
   };
 
@@ -909,5 +909,4 @@
 
   document.addEventListener("DOMContentLoaded", init);
 })();
-
 

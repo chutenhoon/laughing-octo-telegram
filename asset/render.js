@@ -156,7 +156,6 @@ function normalizeInternalLinks(isFile) {
   if (isFile) return;
   const routes = [
     "products/",
-    "shop/",
     "dichvu/",
     "nhiemvu/",
     "profile/",

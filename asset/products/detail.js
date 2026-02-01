@@ -92,9 +92,9 @@
 
   const buildShopUrl = (slug, id) => {
     const safeSlug = String(slug || "").trim();
-    if (safeSlug) return `/shop/${encodeURIComponent(safeSlug)}`;
+    if (safeSlug) return `/gian-hang/${encodeURIComponent(safeSlug)}`;
     const safeId = String(id || "").trim();
-    if (safeId) return `/shop/?id=${encodeURIComponent(safeId)}`;
+    if (safeId) return `/gian-hang/?id=${encodeURIComponent(safeId)}`;
     return "";
   };
 
@@ -406,5 +406,4 @@
 
   document.addEventListener("DOMContentLoaded", init);
 })();
-
 

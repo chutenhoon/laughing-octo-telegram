@@ -2176,7 +2176,7 @@
       if (mobileBuy) {
         mobileBuy.addEventListener("click", () => {
           const root = typeof getProjectRoot === "function" ? getProjectRoot() : "./";
-          const target = window.location.protocol === "file:" ? "products/index.html" : "products/";
+          const target = window.location.protocol === "file:" ? "sanpham/index.html" : "sanpham/";
           window.location.href = root + target;
         });
       }

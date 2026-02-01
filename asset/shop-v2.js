@@ -45,15 +45,6 @@
     return `data-base-amount="${safeMin}" data-base-currency="VND"`;
   };
 
-  const buildPriceLabel = (min, max) => {
-    const safeMin = Number(min || 0);
-    const safeMax = max != null ? Number(max) : null;
-    if (safeMax != null && safeMax > safeMin) {
-      return `${formatCount(safeMin)} VND - ${formatCount(safeMax)} VND`;
-    }
-    return `${formatCount(safeMin)} VND`;
-  };
-
   const renderProducts = (items) => {
     const grid = document.getElementById("shop-products");
     if (!grid) return;
@@ -64,7 +55,6 @@
     grid.innerHTML = items
       .map((item) => {
         const priceAttrs = buildPriceAttrs(item.priceMin, item.priceMax);
-        const priceLabel = buildPriceLabel(item.priceMin, item.priceMax);
         const media = item.imageUrl
           ? `<img src="${item.imageUrl}" alt="${escapeHtml(item.title)}" loading="lazy" />`
           : `<div class="product-fallback">${escapeHtml((item.title || "BK").slice(0, 2))}</div>`;
@@ -73,7 +63,7 @@
             <a class="product-card-link" href="/products/${encodeURIComponent(item.slug || item.id)}">
               <div class="product-media">${media}</div>
               <div class="product-body">
-                <div class="product-price" ${priceAttrs}>${priceLabel}</div>
+                <div class="product-price" ${priceAttrs}>${formatCount(item.priceMin)} VND</div>
                 <h3 class="product-title">${escapeHtml(item.title)}${item.isHot ? ' <span class="product-tag">HOT</span>' : ""}</h3>
                 <div class="product-meta">
                   <div class="meta-col">
