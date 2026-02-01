@@ -23,22 +23,22 @@ function buildMediaProxyUrl(requestUrl, mediaId) {
 
 async function getShopBySlug(db, slug) {
   const sql = `
-    SELECT s.id, s.user_id, s.store_name, s.store_slug, s.store_type, s.category, s.subcategory, s.tags_json,
+    SELECT s.id, s.user_id, s.store_name, s.store_slug, s.slug, s.store_type, s.category, s.subcategory, s.tags_json,
            s.short_desc, s.long_desc, s.description, s.avatar_media_id, s.avatar_r2_key,
            s.status, s.is_active, s.rating, s.total_reviews, s.total_orders, s.stock_count,
            s.created_at, s.updated_at,
            u.display_name, u.username, u.badge, u.title, u.rank, u.role
       FROM shops s
       LEFT JOIN users u ON u.id = s.user_id
-     WHERE lower(s.store_slug) = lower(?)
+     WHERE lower(s.store_slug) = lower(?) OR lower(s.slug) = lower(?)
      LIMIT 1
   `;
-  return db.prepare(sql).bind(slug).first();
+  return db.prepare(sql).bind(slug, slug).first();
 }
 
 async function getShopById(db, id) {
   const sql = `
-    SELECT s.id, s.user_id, s.store_name, s.store_slug, s.store_type, s.category, s.subcategory, s.tags_json,
+    SELECT s.id, s.user_id, s.store_name, s.store_slug, s.slug, s.store_type, s.category, s.subcategory, s.tags_json,
            s.short_desc, s.long_desc, s.description, s.avatar_media_id, s.avatar_r2_key,
            s.status, s.is_active, s.rating, s.total_reviews, s.total_orders, s.stock_count,
            s.created_at, s.updated_at,
@@ -240,7 +240,7 @@ export async function onRequestGet(context) {
       id: shop.id,
       ownerUserId: shop.user_id,
       name: shop.store_name,
-      slug: shop.store_slug,
+      slug: shop.store_slug || shop.slug || "",
       storeType: shop.store_type || "",
       category: shop.category || "",
       subcategory: shop.subcategory || "",

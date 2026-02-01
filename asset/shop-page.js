@@ -135,15 +135,23 @@
     subcategories: new Set(),
   };
 
+  const INVALID_STORE_REFS = new Set(["gian-hang", "nguoi-ban", "seller", "shop", "[slug]", "[id]", "undefined", "null", "nan"]);
+
+  const normalizeStoreRef = (value) => {
+    const raw = String(value || "").trim();
+    if (!raw) return "";
+    const lowered = raw.toLowerCase();
+    if (INVALID_STORE_REFS.has(lowered)) return "";
+    if (raw.includes("/") || raw.includes("\\") || raw.includes("..")) return "";
+    return raw;
+  };
+
   const getPathRef = () => {
     const parts = window.location.pathname.split("/").filter(Boolean);
     if (!parts.length) return "";
     let last = parts[parts.length - 1];
     if (last === "index.html") last = parts[parts.length - 2] || "";
-    if (!last) return "";
-    const invalid = new Set(["gian-hang", "nguoi-ban", "seller", "shop", "[slug]", "[id]"]);
-    if (invalid.has(last)) return "";
-    return String(last).trim();
+    return normalizeStoreRef(last);
   };
 
   const isTemplatePath = () => {
@@ -151,25 +159,35 @@
     if (!parts.length) return false;
     let last = parts[parts.length - 1];
     if (last === "index.html") last = parts[parts.length - 2] || "";
-    return last === "[id]" || last === "[slug]";
+    const normalized = String(last || "").trim().toLowerCase();
+    return normalized === "[id]" || normalized === "[slug]";
   };
 
   const getStoreRef = () => {
     const params = new URLSearchParams(window.location.search);
-    const direct = params.get("id") || params.get("shop") || "";
-    const cleaned = String(direct || "").trim();
+    const direct = params.get("slug") || params.get("id") || params.get("shop") || "";
+    const cleaned = normalizeStoreRef(direct);
     if (cleaned) return cleaned;
     return getPathRef();
   };
 
-  const isUuid = (value) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(value || ""));
+  const shouldRedirectToCanonical = (slug) => {
+    const path = String(window.location.pathname || "").replace(/\/+$/, "");
+    if (!path) return false;
+    const lower = path.toLowerCase();
+    if (lower.startsWith("/gian-hang/") && !lower.startsWith("/gian-hang/nguoi-ban/")) {
+      const currentRef = getPathRef();
+      if (!currentRef) return true;
+      return currentRef.toLowerCase() !== String(slug || "").toLowerCase();
+    }
+    return true;
+  };
 
   const maybeRedirectToSlug = (shop) => {
-    if (!shop || !shop.slug) return;
-    const currentRef = getPathRef();
-    if (!currentRef || currentRef === shop.slug) return;
-    if (!isUuid(currentRef)) return;
-    const next = `/gian-hang/${encodeURIComponent(shop.slug)}${window.location.search || ""}`;
+    const slug = normalizeStoreRef(shop && shop.slug);
+    if (!slug) return;
+    if (!shouldRedirectToCanonical(slug)) return;
+    const next = `/gian-hang/${encodeURIComponent(slug)}${window.location.search || ""}`;
     window.location.replace(next);
   };
 

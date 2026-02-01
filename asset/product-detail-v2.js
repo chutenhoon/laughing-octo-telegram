@@ -148,7 +148,7 @@
     if (sellerLink) {
       sellerLink.textContent = seller.displayName || seller.username || shop.name || "Seller";
       const shopSlug = shop.slug || "";
-      if (shopSlug) sellerLink.href = `/shop/${encodeURIComponent(shopSlug)}`;
+      if (shopSlug) sellerLink.href = `/gian-hang/${encodeURIComponent(shopSlug)}`;
     }
     updateHtml("detail-seller-badge", renderSellerBadge(seller));
     updateText("detail-shop-id", shop.slug || shop.id || "--");
@@ -156,7 +156,7 @@
     const shopLink = document.getElementById("detail-shop-link");
     if (shopLink) {
       if (shop.slug) {
-        shopLink.href = `/shop/${encodeURIComponent(shop.slug)}`;
+        shopLink.href = `/gian-hang/${encodeURIComponent(shop.slug)}`;
         shopLink.style.display = "inline-flex";
       } else {
         shopLink.style.display = "none";

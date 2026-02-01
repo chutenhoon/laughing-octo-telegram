@@ -12,15 +12,28 @@
     return Number.isFinite(num) ? num.toLocaleString("vi-VN") : "0";
   };
 
+  const INVALID_STORE_REFS = new Set(["gian-hang", "nguoi-ban", "seller", "shop", "[slug]", "[id]", "undefined", "null", "nan"]);
+
+  const normalizeStoreRef = (value) => {
+    const raw = String(value || "").trim();
+    if (!raw) return "";
+    const lowered = raw.toLowerCase();
+    if (INVALID_STORE_REFS.has(lowered)) return "";
+    if (raw.includes("/") || raw.includes("\\") || raw.includes("..")) return "";
+    return raw;
+  };
+
+  const isUuid = (value) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(value || ""));
+
   const getSlug = () => {
     const params = new URLSearchParams(window.location.search);
-    let slug = params.get("slug") || params.get("id");
-    if (!slug) {
-      const parts = window.location.pathname.split("/").filter(Boolean);
-      const last = parts[parts.length - 1];
-      if (last && last !== "[slug]") slug = last;
-    }
-    return slug ? String(slug).trim() : "";
+    const direct = params.get("slug") || params.get("id") || params.get("shop") || "";
+    const cleaned = normalizeStoreRef(direct);
+    if (cleaned) return cleaned;
+    const parts = window.location.pathname.split("/").filter(Boolean);
+    let last = parts[parts.length - 1] || "";
+    if (last === "index.html") last = parts[parts.length - 2] || "";
+    return normalizeStoreRef(last);
   };
 
   const buildAuthHeaders = () => {
@@ -43,6 +56,23 @@
       return `data-base-min="${safeMin}" data-base-max="${safeMax}" data-base-currency="VND"`;
     }
     return `data-base-amount="${safeMin}" data-base-currency="VND"`;
+  };
+
+  const buildRedirectUrl = (ref) => {
+    const cleaned = normalizeStoreRef(ref);
+    if (!cleaned) return "";
+    const params = new URLSearchParams(window.location.search);
+    params.delete("slug");
+    params.delete("shop");
+    if (isUuid(cleaned)) {
+      params.set("id", cleaned);
+      const query = params.toString();
+      return query ? `/gian-hang/?${query}` : "/gian-hang/";
+    }
+    params.delete("id");
+    const query = params.toString();
+    const base = `/gian-hang/${encodeURIComponent(cleaned)}`;
+    return query ? `${base}?${query}` : base;
   };
 
   const renderProducts = (items) => {
@@ -92,6 +122,12 @@
     if (!slug) {
       if (nameEl) nameEl.textContent = "Gian hàng không tồn tại";
       if (descEl) descEl.textContent = "Đường dẫn gian hàng không hợp lệ.";
+      return;
+    }
+
+    const redirectUrl = buildRedirectUrl(slug);
+    if (redirectUrl) {
+      window.location.replace(redirectUrl);
       return;
     }
 
