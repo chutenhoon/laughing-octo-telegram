@@ -159,6 +159,13 @@
   gap: 12px;
 }
 
+.store-items-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 @media (max-width: 900px) {
   .store-hero {
     grid-template-columns: 1fr;

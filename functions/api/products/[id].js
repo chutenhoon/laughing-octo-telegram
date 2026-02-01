@@ -30,7 +30,7 @@ function isTruthyFlag(value) {
 function isVisibleProductStatus(status) {
   const value = String(status || "").trim().toLowerCase();
   if (!value) return true;
-  return value !== "disabled" && value !== "blocked" && value !== "banned";
+  return value !== "disabled" && value !== "blocked" && value !== "banned" && value !== "deleted";
 }
 
 export async function onRequestGet(context) {

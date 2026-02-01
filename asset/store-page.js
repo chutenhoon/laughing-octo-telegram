@@ -108,6 +108,8 @@
   const storeLongDesc = document.getElementById("store-long-desc");
   const itemsTitle = document.getElementById("store-items-title");
   const itemsSub = document.getElementById("store-items-sub");
+  const itemsTabs = document.getElementById("store-items-tabs");
+  const itemTabButtons = itemsTabs ? Array.from(itemsTabs.querySelectorAll("button[data-type]")) : [];
   const itemsGrid = document.getElementById("store-items-grid");
   const pagination = document.getElementById("store-items-pagination");
 
@@ -117,6 +119,8 @@
     page: 1,
     totalPages: 1,
     preview: false,
+    activeType: "product",
+    counts: { product: 0, service: 0 },
   };
 
   const getStoreRef = () => {
@@ -128,6 +132,18 @@
       if (last && last !== "[id]") id = last;
     }
     return id ? String(id).trim() : "";
+  };
+
+  const isUuid = (value) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(value || ""));
+
+  const maybeRedirectToSlug = (shop) => {
+    if (!shop || !shop.slug) return;
+    const parts = window.location.pathname.split("/").filter(Boolean);
+    const last = parts[parts.length - 1];
+    if (!last || last === shop.slug) return;
+    if (!isUuid(last)) return;
+    const next = `/gian-hang/${encodeURIComponent(shop.slug)}${window.location.search || ""}`;
+    window.location.replace(next);
   };
 
   const isPreviewMode = () => {
@@ -306,20 +322,36 @@
     if (storeShortDesc) storeShortDesc.textContent = shop.descriptionShort || "";
     if (storeLongDesc) storeLongDesc.innerHTML = toSafeHtml(shop.descriptionLong || "");
 
-    if (itemsTitle) itemsTitle.textContent = type === "service" ? "D\u1ecbch v\u1ee5" : "S\u1ea3n ph\u1ea9m";
-    if (itemsSub) {
-      itemsSub.textContent =
-        type === "service"
-          ? "Danh s\u00e1ch d\u1ecbch v\u1ee5 t\u1eeb gian h\u00e0ng."
-          : "Danh s\u00e1ch s\u1ea3n ph\u1ea9m t\u1eeb gian h\u00e0ng.";
-    }
-
     state.shop = { ...shop, storeType: type };
     try {
       window.BKStoreShop = state.shop;
       document.dispatchEvent(new CustomEvent("store:loaded", { detail: state.shop }));
     } catch (error) {}
     setHeroLoading(false);
+  };
+
+  const updateItemsHeading = () => {
+    if (!itemsTitle || !itemsSub) return;
+    if (state.activeType === "service") {
+      itemsTitle.textContent = "D\u1ecbch v\u1ee5";
+      itemsSub.textContent = "Danh s\u00e1ch d\u1ecbch v\u1ee5 t\u1eeb gian h\u00e0ng.";
+    } else {
+      itemsTitle.textContent = "S\u1ea3n ph\u1ea9m";
+      itemsSub.textContent = "Danh s\u00e1ch s\u1ea3n ph\u1ea9m t\u1eeb gian h\u00e0ng.";
+    }
+  };
+
+  const updateTabs = () => {
+    if (!itemsTabs) return;
+    const hasProduct = Number(state.counts.product || 0) > 0;
+    const hasService = Number(state.counts.service || 0) > 0;
+    const showTabs = hasProduct && hasService;
+    itemsTabs.style.display = showTabs ? "flex" : "none";
+    itemTabButtons.forEach((btn) => {
+      const type = btn.getAttribute("data-type");
+      btn.classList.toggle("active", type === state.activeType);
+      btn.disabled = !showTabs;
+    });
   };
 
   const renderSkeleton = () => {
@@ -437,20 +469,51 @@
     params.set("perPage", String(PAGE_SIZE));
     params.set("sort", "custom");
     if (state.preview) params.set("preview", "1");
-    const endpoint = state.shop.storeType === "service" ? "/api/services" : "/api/products";
+    const endpoint = state.activeType === "service" ? "/api/services" : "/api/products";
     try {
       const headers = state.preview ? getAdminHeaders() : null;
       const response = await fetch(`${endpoint}?${params.toString()}`, headers ? { headers } : undefined);
       const data = await response.json();
       if (!response.ok || !data || data.ok === false) {
-        renderItems([], state.shop.storeType);
+        renderItems([], state.activeType);
         return;
       }
       state.totalPages = data.totalPages || 1;
-      renderItems(Array.isArray(data.items) ? data.items : [], state.shop.storeType);
+      renderItems(Array.isArray(data.items) ? data.items : [], state.activeType);
     } catch (error) {
-      renderItems([], state.shop.storeType);
+      renderItems([], state.activeType);
     }
+  };
+
+  const loadCounts = async () => {
+    if (!state.shop) return;
+    const headers = state.preview ? getAdminHeaders() : null;
+    const fetchOptions = headers ? { headers } : undefined;
+    const query = new URLSearchParams();
+    query.set("shopId", state.shop.id);
+    query.set("page", "1");
+    query.set("perPage", "1");
+    query.set("sort", "custom");
+    if (state.preview) query.set("preview", "1");
+    const productRequest = fetch(`/api/products?${query.toString()}`, fetchOptions)
+      .then((res) => res.json().then((data) => (res.ok && data && data.ok !== false ? data.total || 0 : 0)))
+      .catch(() => 0);
+    const serviceRequest = fetch(`/api/services?${query.toString()}`, fetchOptions)
+      .then((res) => res.json().then((data) => (res.ok && data && data.ok !== false ? data.total || 0 : 0)))
+      .catch(() => 0);
+    const [productCount, serviceCount] = await Promise.all([productRequest, serviceRequest]);
+    state.counts = { product: Number(productCount || 0), service: Number(serviceCount || 0) };
+    if (state.counts.product && state.counts.service) {
+      if (state.activeType !== "product" && state.activeType !== "service") {
+        state.activeType = state.shop && state.shop.storeType === "service" ? "service" : "product";
+      }
+    } else if (state.counts.service) {
+      state.activeType = "service";
+    } else {
+      state.activeType = "product";
+    }
+    updateTabs();
+    updateItemsHeading();
   };
 
   const init = async () => {
@@ -471,7 +534,9 @@
         setHeroLoading(false);
         return;
       }
+      maybeRedirectToSlug(data.shop);
       await renderShop(data.shop);
+      await loadCounts();
       await loadItems();
     } catch (error) {
       if (storeName) storeName.textContent = translate("store.notFound", "Gian h\u00e0ng kh\u00f4ng t\u1ed3n t\u1ea1i");
@@ -486,6 +551,20 @@
       const next = Number(button.dataset.page);
       if (!Number.isFinite(next) || next === state.page) return;
       state.page = next;
+      loadItems();
+    });
+  }
+
+  if (itemsTabs) {
+    itemsTabs.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-type]");
+      if (!button) return;
+      const nextType = button.getAttribute("data-type");
+      if (!nextType || nextType === state.activeType) return;
+      state.activeType = nextType;
+      state.page = 1;
+      updateTabs();
+      updateItemsHeading();
       loadItems();
     });
   }

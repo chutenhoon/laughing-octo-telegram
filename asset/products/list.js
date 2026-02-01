@@ -8,37 +8,11 @@
   const translate = (key, fallback, vars) =>
     typeof formatI18n === "function" ? formatI18n(getLanguage(), key, fallback, vars) : fallback || key;
 
-  const formatVnd = (value) => {
-    if (typeof formatPrice === "function") return formatPrice(value);
-    return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(value);
-  };
-
-  const formatPriceRange = (item) => {
-    const price = Number(item.price || 0);
-    const priceMax = item.priceMax != null ? Number(item.priceMax || 0) : null;
-    if (priceMax && priceMax > price) {
-      return `${formatVnd(price)} - ${formatVnd(priceMax)}`;
-    }
-    return formatVnd(price);
-  };
-
   const escapeHtml = (value) =>
     String(value || "").replace(/[&<>"']/g, (char) => {
       const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
       return map[char] || char;
     });
-
-  const resolveShopRef = (item) => {
-    if (!item) return "";
-    if (item.shopSlug) return String(item.shopSlug).trim();
-    if (item.shop && item.shop.slug) return String(item.shop.slug).trim();
-    const seller = item.seller || {};
-    if (seller.slug) return String(seller.slug).trim();
-    if (item.shopId != null && item.shopId !== "") return String(item.shopId).trim();
-    if (seller.storeId != null && seller.storeId !== "") return String(seller.storeId).trim();
-    if (seller.id != null && seller.id !== "") return String(seller.id).trim();
-    return "";
-  };
 
   const resolveSellerName = (seller) => {
     if (!seller) return "";
@@ -46,11 +20,18 @@
     if (display) return display;
     const username = String(seller.username || "").trim();
     if (username) return username;
-    const fallback = String(seller.name || "").trim();
-    return fallback;
+    return "";
   };
 
   const buildShopUrl = (shopRef) => (shopRef ? `/gian-hang/${encodeURIComponent(shopRef)}` : "");
+
+  const getInitials = (value) => {
+    const text = String(value || "").trim();
+    if (!text) return "BK";
+    const parts = text.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) return `${parts[0][0] || ""}${parts[1][0] || ""}`.toUpperCase();
+    return text.slice(0, 2).toUpperCase();
+  };
 
   const isPreviewMode = () => {
     const params = new URLSearchParams(window.location.search);
@@ -265,54 +246,45 @@
     pagination.appendChild(fragment);
   };
 
-  const buildCard = (item) => {
-    const seller = item.seller || {};
-    const sellerBadge = renderSellerBadge(seller);
-    const sellerName = resolveSellerName(seller) || "Seller";
-    const ratingLabel = item.rating != null ? item.rating : "--";
-    const subLabel = item.subcategory || categoryFallback[item.category] || "BK";
-    const media = item.thumbnailUrl
-      ? `<img src="${item.thumbnailUrl}" alt="${item.title}" loading="lazy" />`
-      : `<div class="product-fallback">${String(subLabel || "BK").slice(0, 2)}</div>`;
-    const priceLabel = formatPriceRange(item);
-    const priceAttrs =
-      item.priceMax != null && item.priceMax > item.price
-        ? `data-base-min="${item.price}" data-base-max="${item.priceMax}" data-base-currency="VND"`
-        : `data-base-amount="${item.price}" data-base-currency="VND"`;
-    const detailUrl = typeof getProductDetailPath === "function" ? getProductDetailPath(item.id) : `/sanpham/[id]/?id=${encodeURIComponent(item.id)}`;
-    const shopRef = resolveShopRef(item);
+  const buildCard = (shop) => {
+    const owner = shop.owner || {};
+    const sellerBadge = renderSellerBadge(owner);
+    const sellerName = resolveSellerName(owner) || "Seller";
+    const shopName = shop.name || "Gian hàng";
+    const shopRef = shop.slug || shop.id;
     const shopUrl = buildShopUrl(shopRef);
-    const previewBadges = buildPreviewBadges(item);
-    const actions = [];
-    if (previewBadges) actions.push(`<div class="card-badges">${previewBadges}</div>`);
-    if (shopUrl) actions.push(`<a class="shop-link" href="${shopUrl}">Gian h\u00e0ng</a>`);
+    const mediaUrl = shop.coverUrl || shop.avatarUrl || "";
+    const media = mediaUrl
+      ? `<img src="${mediaUrl}" alt="${escapeHtml(shopName)}" loading="lazy" />`
+      : `<div class="product-fallback">${getInitials(shopName)}</div>`;
+    const ratingLabel = Number(shop.rating || 0).toFixed(1);
+    const orderLabel = Number(shop.totalOrders || 0).toLocaleString("vi-VN");
+    const countLabel = Number(shop.itemCount || 0).toLocaleString("vi-VN");
     return `
-      <div class="product-card">
-        <a class="product-card-link" href="${detailUrl}">
+      <div class="product-card shop-card">
+        <a class="product-card-link" href="${shopUrl}">
           <div class="product-media">${media}</div>
           <div class="product-body">
-            <div class="product-price" ${priceAttrs}>${priceLabel}</div>
-            <h3 class="product-title">
-              ${item.title}
-            </h3>
+            <h3 class="product-title">${escapeHtml(shopName)}</h3>
             <div class="product-meta">
               <div class="meta-col">
-                <span>${translate("label.stock", "Stock")}: <strong>${item.stockCount ?? "--"}</strong></span>
-                <span>${translate("label.sold", "Sold")}: <strong>${item.soldCount ?? "--"}</strong></span>
-                <span>${translate("label.rating", "Rating")}: <strong>${ratingLabel}</strong></span>
+                <span>${translate("label.rating", "Đánh giá")}: <strong>${ratingLabel}</strong></span>
+                <span>${translate("label.orders", "Đơn hàng")}: <strong>${orderLabel}</strong></span>
+                <span>${translate("label.products", "Sản phẩm")}: <strong>${countLabel}</strong></span>
               </div>
               <div class="meta-col meta-right">
                 <span class="seller-line">
                   <span class="seller-label">${translate("label.seller", "Seller")}:</span>
-                  <span class="seller-value"><strong class="seller-name">${sellerName}</strong>${sellerBadge}</span>
+                  <span class="seller-value"><strong class="seller-name">${escapeHtml(sellerName)}</strong>${sellerBadge}</span>
                 </span>
               </div>
             </div>
-            ${subLabel ? `<div class="product-type">${translate("label.type", "Type")}: <strong>${subLabel}</strong></div>` : ""}
-            <p class="product-desc">${item.descriptionShort || ""}</p>
+            ${shop.descriptionShort ? `<p class="product-desc">${escapeHtml(shop.descriptionShort)}</p>` : ""}
           </div>
         </a>
-        ${actions.length ? `<div class="product-card-actions">${actions.join("")}</div>` : ""}
+        <div class="product-card-actions">
+          <a class="shop-link" href="${shopUrl}">Vào gian h\u00e0ng</a>
+        </div>
       </div>
     `;
   };
@@ -322,8 +294,8 @@
     if (!items.length) {
       grid.innerHTML = `
         <div class="card empty-state product-empty" style="grid-column: 1 / -1;">
-          <strong>${translate("empty.noData", "No data")}</strong>
-          <div style="margin-top:4px;">${translate("empty.adjustCategory", "Adjust filters and try again.")}</div>
+          <strong>${translate("empty.noShops", "Chưa có gian hàng")}</strong>
+          <div style="margin-top:4px;">${translate("empty.adjustCategory", "Hãy thử thay đổi bộ lọc hoặc tìm kiếm khác.")}</div>
           ${buildEmptyHint()}
         </div>
       `;
@@ -348,7 +320,8 @@
     params.set("perPage", String(PAGE_SIZE));
     if (state.preview) params.set("preview", "1");
     try {
-      const response = await fetch(`/api/products?${params.toString()}`);
+      params.set("type", "product");
+      const response = await fetch(`/api/marketplace/shops?${params.toString()}`);
       const data = await response.json();
       if (!response.ok || !data || data.ok === false) {
         renderProducts([]);

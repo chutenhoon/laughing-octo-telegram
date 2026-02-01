@@ -19,7 +19,7 @@ async function getProductColumns(db) {
 
 async function getShopProductCount(db, shopId) {
   const row = await db
-    .prepare("SELECT COUNT(1) AS count FROM products WHERE shop_id = ? AND kind = 'product'")
+    .prepare("SELECT COUNT(1) AS count FROM products WHERE shop_id = ? AND kind = 'product' AND (status IS NULL OR lower(status) <> 'deleted')")
     .bind(shopId)
     .first();
   return Number(row && row.count ? row.count : 0);
@@ -27,7 +27,7 @@ async function getShopProductCount(db, shopId) {
 
 async function getNextSortOrder(db, shopId) {
   const row = await db
-    .prepare("SELECT COALESCE(MAX(sort_order), 0) AS max_order FROM products WHERE shop_id = ? AND kind = 'product'")
+    .prepare("SELECT COALESCE(MAX(sort_order), 0) AS max_order FROM products WHERE shop_id = ? AND kind = 'product' AND (status IS NULL OR lower(status) <> 'deleted')")
     .bind(shopId)
     .first();
   return Number(row && row.max_order ? row.max_order : 0) + 1;
@@ -99,10 +99,11 @@ export async function onRequestGet(context) {
     SELECT p.id, p.shop_id, p.name, p.description_short, p.description_html,
            p.category, p.subcategory, p.tags_json, p.price, p.price_max, p.stock_count,
            p.sort_order, p.status, p.is_active, p.is_published, p.created_at, p.updated_at
-      FROM products p
-      JOIN shops s ON s.id = p.shop_id
+     FROM products p
+     JOIN shops s ON s.id = p.shop_id
      WHERE s.user_id = ?
        AND p.kind = 'product'
+       AND (p.status IS NULL OR lower(p.status) <> 'deleted')
      ORDER BY CASE WHEN p.sort_order IS NULL OR p.sort_order = 0 THEN 1 ELSE 0 END,
               p.sort_order ASC,
               p.created_at DESC

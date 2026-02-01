@@ -57,6 +57,7 @@ function buildWhere(params, binds, options = {}) {
   if (!options.includeUnpublished) {
     clauses.push(flagTrueOrNull("p.is_published"));
   }
+  clauses.push("lower(trim(coalesce(p.status,''))) <> 'deleted'");
   clauses.push(flagTrueOrNull("s.is_active"));
   if (!options.includeUnapproved) {
     clauses.push("lower(trim(coalesce(s.status,''))) IN ('approved','active','published','pending_update')");

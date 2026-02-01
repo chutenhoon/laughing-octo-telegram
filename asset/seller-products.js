@@ -217,6 +217,7 @@
         <div class="seller-product-stock">Kho: ${stockLabel}</div>
         <div class="seller-product-actions">
           <button class="btn ghost" type="button" data-action="edit-product" data-product-id="${product.productId}">Sửa</button>
+          <button class="btn ghost" type="button" data-action="delete-product" data-product-id="${product.productId}">Xóa</button>
           <button class="btn" type="button" data-action="inventory" data-product-id="${product.productId}">Quản lý kho</button>
         </div>
       </div>
@@ -756,6 +757,28 @@
         const productId = actionButton.getAttribute("data-product-id");
         const product = state.products.find((item) => item.productId === productId);
         if (product) openInventoryPanel(product);
+        return;
+      }
+      if (action === "delete-product") {
+        const productId = actionButton.getAttribute("data-product-id");
+        if (!productId) return;
+        const product = state.products.find((item) => item.productId === productId);
+        const label = product && product.name ? product.name : "sản phẩm này";
+        const confirmed = window.confirm(`Xóa ${label}?`);
+        if (!confirmed) return;
+        services.products
+          .delete(productId)
+          .then(() => {
+            state.products = state.products.filter((item) => item.productId !== productId);
+            renderGroups();
+            showToast("Đã xóa sản phẩm.");
+          })
+          .catch((error) => {
+            const handled = handleAuthError(error);
+            if (!handled) {
+              showToast(resolveLoadError(error, "Không thể xóa sản phẩm."));
+            }
+          });
         return;
       }
       return;
