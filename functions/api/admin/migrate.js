@@ -1,7 +1,7 @@
 ﻿import { jsonResponse, readJsonBody } from "../auth/_utils.js";
 import { buildSlug } from "../_catalog.js";
 
-const DEFAULT_MIGRATION_ID = "2026-01-28-approvals";
+const DEFAULT_MIGRATION_ID = "2026-02-01-storefront-v2";
 export const SCHEMA_USER_VERSION = 20260208;
 
 function safeEqual(a, b) {
@@ -153,6 +153,10 @@ const TABLE_DEFS = {
       user_id TEXT NOT NULL,
       store_name TEXT NOT NULL,
       store_slug TEXT UNIQUE,
+      slug TEXT UNIQUE,
+      name TEXT,
+      owner_user_id TEXT,
+      is_public INTEGER NOT NULL DEFAULT 1,
       store_type TEXT,
       category TEXT,
       subcategory TEXT,
@@ -215,16 +219,23 @@ const TABLE_DEFS = {
       id TEXT PRIMARY KEY,
       shop_id TEXT NOT NULL,
       sku TEXT UNIQUE,
+      slug TEXT UNIQUE,
+      title TEXT,
       name TEXT NOT NULL,
       description TEXT,
       description_short TEXT,
       description_html TEXT,
       category TEXT,
+      category_slug TEXT,
       subcategory TEXT,
       tags_json TEXT,
+      price_min INTEGER,
       price INTEGER NOT NULL,
       price_max INTEGER,
       stock_count INTEGER NOT NULL DEFAULT 0,
+      sold_count INTEGER NOT NULL DEFAULT 0,
+      rating REAL NOT NULL DEFAULT 0,
+      is_hot INTEGER NOT NULL DEFAULT 0,
       sort_order INTEGER NOT NULL DEFAULT 0,
       currency TEXT NOT NULL DEFAULT 'VND',
       status TEXT NOT NULL DEFAULT 'draft',
@@ -239,6 +250,24 @@ const TABLE_DEFS = {
       updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
       FOREIGN KEY (shop_id) REFERENCES shops(id) ON DELETE CASCADE,
       FOREIGN KEY (thumbnail_media_id) REFERENCES media_metadata(id) ON DELETE SET NULL
+    );
+  `,
+  product_images: `
+    CREATE TABLE IF NOT EXISTS product_images (
+      id TEXT PRIMARY KEY,
+      product_id TEXT NOT NULL,
+      r2_key TEXT NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    );
+  `,
+  categories: `
+    CREATE TABLE IF NOT EXISTS categories (
+      slug TEXT PRIMARY KEY,
+      label TEXT NOT NULL,
+      group_name TEXT NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0
     );
   `,
   inventory: `
@@ -479,6 +508,10 @@ const COLUMN_DEFS = {
   ],
   shops: [
     { name: "store_slug", def: "TEXT" },
+    { name: "slug", def: "TEXT" },
+    { name: "name", def: "TEXT" },
+    { name: "owner_user_id", def: "TEXT" },
+    { name: "is_public", def: "INTEGER DEFAULT 1" },
     { name: "store_type", def: "TEXT" },
     { name: "category", def: "TEXT" },
     { name: "subcategory", def: "TEXT" },
@@ -510,6 +543,17 @@ const COLUMN_DEFS = {
     { name: "uploaded_by_role", def: "TEXT DEFAULT 'seller'" },
     { name: "created_at", def: "TEXT" },
   ],
+  product_images: [
+    { name: "product_id", def: "TEXT" },
+    { name: "r2_key", def: "TEXT" },
+    { name: "sort_order", def: "INTEGER DEFAULT 0" },
+    { name: "created_at", def: "INTEGER" },
+  ],
+  categories: [
+    { name: "label", def: "TEXT" },
+    { name: "group_name", def: "TEXT" },
+    { name: "sort_order", def: "INTEGER DEFAULT 0" },
+  ],
   approval_requests: [
     { name: "user_id", def: "TEXT" },
     { name: "type", def: "TEXT" },
@@ -523,12 +567,19 @@ const COLUMN_DEFS = {
   ],
   products: [
     { name: "shop_id", def: "TEXT" },
+    { name: "slug", def: "TEXT" },
+    { name: "title", def: "TEXT" },
     { name: "description_short", def: "TEXT" },
     { name: "description_html", def: "TEXT" },
+    { name: "category_slug", def: "TEXT" },
     { name: "subcategory", def: "TEXT" },
     { name: "tags_json", def: "TEXT" },
+    { name: "price_min", def: "INTEGER" },
     { name: "price_max", def: "INTEGER" },
     { name: "stock_count", def: "INTEGER DEFAULT 0" },
+    { name: "sold_count", def: "INTEGER DEFAULT 0" },
+    { name: "rating", def: "REAL DEFAULT 0" },
+    { name: "is_hot", def: "INTEGER DEFAULT 0" },
     { name: "sort_order", def: "INTEGER DEFAULT 0" },
     { name: "kind", def: "TEXT DEFAULT 'product'" },
     { name: "is_active", def: "INTEGER DEFAULT 1" },
@@ -1021,6 +1072,136 @@ async function backfillShopSlugs(db, report) {
   if (updated) report.backfills.push(`shops.store_slug:${updated}`);
 }
 
+async function backfillShopV2Fields(db, report) {
+  const cols = await getColumns(db, "shops");
+  if (!cols.size) return;
+  try {
+    if (cols.has("slug") && cols.has("store_slug")) {
+      await db.prepare("UPDATE shops SET slug = store_slug WHERE (slug IS NULL OR slug = '') AND store_slug IS NOT NULL").run();
+      report.backfills.push("shops.slug");
+    }
+    if (cols.has("name") && cols.has("store_name")) {
+      await db.prepare("UPDATE shops SET name = store_name WHERE (name IS NULL OR name = '') AND store_name IS NOT NULL").run();
+      report.backfills.push("shops.name");
+    }
+    if (cols.has("owner_user_id") && cols.has("user_id")) {
+      await db.prepare("UPDATE shops SET owner_user_id = user_id WHERE (owner_user_id IS NULL OR owner_user_id = '') AND user_id IS NOT NULL").run();
+      report.backfills.push("shops.owner_user_id");
+    }
+    if (cols.has("is_public")) {
+      await db.prepare("UPDATE shops SET is_public = 1 WHERE is_public IS NULL").run();
+      report.backfills.push("shops.is_public");
+    }
+  } catch (error) {
+    report.errors.push({ table: "shops", action: "backfill", error: String(error) });
+  }
+}
+
+async function ensureUniqueProductSlug(db, base) {
+  if (!base) return "";
+  let candidate = base;
+  let counter = 1;
+  while (counter <= 500) {
+    const row = await db.prepare("SELECT id FROM products WHERE lower(slug) = lower(?) LIMIT 1").bind(candidate).first();
+    if (!row) return candidate;
+    candidate = `${base}-${counter}`;
+    counter += 1;
+  }
+  return `${base}-${Date.now().toString(36).slice(-4)}`;
+}
+
+function buildProductFallbackSlug() {
+  return `product-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+async function backfillProductV2Fields(db, report) {
+  const cols = await getColumns(db, "products");
+  if (!cols.size) return;
+  try {
+    if (cols.has("title") && cols.has("name")) {
+      await db.prepare("UPDATE products SET title = name WHERE (title IS NULL OR title = '') AND name IS NOT NULL").run();
+      report.backfills.push("products.title");
+    }
+    if (cols.has("price_min") && cols.has("price")) {
+      await db.prepare("UPDATE products SET price_min = price WHERE price_min IS NULL AND price IS NOT NULL").run();
+      report.backfills.push("products.price_min");
+    }
+    if (cols.has("sold_count")) {
+      await db.prepare("UPDATE products SET sold_count = 0 WHERE sold_count IS NULL").run();
+      report.backfills.push("products.sold_count");
+    }
+    if (cols.has("rating")) {
+      await db.prepare("UPDATE products SET rating = 0 WHERE rating IS NULL").run();
+      report.backfills.push("products.rating");
+    }
+    if (cols.has("is_hot")) {
+      await db.prepare("UPDATE products SET is_hot = 0 WHERE is_hot IS NULL").run();
+      report.backfills.push("products.is_hot");
+    }
+  } catch (error) {
+    report.errors.push({ table: "products", action: "backfill", error: String(error) });
+  }
+
+  if (cols.has("slug")) {
+    let rows = [];
+    try {
+      const result = await db
+        .prepare(
+          "SELECT id, sku, title, name FROM products WHERE slug IS NULL OR slug = ''"
+        )
+        .all();
+      rows = result && Array.isArray(result.results) ? result.results : [];
+    } catch (error) {
+      report.errors.push({ table: "products", action: "backfill", error: String(error) });
+      rows = [];
+    }
+    let updated = 0;
+    for (const row of rows) {
+      const source = String(row.sku || row.title || row.name || "").trim();
+      let base = buildSlug(source);
+      if (!base) base = buildProductFallbackSlug();
+      const slug = await ensureUniqueProductSlug(db, base);
+      if (!slug) continue;
+      try {
+        await db.prepare("UPDATE products SET slug = ? WHERE id = ?").bind(slug, row.id).run();
+        updated += 1;
+      } catch (error) {
+        report.errors.push({ table: "products", action: "backfill", error: String(error) });
+      }
+    }
+    if (updated) report.backfills.push(`products.slug:${updated}`);
+  }
+
+  if (cols.has("category_slug")) {
+    let rows = [];
+    try {
+      const result = await db
+        .prepare(
+          "SELECT id, category_slug, subcategory, category FROM products WHERE category_slug IS NULL OR category_slug = ''"
+        )
+        .all();
+      rows = result && Array.isArray(result.results) ? result.results : [];
+    } catch (error) {
+      report.errors.push({ table: "products", action: "backfill", error: String(error) });
+      rows = [];
+    }
+    let updated = 0;
+    for (const row of rows) {
+      const source = String(row.subcategory || row.category || "").trim();
+      if (!source) continue;
+      const slug = buildSlug(source);
+      if (!slug) continue;
+      try {
+        await db.prepare("UPDATE products SET category_slug = ? WHERE id = ?").bind(slug, row.id).run();
+        updated += 1;
+      } catch (error) {
+        report.errors.push({ table: "products", action: "backfill", error: String(error) });
+      }
+    }
+    if (updated) report.backfills.push(`products.category_slug:${updated}`);
+  }
+}
+
 async function backfillConversationPairKeys(db, report) {
   try {
     const convoCols = await getColumns(db, "conversations");
@@ -1488,7 +1669,9 @@ export async function runMigrations(db, options = {}) {
   await migrateSellerToShops(db, report);
   await backfillShopIds(db, report);
   await backfillShopSlugs(db, report);
+  await backfillShopV2Fields(db, report);
   await backfillProductFlags(db, report);
+  await backfillProductV2Fields(db, report);
   await backfillUserIds(db, report);
   await backfillUsernames(db, report);
   await backfillFeaturedMedia(db, report);
@@ -1499,8 +1682,17 @@ export async function runMigrations(db, options = {}) {
   await ensureIndexIfColumns(db, report, "products", "idx_products_shop", ["shop_id"]);
   await ensureIndexIfColumns(db, report, "products", "idx_products_kind", ["kind"]);
   await ensureIndexIfColumns(db, report, "products", "idx_products_shop_sort", ["shop_id", "sort_order", "created_at"]);
+  await ensureIndexIfColumns(db, report, "products", "idx_products_category_slug", ["category_slug"]);
+  await ensureIndexIfColumns(db, report, "products", "idx_products_rating", ["rating"]);
+  await ensureIndexIfColumns(db, report, "products", "idx_products_sold_count", ["sold_count"]);
+  await ensureIndexIfColumns(db, report, "products", "idx_products_hot", ["is_hot"]);
   await ensureIndexIfColumns(db, report, "shops", "idx_shops_status_created_at", ["status", "created_at"]);
+  await ensureIndexIfColumns(db, report, "shops", "idx_shops_slug", ["slug"]);
+  await ensureIndexIfColumns(db, report, "shops", "idx_shops_public", ["is_public"]);
+  await ensureIndexIfColumns(db, report, "shops", "idx_shops_owner_user", ["owner_user_id"]);
   await ensureIndexIfColumns(db, report, "shop_images", "idx_shop_images_shop_pos", ["shop_id", "position"]);
+  await ensureIndexIfColumns(db, report, "product_images", "idx_product_images_product", ["product_id", "sort_order"]);
+  await ensureIndexIfColumns(db, report, "categories", "idx_categories_group_sort", ["group_name", "sort_order"]);
   await ensureIndexIfColumns(db, report, "inventory_events", "idx_inventory_events_product", ["product_id", "created_at"]);
   await ensureIndexIfColumns(db, report, "inventory_events", "idx_inventory_events_shop", ["shop_id", "created_at"]);
   await ensureIndexIfColumns(db, report, "approval_requests", "idx_approval_requests_user", ["user_id"]);

@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   "use strict";
 
   const PAGE_SIZE = 10;
@@ -25,9 +25,9 @@
 
   const buildShopUrl = (slug, id) => {
     const safeSlug = String(slug || "").trim();
-    if (safeSlug) return `/gian-hang/${encodeURIComponent(safeSlug)}`;
+    if (safeSlug) return `/shop/${encodeURIComponent(safeSlug)}`;
     const safeId = String(id || "").trim();
-    if (safeId) return `/gian-hang/?id=${encodeURIComponent(safeId)}`;
+    if (safeId) return `/shop/?id=${encodeURIComponent(safeId)}`;
     return "";
   };
 
@@ -237,7 +237,7 @@
     const owner = shop.owner || {};
     const sellerBadge = renderSellerBadge(owner);
     const sellerName = resolveSellerName(owner) || "Seller";
-    const shopName = shop.name || "Gian hàng";
+    const shopName = shop.name || "Gian hÃ ng";
     const shopSlug = shop.slug || "";
     const shopId = shop.id || "";
     const shopUrl = buildShopUrl(shopSlug, shopId);
@@ -255,9 +255,9 @@
             <h3 class="product-title">${escapeHtml(shopName)}</h3>
             <div class="product-meta">
               <div class="meta-col">
-                <span>${translate("label.rating", "Đánh giá")}: <strong>${ratingLabel}</strong></span>
-                <span>${translate("label.orders", "Đơn hàng")}: <strong>${orderLabel}</strong></span>
-                <span>${translate("label.services", "Dịch vụ")}: <strong>${countLabel}</strong></span>
+                <span>${translate("label.rating", "ÄÃ¡nh giÃ¡")}: <strong>${ratingLabel}</strong></span>
+                <span>${translate("label.orders", "ÄÆ¡n hÃ ng")}: <strong>${orderLabel}</strong></span>
+                <span>${translate("label.services", "Dá»‹ch vá»¥")}: <strong>${countLabel}</strong></span>
               </div>
               <div class="meta-col meta-right">
                 <span class="seller-line">
@@ -277,8 +277,8 @@
     if (!items.length) {
       grid.innerHTML = `
         <div class="card empty-state product-empty" style="grid-column: 1 / -1;">
-          <strong>${translate("empty.noShops", "Chưa có gian hàng")}</strong>
-          <div style="margin-top:4px;">${translate("empty.adjustCategory", "Hãy thử thay đổi bộ lọc hoặc tìm kiếm khác.")}</div>
+          <strong>${translate("empty.noShops", "ChÆ°a cÃ³ gian hÃ ng")}</strong>
+          <div style="margin-top:4px;">${translate("empty.adjustCategory", "HÃ£y thá»­ thay Ä‘á»•i bá»™ lá»c hoáº·c tÃ¬m kiáº¿m khÃ¡c.")}</div>
           ${buildEmptyHint()}
         </div>
       `;
@@ -420,3 +420,4 @@
 
   document.addEventListener("DOMContentLoaded", init);
 })();
+

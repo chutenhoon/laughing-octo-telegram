@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   "use strict";
 
   const PAGE_SIZE = 12;
@@ -169,7 +169,7 @@
     const currentRef = getPathRef();
     if (!currentRef || currentRef === shop.slug) return;
     if (!isUuid(currentRef)) return;
-    const next = `/gian-hang/${encodeURIComponent(shop.slug)}${window.location.search || ""}`;
+    const next = `/shop/${encodeURIComponent(shop.slug)}${window.location.search || ""}`;
     window.location.replace(next);
   };
 
@@ -228,9 +228,9 @@
 
   const buildShopRedirectUrl = (slug, id) => {
     const safeSlug = String(slug || "").trim();
-    if (safeSlug) return `/gian-hang/${encodeURIComponent(safeSlug)}`;
+    if (safeSlug) return `/shop/${encodeURIComponent(safeSlug)}`;
     const safeId = String(id || "").trim();
-    if (safeId) return `/gian-hang/?id=${encodeURIComponent(safeId)}`;
+    if (safeId) return `/shop/?id=${encodeURIComponent(safeId)}`;
     return "";
   };
 
@@ -339,8 +339,8 @@
       const title =
         message ||
         (status === "invalid"
-          ? translate("store.invalidLink", "Liên kết gian hàng không hợp lệ.")
-          : translate("store.notFound", "Gian hàng không tồn tại"));
+          ? translate("store.invalidLink", "LiÃªn káº¿t gian hÃ ng khÃ´ng há»£p lá»‡.")
+          : translate("store.notFound", "Gian hÃ ng khÃ´ng tá»“n táº¡i"));
       storeState.innerHTML = `<strong>${escapeHtml(title)}</strong>`;
       return;
     }
@@ -660,7 +660,7 @@
     const detailUrl =
       type === "service"
         ? `/dichvu/[id]/?id=${encodeURIComponent(item.id)}`
-        : `/sanpham/[id]/?id=${encodeURIComponent(item.id)}`;
+        : `/products/[id]/?id=${encodeURIComponent(item.id)}`;
     return `
       <a class="product-card" href="${detailUrl}">
         <div class="product-media">${media}</div>
@@ -909,3 +909,5 @@
 
   document.addEventListener("DOMContentLoaded", init);
 })();
+
+

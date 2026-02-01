@@ -592,7 +592,7 @@
         label: "Khu vực chính",
         routes: [
           { key: "home", label: "Trang chủ", paths: "/" },
-          { key: "products", label: "Sản phẩm", paths: "/sanpham" },
+          { key: "products", label: "Sản phẩm", paths: "/products" },
           { key: "services", label: "Dịch vụ", paths: "/dichvu" },
           { key: "tasks_market", label: "Nhiệm vụ", paths: "/nhiemvu" },
           { key: "task_posting", label: "Nhiệm vụ marketplace", paths: "/nhiemvu/tao" },
@@ -604,7 +604,7 @@
         label: "Seller",
         routes: [
           { key: "seller_panel", label: "Seller panel", paths: "/seller/panel, /seller/panel/create, /seller/tasks, /seller/join" },
-          { key: "seller_public", label: "Gian hàng công khai", paths: "/gian-hang" },
+          { key: "seller_public", label: "Gian hàng công khai", paths: "/shop" },
         ],
       },
       {

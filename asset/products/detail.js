@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   "use strict";
 
   const getLanguage = () => (typeof getCurrentLanguage === "function" ? getCurrentLanguage() : "vi");
@@ -92,9 +92,9 @@
 
   const buildShopUrl = (slug, id) => {
     const safeSlug = String(slug || "").trim();
-    if (safeSlug) return `/gian-hang/${encodeURIComponent(safeSlug)}`;
+    if (safeSlug) return `/shop/${encodeURIComponent(safeSlug)}`;
     const safeId = String(id || "").trim();
-    if (safeId) return `/gian-hang/?id=${encodeURIComponent(safeId)}`;
+    if (safeId) return `/shop/?id=${encodeURIComponent(safeId)}`;
     return "";
   };
 
@@ -265,7 +265,7 @@
         otherList.innerHTML = others
           .map((item) => {
             const detailUrl =
-              typeof getProductDetailPath === "function" ? getProductDetailPath(item.id) : `/sanpham/[id]/?id=${encodeURIComponent(item.id)}`;
+              typeof getProductDetailPath === "function" ? getProductDetailPath(item.id) : `/products/[id]/?id=${encodeURIComponent(item.id)}`;
             const subLabel = item.subcategory || item.category || product.subcategory || product.category || "BK";
             const media = item.thumbnailUrl
               ? `<img src="${item.thumbnailUrl}" alt="${escapeHtml(item.title)}" loading="lazy" />`
@@ -406,3 +406,5 @@
 
   document.addEventListener("DOMContentLoaded", init);
 })();
+
+
