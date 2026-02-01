@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title data-i18n-key="profile.topups.pageTitle">Top up | polyflux.xyz</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="../../apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="../../favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="../../favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="../../android-chrome-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="../../android-chrome-512x512.png" />
+    <link rel="manifest" href="../../site.webmanifest" />
+    <link rel="icon" href="../../favicon.ico" />
+    <meta name="description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta property="og:title" content="polyflux.xyz" />
+    <meta property="og:description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta property="og:image" content="../../asset/logo-preview.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="vi_VN" />
+    <meta property="og:site_name" content="polyflux.xyz" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="polyflux.xyz" />
+    <meta name="twitter:description" content="S&#224;n th&#432;&#417;ng m&#7841;i &#273;i&#7879;n t&#7917; uy t&#237;n, giao nhanh, b&#7843;o h&#224;nh r&#245; r&#224;ng, h&#7895; tr&#7907; 24/7." />
+    <meta name="twitter:image" content="../../asset/logo-preview.png" />
+<link rel="stylesheet" href="../../asset/base.css" />
+  </head>
+  <body class="page-profile page-topups">
+    <video class="video-bg" autoplay muted loop playsinline preload="metadata">
+      <source src="../../asset/bg-donut.mp4" type="video/mp4" />
+    </video>
+    <div class="video-overlay"></div>
+
+    <header class="wrap">
+      <nav class="nav glass">
+        <a href="/" class="brand" style="display: flex; align-items: center; gap: 12px; text-decoration: none;">
+          <img src="../../asset/logo.png" alt="PolyFlux" />
+          <span>polyflux<b>.xyz</b></span>
+        </a>
+        <div class="nav-links">
+          <a href="/sanpham/" data-nav="sanpham">Products <span class="badge">HOT</span></a>
+          <a href="/dichvu/" data-nav="dichvu">Services</a>
+          <a href="/nhiemvu/" data-nav="nhiemvu">Tasks</a>
+          <a href="/profile/topups/" data-nav="topups">Top up</a>
+        </div>
+        <div class="nav-actions">
+                    <button class="btn balance-btn" data-balance type="button">0 VND</button>
+          <a class="btn login-btn" href="/login/">Login</a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="wrap">
+      <section class="hero">
+        <h1 class="hero-title" data-i18n-key="profile.topups.title">Top up your account</h1>
+        <p class="hero-sub" data-i18n-key="profile.topups.subtitle">
+          Enter the amount to top up: minimum 10,000đ and maximum 499,000,000đ. A QR code will be generated per transaction.
+        </p>
+      </section>
+
+      <section class="section">
+        <div class="auth-guard" data-auth-guard>
+          <span>
+            <strong data-i18n-key="profile.topups.guard.title">Login required:</strong>
+            <span data-i18n-key="profile.topups.guard.desc">You need to log in to top up your wallet.</span>
+          </span>
+          <a class="btn" data-auth-login href="#" data-i18n-key="cta.login">Log in</a>
+        </div>
+
+        <div class="layout-grid" data-auth-lock="login">
+          <div>
+            <div class="card">
+              <h3 data-i18n-key="profile.topups.bank.title">Bank top up (QR)</h3>
+              <p class="hero-sub" data-i18n-key="profile.topups.bank.desc">
+                Scan the QR code in your banking app. After transferring, funds will be credited automatically.
+              </p>
+              <div class="qr-box" id="qr-box">
+                <div class="qr-placeholder" id="qr-placeholder" data-i18n-key="profile.topups.bank.qrPlaceholder">QR will appear after creation.</div>
+                <div class="qr-meta"><span data-i18n-key="profile.topups.bank.codeLabel">Account name</span>: <strong id="qr-account-name">---</strong></div>
+              </div>
+              <div class="form-grid" style="margin-top: 16px;">
+                <div class="form-field">
+                  <label for="amount-vnd" data-i18n-key="profile.topups.bank.amountInputLabel">Top-up amount (VND)</label>
+                  <input
+                    id="amount-vnd"
+                    type="number"
+                    min="10000"
+                    max="499000000"
+                    inputmode="numeric"
+                    placeholder="e.g. 100000"
+                    data-i18n-placeholder="profile.topups.bank.amountPlaceholder"
+                  />
+                  <div class="form-hint" data-i18n-key="profile.topups.bank.amountHint">Minimum 10,000đ, maximum 499,000,000đ.</div>
+                </div>
+                <button class="btn primary" id="generate-qr" type="button" data-i18n-key="profile.topups.bank.generate">Generate QR</button>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="card is-disabled">
+              <div class="notice-overlay">
+                <div class="notice-x">X</div>
+                <p data-i18n-key="profile.topups.crypto.notice">Crypto top-ups are temporarily unavailable. Please use bank transfer.</p>
+              </div>
+              <h3 data-i18n-key="profile.topups.crypto.title">Crypto top up (USDT TRC20)</h3>
+              <p class="hero-sub" data-i18n-key="profile.topups.crypto.desc">
+                Top up via USDT TRC20. Once the on-chain transaction is confirmed, your balance will be credited.
+              </p>
+              <div class="form-grid" style="margin-top: 12px;">
+                <div class="form-field">
+                  <label data-i18n-key="profile.topups.crypto.addressLabel">TRC20 wallet address</label>
+                  <input readonly value="--" />
+                </div>
+                <div class="form-field">
+                  <label for="amount-usdt" data-i18n-key="profile.topups.crypto.amountLabel">USDT amount</label>
+                  <input id="amount-usdt" placeholder="e.g. 10" data-i18n-placeholder="profile.topups.crypto.amountPlaceholder" />
+                </div>
+                <button class="btn primary" type="button" data-i18n-key="profile.topups.crypto.confirm">I've sent it</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section" style="margin-top: 40px;">
+          <div class="layout-grid">
+            <div>
+              <div class="card">
+                <h3 data-i18n-key="profile.topups.withdraw.title">Withdraw funds</h3>
+                <p class="hero-sub" data-i18n-key="profile.topups.withdraw.desc">
+                  Enter the amount to withdraw based on your current balance. Minimum 50,000đ, maximum 499,000,000đ.
+                </p>
+                <div class="form-hint"><span data-i18n-key="profile.topups.withdraw.balanceLabel">Available balance:</span> <strong>0&#273;</strong></div>
+                <div class="form-grid" style="margin-top: 12px;">
+                  <div class="form-field">
+                    <label for="withdraw-amount" data-i18n-key="profile.topups.withdraw.amountLabel">Withdrawal amount (VND)</label>
+                    <input
+                      id="withdraw-amount"
+                      type="number"
+                      min="50000"
+                      max="499000000"
+                      inputmode="numeric"
+                      placeholder="e.g. 500000"
+                      data-i18n-placeholder="profile.topups.withdraw.amountPlaceholder"
+                    />
+                    <div class="form-hint" data-i18n-key="profile.topups.withdraw.amountHint">Minimum 50,000đ, maximum 499,000,000đ.</div>
+                  </div>
+                  <div class="form-field">
+                    <label for="withdraw-bank" data-i18n-key="profile.topups.withdraw.bankLabel">Bank</label>
+                    <input id="withdraw-bank" placeholder="e.g. Vietcombank, ACB..." data-i18n-placeholder="profile.topups.withdraw.bankPlaceholder" />
+                  </div>
+                  <div class="form-field">
+                    <label for="withdraw-account" data-i18n-key="profile.topups.withdraw.accountLabel">Account number</label>
+                    <input id="withdraw-account" placeholder="Enter account number" data-i18n-placeholder="profile.topups.withdraw.accountPlaceholder" />
+                  </div>
+                  <div class="form-field">
+                    <label for="withdraw-name" data-i18n-key="profile.topups.withdraw.nameLabel">Account holder name</label>
+                    <input id="withdraw-name" placeholder="Full name of account holder" data-i18n-placeholder="profile.topups.withdraw.namePlaceholder" />
+                  </div>
+                  <button class="btn primary" type="button" data-i18n-key="profile.topups.withdraw.submit">Submit withdrawal</button>
+                  <div class="empty-state">
+                    <strong data-i18n-key="profile.topups.withdraw.mockTitle">Note:</strong>
+                    <span data-i18n-key="profile.topups.withdraw.mockDesc">Requests will be reviewed by the admin before transfer.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="history-stack">
+              <div class="card">
+                <h3 data-i18n-key="profile.topups.history.topup.title">Recent top-ups</h3>
+                <div class="empty-state" style="margin-top: 10px;">
+                  <strong data-i18n-key="empty.noData">No data yet, will appear when the API is connected.</strong>
+                </div>
+              </div>
+              <div class="card">
+                <h3 data-i18n-key="profile.topups.history.withdraw.title">Withdrawal history</h3>
+                <div class="table-like is-responsive withdraw-full withdraw-history" id="withdraw-history"></div>
+                <div class="table-pagination" id="withdraw-pagination"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        <div class="footer-grid">
+          <div>
+            <h4>About polyflux.xyz</h4>
+            <p>
+              The #1 trusted marketplace for digital assets on polyflux.xyz. Buy accounts, emails, tools and more with
+              instant delivery.
+            </p>
+          </div>
+          <div>
+            <h4>Navigation</h4>
+            <p><a href="/sanpham/">Products</a></p>
+            <p><a href="/dichvu/">Services</a></p>
+            <p><a href="/nhiemvu/">Tasks</a></p>
+            <p><a href="/profile/">My account</a></p>
+          </div>
+          <div>
+            <h4>Payments &amp; security</h4>
+            <p>20+ payment methods, processed automatically.</p>
+            <p>Transparent order history.</p>
+            <p>2FA &amp; suspicious login alerts.</p>
+          </div>
+          <div>
+            <h4>Sell on PolyFlux</h4>
+            <p>Want to open a store on polyflux.xyz?</p>
+            <a
+              href="/seller/join/"
+              class="btn primary"
+              style="margin-top: 8px; display: inline-flex; align-items: center; gap: 6px;"
+            >
+              Sell on PolyFlux
+            </a>
+          </div>
+        </div>
+      </footer>
+    </main>
+
+    <nav class="mobile-nav">
+      <div class="mobile-nav-top">
+        <a href="/" class="mobile-brand" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+          <img src="../../asset/logo.png" alt="PolyFlux" />
+          <span>polyflux<b>.xyz</b></span>
+        </a>
+        <div class="mobile-actions">
+                    <button class="btn balance-btn" data-balance type="button">0 VND</button>
+          <a class="btn login-btn" href="/login/">Login</a>
+          <button class="menu-btn" id="mobile-menu" type="button" aria-label="Menu">
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="mobile-links">
+        <a href="/sanpham/" data-nav="sanpham">Products</a>
+        <a href="/dichvu/" data-nav="dichvu">Services</a>
+        <a href="/nhiemvu/" data-nav="nhiemvu">Tasks</a>
+        <a href="/profile/topups/" data-nav="topups">Top up</a>
+      </div>
+    </nav>
+
+    <script src="../../asset/render.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const btn = document.getElementById("generate-qr");
+        const amountInput = document.getElementById("amount-vnd");
+        const accountNameEl = document.getElementById("qr-account-name");
+        const placeholder = document.getElementById("qr-placeholder");
+        if (!btn || !amountInput || !accountNameEl || !placeholder) return;
+
+        const min = 10000;
+        const max = 499000000;
+        const format = (value) => new Intl.NumberFormat("vi-VN").format(value);
+        const t = (key, fallback, vars) => {
+          if (typeof formatI18n === "function") {
+            const lang = typeof getCurrentLanguage === "function" ? getCurrentLanguage() : "vi";
+            return formatI18n(lang, key, fallback, vars);
+          }
+          return fallback || key;
+        };
+        const toast = (message) => {
+          if (window.BKAuth && window.BKAuth.showToast) {
+            window.BKAuth.showToast(message);
+          }
+        };
+        const isFile = window.location.protocol === "file:";
+        let qrImage = null;
+        const resetQr = (message) => {
+          if (qrImage && qrImage.parentNode) {
+            qrImage.parentNode.removeChild(qrImage);
+          }
+          qrImage = null;
+          placeholder.textContent = message;
+          accountNameEl.textContent = "---";
+        };
+        const showQr = (src) => {
+          if (!qrImage) {
+            qrImage = document.createElement("img");
+            qrImage.alt = "QR";
+            qrImage.style.width = "200px";
+            qrImage.style.maxWidth = "100%";
+            qrImage.style.height = "auto";
+            qrImage.style.display = "block";
+            qrImage.style.margin = "0 auto 8px";
+            placeholder.textContent = "";
+            placeholder.appendChild(qrImage);
+          } else {
+            placeholder.textContent = "";
+          }
+          qrImage.src = src;
+        };
+
+        btn.addEventListener("click", async () => {
+          const amount = parseInt(amountInput.value, 10);
+          if (!Number.isFinite(amount)) {
+            toast(t("profile.topups.bank.toast.invalidAmount", "Please enter a valid amount."));
+            return;
+          }
+          if (amount < min || amount > max) {
+            toast(
+              t("profile.topups.bank.toast.range", "Amount must be between {min} and {max} �'.", {
+                min: format(min),
+                max: format(max),
+              })
+            );
+            return;
+          }
+
+          const auth =
+            window.BKAuth && typeof window.BKAuth.read === "function" ? window.BKAuth.read() : { loggedIn: false };
+          if (!auth || !auth.loggedIn) {
+            if (window.BKAuth && typeof window.BKAuth.redirectToLogin === "function") {
+              window.BKAuth.redirectToLogin();
+            }
+            return;
+          }
+          if (isFile) {
+            toast(t("profile.topups.bank.toast.failed", "Unable to create QR right now."));
+            return;
+          }
+          const user = auth.user || {};
+          const userId = user.id || user.email || user.username || user.name;
+          if (!userId) {
+            toast(t("profile.topups.bank.toast.failed", "Unable to create QR right now."));
+            return;
+          }
+
+          btn.disabled = true;
+          resetQr(t("profile.topups.bank.qrPlaceholder", "QR will appear after creation."));
+          try {
+            const base =
+              typeof getRootPath === "function"
+                ? getRootPath()
+                : typeof getProjectRoot === "function"
+                  ? getProjectRoot()
+                  : "/";
+            const apiUrl = `${base}api/topups`;
+            const response = await fetch(apiUrl, {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({
+                amount,
+                currency: "VND",
+                userId,
+              }),
+            });
+            if (!response.ok) {
+              throw new Error("request_failed");
+            }
+            const data = await response.json().catch(() => null);
+            if (!data || !data.qrImage || !data.accountName) {
+              throw new Error("invalid_response");
+            }
+            showQr(data.qrImage);
+            accountNameEl.textContent = data.accountName;
+            toast(t("profile.topups.bank.toast.created", "QR created. Scan to top up."));
+          } catch (error) {
+            resetQr(t("profile.topups.bank.qrPlaceholder", "QR will appear after creation."));
+            toast(t("profile.topups.bank.toast.failed", "Unable to create QR right now."));
+          } finally {
+            btn.disabled = false;
+          }
+        });
+
+        const historyWrap = document.getElementById("withdraw-history");
+        const historyPagination = document.getElementById("withdraw-pagination");
+        if (!historyWrap) return;
+
+        const PAGE_SIZE = 10;
+        const PAGE_WINDOW = 5;
+        let currentPage = 1;
+        let pageWindowStart = 1;
+
+        const formatAmountFull = (value) => `${new Intl.NumberFormat("vi-VN").format(value)}&nbsp;VND`;
+
+        const formatAmountShort = (value) => {
+          if (value < 1000000) return new Intl.NumberFormat("vi-VN").format(value);
+          const raw = value / 1000000;
+          const rounded = raw % 1 === 0 ? String(raw.toFixed(0)) : String(raw.toFixed(1));
+          return `${rounded.replace(/\.0$/, "")}M`;
+        };
+        const historyItems = [];
+
+        const renderPagination = (totalPages) => {
+          if (!historyPagination) return;
+          historyPagination.innerHTML = "";
+          if (totalPages <= 1) return;
+
+          const windowEnd = Math.min(pageWindowStart + PAGE_WINDOW - 1, totalPages);
+          const fragment = document.createDocumentFragment();
+
+          for (let page = pageWindowStart; page <= windowEnd; page += 1) {
+            const btnPage = document.createElement("button");
+            btnPage.type = "button";
+            btnPage.className = page === currentPage ? "btn primary" : "btn ghost";
+            btnPage.textContent = String(page);
+            btnPage.dataset.page = String(page);
+            fragment.appendChild(btnPage);
+          }
+
+          if (totalPages > PAGE_WINDOW) {
+            const nextBtn = document.createElement("button");
+            nextBtn.type = "button";
+            nextBtn.className = "btn ghost";
+            nextBtn.textContent = "+";
+            nextBtn.dataset.pageWindow = "next";
+            fragment.appendChild(nextBtn);
+          }
+
+          historyPagination.appendChild(fragment);
+        };
+
+        const renderHistory = () => {
+          if (!historyItems.length) {
+            historyWrap.innerHTML = `
+              <div class="empty-state" style="margin-top: 10px;">
+                <strong>${t("empty.noData", "No data yet.")}</strong>
+              </div>
+            `;
+            if (historyPagination) historyPagination.innerHTML = "";
+            return;
+          }
+          const totalPages = Math.max(1, Math.ceil(historyItems.length / PAGE_SIZE));
+          if (currentPage > totalPages) currentPage = totalPages;
+          pageWindowStart = Math.max(1, Math.min(pageWindowStart, totalPages));
+
+          const start = (currentPage - 1) * PAGE_SIZE;
+          const rows = historyItems.slice(start, start + PAGE_SIZE);
+
+          const headerDate = t("profile.topups.history.table.date", "Date");
+          const headerAmount = t("profile.topups.history.table.amount", "Amount");
+          const headerBank = t("profile.topups.history.table.bank", "Bank");
+          const headerStatus = t("profile.topups.history.table.status", "Status");
+          historyWrap.innerHTML = `
+            <div class="table-like-header">
+              <span>${headerDate}</span>
+              <span>${headerAmount}</span>
+              <span>${headerBank}</span>
+              <span>${headerStatus}</span>
+            </div>
+            ${rows
+              .map(
+                (row) => `
+              <div class="table-like-row">
+                <span data-label="${headerDate}">${row.date}</span>
+                <span data-label="${headerAmount}">
+                  <span class="amount-full">${formatAmountFull(row.amount)}</span>
+                  <span class="amount-short">${formatAmountShort(row.amount)}</span>
+                </span>
+                <span data-label="${headerBank}">
+                  <span class="bank-full">${row.bank}</span>
+                  <span class="bank-short">${row.bankShort}</span>
+                </span>
+                <span data-label="${headerStatus}"><span class="badge-soft ${row.status.cls}">${t(row.status.key, row.status.label)}</span></span>
+              </div>
+            `
+              )
+              .join("")}
+          `;
+
+          renderPagination(totalPages);
+        };
+
+        if (historyPagination) {
+          historyPagination.addEventListener("click", (event) => {
+            const button = event.target.closest("button");
+            if (!button) return;
+            if (button.dataset.page) {
+              currentPage = Number(button.dataset.page);
+              renderHistory();
+              return;
+            }
+            if (button.dataset.pageWindow === "next") {
+              const nextStart = pageWindowStart + PAGE_WINDOW;
+              pageWindowStart = nextStart > totalPages ? 1 : nextStart;
+              currentPage = pageWindowStart;
+              renderHistory();
+              return;
+            }
+          });
+        }
+
+        renderHistory();
+
+      });
+    </script>
+  </body>
+</html>
+
+
+
+
+
