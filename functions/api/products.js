@@ -27,19 +27,64 @@ function flagTrue(column) {
   return `(${column} = 1 OR lower(${column}) IN ('true','yes'))`;
 }
 
+function flagTrueOrNull(column) {
+  return `(${column} IS NULL OR ${flagTrue(column)})`;
+}
+
+function normalizeCategory(value) {
+  const trimmed = String(value || "").trim();
+  return trimmed ? trimmed.toLowerCase() : "";
+}
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const SAFE_ID_PATTERN = /^[a-z0-9]+$/i;
+
+function slugifyText(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  if (!raw) return "";
+  return raw
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function encodeProductSlugId(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^\d+$/.test(raw)) return raw;
+  if (UUID_PATTERN.test(raw)) return raw.replace(/-/g, "").toLowerCase();
+  if (SAFE_ID_PATTERN.test(raw)) return raw.toLowerCase();
+  return raw.replace(/[^a-z0-9]/gi, "").toLowerCase();
+}
+
+function buildProductSlug(name, id) {
+  const base = slugifyText(name || "product");
+  const suffix = encodeProductSlugId(id);
+  if (!suffix) return base;
+  if (!base) return suffix;
+  return `${base}-${suffix}`;
+}
+
 function buildWhere(params, binds, options = {}) {
   const clauses = [
-    "p.kind = 'product'",
-    flagTrue("p.is_active"),
-    flagTrue("p.is_published"),
-    flagTrue("s.is_active"),
+    "(lower(trim(p.kind)) = 'product' OR (p.kind IS NULL AND (p.type IS NULL OR lower(trim(p.type)) <> 'service')))",
   ];
+  if (!options.includeInactive) {
+    clauses.push(flagTrueOrNull("p.is_active"));
+  }
+  if (!options.includeUnpublished) {
+    clauses.push(flagTrueOrNull("p.is_published"));
+  }
+  clauses.push(flagTrueOrNull("s.is_active"));
   if (!options.includeUnapproved) {
     clauses.push("lower(trim(coalesce(s.status,''))) IN ('approved','active','published','pending_update')");
   }
 
   if (params.category) {
-    clauses.push("COALESCE(p.category, s.category) = ?");
+    clauses.push("lower(trim(COALESCE(p.category, s.category))) = ?");
     binds.push(params.category);
   }
   if (params.subcategories.length) {
@@ -79,14 +124,21 @@ export async function onRequestGet(context) {
     const url = new URL(context.request.url);
     const preview = String(url.searchParams.get("preview") || "").toLowerCase();
     let includeUnapproved = false;
+    let includeUnpublished = false;
+    let includeInactive = false;
     if (preview === "1" || preview === "true") {
       const adminAuth = await requireAdmin(context);
-      includeUnapproved = adminAuth && adminAuth.ok;
+      if (adminAuth && adminAuth.ok) {
+        includeUnapproved = true;
+        includeUnpublished = true;
+        includeInactive = true;
+      }
     }
     const shopId = String(url.searchParams.get("shop") || url.searchParams.get("shopId") || "").trim();
     const sortParam = url.searchParams.get("sort");
+    const categoryValue = normalizeCategory(url.searchParams.get("category"));
     const params = {
-      category: String(url.searchParams.get("category") || "").trim() || "",
+      category: categoryValue,
       subcategories: parseList(url.searchParams.get("subcategory") || url.searchParams.get("subcategories") || ""),
       search: buildSearch(url.searchParams.get("search") || url.searchParams.get("q") || ""),
       sort: String(sortParam || (shopId ? "custom" : "popular")).trim(),
@@ -98,7 +150,7 @@ export async function onRequestGet(context) {
     params.perPage = Math.min(40, Math.max(1, Math.floor(params.perPage)));
 
     const binds = [];
-    const whereClause = buildWhere(params, binds, { includeUnapproved });
+    const whereClause = buildWhere(params, binds, { includeUnapproved, includeUnpublished, includeInactive });
     const orderClause = buildOrder(params.sort);
     const offset = (params.page - 1) * params.perPage;
 
@@ -112,10 +164,11 @@ export async function onRequestGet(context) {
     const total = Number(countRow && countRow.total ? countRow.total : 0);
 
     const soldCondition = SOLD_STATUSES.map(() => "?").join(", ");
-    const soldBinds = [...binds, ...SOLD_STATUSES, params.perPage, offset];
+    const soldBinds = [...SOLD_STATUSES, ...binds, params.perPage, offset];
     const listSql = `
       SELECT p.id, p.shop_id, p.name, p.description_short, p.description, p.category, p.subcategory, p.tags_json,
              p.price, p.price_max, p.stock_count, p.thumbnail_media_id, p.status, p.created_at,
+             p.is_active, p.is_published, p.kind, p.type,
              s.store_name, s.store_slug, s.rating AS shop_rating, s.category AS store_category, s.subcategory AS store_subcategory, s.tags_json AS store_tags_json,
              u.badge, u.role, u.display_name, u.title, u.rank,
              (
@@ -144,7 +197,9 @@ export async function onRequestGet(context) {
       }
       return {
         id: row.id,
+        slug: buildProductSlug(row.name, row.id),
         shopId: row.shop_id,
+        shopSlug: row.store_slug || "",
         title: row.name,
         descriptionShort: row.description_short || toPlainText(row.description || ""),
         category: row.category || row.store_category || "",
@@ -156,6 +211,10 @@ export async function onRequestGet(context) {
         soldCount: Number(row.sold_count || 0),
         rating: Number(row.shop_rating || 0),
         status: row.status || "draft",
+        isActive: row.is_active != null ? Number(row.is_active || 0) === 1 : null,
+        isPublished: row.is_published != null ? Number(row.is_published || 0) === 1 : null,
+        kind: row.kind || "",
+        type: row.type || "",
         createdAt: row.created_at || null,
         thumbnailId: row.thumbnail_media_id || "",
         seller: {

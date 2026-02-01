@@ -22,6 +22,45 @@
     return formatVnd(price);
   };
 
+  const escapeHtml = (value) =>
+    String(value || "").replace(/[&<>"']/g, (char) => {
+      const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+      return map[char] || char;
+    });
+
+  const resolveShopRef = (item) => {
+    if (!item) return "";
+    if (item.shopSlug != null && item.shopSlug !== "") return String(item.shopSlug).trim();
+    const seller = item.seller || {};
+    if (seller.slug != null && seller.slug !== "") return String(seller.slug).trim();
+    if (item.shopId != null && item.shopId !== "") return String(item.shopId).trim();
+    if (seller.storeId != null && seller.storeId !== "") return String(seller.storeId).trim();
+    if (seller.id != null && seller.id !== "") return String(seller.id).trim();
+    return "";
+  };
+
+  const buildShopUrl = (shopRef) => {
+    if (!shopRef) return "";
+    if (window.BKRoutes && typeof window.BKRoutes.getShopDetailPath === "function") {
+      return window.BKRoutes.getShopDetailPath(shopRef);
+    }
+    return `/shops/${encodeURIComponent(shopRef)}`;
+  };
+
+  const resolveThumbnailUrl = (item) => {
+    if (!item) return "";
+    if (item.thumbnailUrl) return item.thumbnailUrl;
+    const mediaId = item.thumbnailId || item.thumbnail_id || item.thumbnail_media_id;
+    if (!mediaId) return "";
+    return `/api/media?id=${encodeURIComponent(mediaId)}`;
+  };
+
+  const isPreviewMode = () => {
+    const params = new URLSearchParams(window.location.search);
+    const preview = params.get("preview");
+    return preview === "1" || preview === "true";
+  };
+
   const renderSellerBadge = (seller) => {
     if (!seller) return "";
     let badgeValue = String(seller.badge || "").trim();
@@ -95,6 +134,7 @@
     subcategories: new Set(),
     page: 1,
     totalPages: 1,
+    preview: false,
   };
 
   const categoryTitle = document.getElementById("category-title");
@@ -155,6 +195,34 @@
     grid.innerHTML = Array.from({ length: 6 }, () => skeleton).join("");
   };
 
+  const buildPreviewBadges = (item) => {
+    if (!state.preview) return "";
+    const badges = [];
+    if (item && item.isPublished === false) {
+      badges.push({ label: translate("label.unpublished", "Ch\u01b0a publish"), className: "warn" });
+    }
+    if (item && item.isActive === false) {
+      badges.push({ label: translate("label.inactive", "\u0110ang \u1ea9n"), className: "bad" });
+    }
+    if (!badges.length) return "";
+    return badges.map((badge) => `<span class="status-badge ${badge.className}">${badge.label}</span>`).join("");
+  };
+
+  const buildEmptyHint = () => {
+    const parts = [];
+    if (state.search) parts.push(`${translate("label.search", "T\u1eeb kh\u00f3a")}: &quot;${escapeHtml(state.search)}&quot;`);
+    if (state.subcategories.size) {
+      const tags = Array.from(state.subcategories).join(", ");
+      parts.push(`${translate("label.filters", "B\u1ed9 l\u1ecdc")}: ${escapeHtml(tags)}`);
+    }
+    if (state.category) {
+      const labelKey = categoryKeys[state.category];
+      const label = labelKey ? translate(labelKey, state.category) : state.category;
+      parts.push(`${translate("label.category", "Danh m\u1ee5c")}: ${escapeHtml(label)}`);
+    }
+    return parts.length ? `<div class="empty-state-meta">${parts.join(" \u2022 ")}</div>` : "";
+  };
+
   const renderPagination = (total) => {
     if (!pagination) return;
     pagination.innerHTML = "";
@@ -186,36 +254,48 @@
     const sellerBadge = renderSellerBadge(seller);
     const ratingLabel = item.rating != null ? item.rating : "--";
     const subLabel = item.subcategory || categoryFallback[item.category] || "DV";
-    const media = item.thumbnailUrl
-      ? `<img src="${item.thumbnailUrl}" alt="${item.title}" loading="lazy" />`
+    const safeTitle = escapeHtml(item.title || "");
+    const safeDesc = escapeHtml(item.descriptionShort || "");
+    const thumbUrl = resolveThumbnailUrl(item);
+    const media = thumbUrl
+      ? `<img src="${thumbUrl}" alt="${safeTitle}" loading="lazy" />`
       : `<div class="product-fallback">${String(subLabel || "DV").slice(0, 2)}</div>`;
     const priceLabel = formatPriceRange(item);
     const priceAttrs =
       item.priceMax != null && item.priceMax > item.price
         ? `data-base-min="${item.price}" data-base-max="${item.priceMax}" data-base-currency="VND"`
         : `data-base-amount="${item.price}" data-base-currency="VND"`;
+    const shopRef = resolveShopRef(item);
+    const shopUrl = buildShopUrl(shopRef);
+    const previewBadges = buildPreviewBadges(item);
+    const actions = [];
+    if (previewBadges) actions.push(`<div class="card-badges">${previewBadges}</div>`);
+    if (shopUrl) actions.push(`<a class="shop-link" href="${shopUrl}">Gian h\u00e0ng</a>`);
     return `
-      <a class="product-card" href="${getServiceDetailPath(item.id)}">
-        <div class="product-media">${media}</div>
-        <div class="product-body">
-          <div class="product-price" ${priceAttrs}>${priceLabel}</div>
-          <h3 class="product-title">${item.title}</h3>
-          <div class="product-meta">
-            <div class="meta-col">
-              <span>${translate("label.rating", "Rating")}: <strong>${ratingLabel}</strong></span>
-              <span>${translate("label.sold", "Requests")}: <strong>${item.requestCount ?? "--"}</strong></span>
+      <div class="product-card">
+        <a class="product-card-link" href="${getServiceDetailPath(item.id)}">
+          <div class="product-media">${media}</div>
+          <div class="product-body">
+            <div class="product-price" ${priceAttrs}>${priceLabel}</div>
+            <h3 class="product-title">${safeTitle}</h3>
+            <div class="product-meta">
+              <div class="meta-col">
+                <span>${translate("label.rating", "Rating")}: <strong>${ratingLabel}</strong></span>
+                <span>${translate("label.sold", "Requests")}: <strong>${item.requestCount ?? "--"}</strong></span>
+              </div>
+              <div class="meta-col meta-right">
+                <span class="seller-line">
+                  <span class="seller-label">${translate("label.seller", "Seller")}:</span>
+                  <span class="seller-value"><strong class="seller-name">${escapeHtml(seller.name || "Shop")}</strong>${sellerBadge}</span>
+                </span>
+              </div>
             </div>
-            <div class="meta-col meta-right">
-              <span class="seller-line">
-                <span class="seller-label">${translate("label.seller", "Seller")}:</span>
-                <span class="seller-value"><strong class="seller-name">${seller.name || "Shop"}</strong>${sellerBadge}</span>
-              </span>
-            </div>
+            ${subLabel ? `<div class="product-type">${translate("label.type", "Type")}: <strong>${subLabel}</strong></div>` : ""}
+            <p class="product-desc">${safeDesc}</p>
           </div>
-          ${subLabel ? `<div class="product-type">${translate("label.type", "Type")}: <strong>${subLabel}</strong></div>` : ""}
-          <p class="product-desc">${item.descriptionShort || ""}</p>
-        </div>
-      </a>
+        </a>
+        ${actions.length ? `<div class="product-card-actions">${actions.join("")}</div>` : ""}
+      </div>
     `;
   };
 
@@ -226,6 +306,7 @@
         <div class="card empty-state product-empty" style="grid-column: 1 / -1;">
           <strong>${translate("empty.noData", "No data")}</strong>
           <div style="margin-top:4px;">${translate("empty.adjustCategory", "Adjust filters and try again.")}</div>
+          ${buildEmptyHint()}
         </div>
       `;
       if (pagination) pagination.innerHTML = "";
@@ -247,6 +328,7 @@
     params.set("sort", state.sort);
     params.set("page", String(state.page));
     params.set("perPage", String(PAGE_SIZE));
+    if (state.preview) params.set("preview", "1");
     try {
       const response = await fetch(`/api/services?${params.toString()}`);
       const data = await response.json();
@@ -356,6 +438,7 @@
 
   const init = () => {
     if (!grid) return;
+    state.preview = isPreviewMode();
     renderSubcategories();
     initFilters();
     loadServices();

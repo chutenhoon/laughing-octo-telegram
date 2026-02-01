@@ -271,7 +271,9 @@ export const getRouteKeyForPath = (pathname) => {
   }
   const path = rawPath.replace(/\\/g, "/").toLowerCase();
   if (!path || path === "/" || path === "/index.html") return "home";
+  if (path.startsWith("/products")) return "products";
   if (path.startsWith("/sanpham")) return "products";
+  if (path.startsWith("/shops") || path.startsWith("/gian-hang")) return "seller_public";
   if (path.startsWith("/dichvu")) return "services";
   if (path.startsWith("/nhiemvu/tao")) return "task_posting";
   if (path.startsWith("/nhiemvu")) return "tasks_market";

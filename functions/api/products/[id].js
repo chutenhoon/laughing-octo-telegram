@@ -20,12 +20,85 @@ function isVisibleProductStatus(status) {
   return value !== "disabled" && value !== "blocked" && value !== "banned";
 }
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const COMPACT_UUID_PATTERN = /^[0-9a-f]{32}$/i;
+const SAFE_ID_PATTERN = /^[a-z0-9]+$/i;
+
+function slugifyText(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  if (!raw) return "";
+  return raw
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function encodeProductSlugId(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^\d+$/.test(raw)) return raw;
+  if (UUID_PATTERN.test(raw)) return raw.replace(/-/g, "").toLowerCase();
+  if (SAFE_ID_PATTERN.test(raw)) return raw.toLowerCase();
+  return raw.replace(/[^a-z0-9]/gi, "").toLowerCase();
+}
+
+function buildProductSlug(name, id) {
+  const base = slugifyText(name || "product");
+  const suffix = encodeProductSlugId(id);
+  if (!suffix) return base;
+  if (!base) return suffix;
+  return `${base}-${suffix}`;
+}
+
+function expandCompactUuid(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  if (!COMPACT_UUID_PATTERN.test(raw)) return "";
+  return `${raw.slice(0, 8)}-${raw.slice(8, 12)}-${raw.slice(12, 16)}-${raw.slice(16, 20)}-${raw.slice(20)}`;
+}
+
+function parseSlugToId(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (UUID_PATTERN.test(raw)) return raw.toLowerCase();
+  const parts = raw.split("-").filter(Boolean);
+  if (!parts.length) return "";
+  const suffix = parts[parts.length - 1];
+  if (/^\d+$/.test(suffix)) return suffix;
+  if (COMPACT_UUID_PATTERN.test(suffix)) return expandCompactUuid(suffix);
+  if (SAFE_ID_PATTERN.test(suffix)) return suffix.toLowerCase();
+  return "";
+}
+
+async function findProductIdBySlug(db, slug) {
+  const raw = String(slug || "").trim().toLowerCase();
+  if (!raw) return "";
+  const base = raw.replace(/-[^-]+$/, "");
+  const search = base.replace(/-/g, " ").trim();
+  if (!search) return "";
+  const like = `%${search.replace(/\s+/g, "%")}%`;
+  const result = await db
+    .prepare("SELECT id, name FROM products WHERE kind = 'product' AND name LIKE ? LIMIT 50")
+    .bind(like)
+    .all();
+  const rows = result && Array.isArray(result.results) ? result.results : [];
+  for (const row of rows) {
+    if (!row) continue;
+    const candidate = buildProductSlug(row.name, row.id);
+    if (candidate === raw) return row.id;
+  }
+  return "";
+}
+
 export async function onRequestGet(context) {
   try {
     const db = context?.env?.DB;
     if (!db) return jsonResponse({ ok: false, error: "DB_NOT_CONFIGURED" }, 500);
-    const id = context?.params?.id ? String(context.params.id).trim() : "";
-    if (!id) return jsonResponse({ ok: false, error: "INVALID_PRODUCT" }, 400);
+    const rawRef = context?.params?.id ? String(context.params.id).trim() : "";
+    if (!rawRef) return jsonResponse({ ok: false, error: "INVALID_PRODUCT" }, 400);
+    let productId = parseSlugToId(rawRef);
 
     const soldCondition = SOLD_STATUSES.map(() => "?").join(", ");
     const sql = `
@@ -50,7 +123,21 @@ export async function onRequestGet(context) {
          AND p.kind = 'product'
        LIMIT 1
     `;
-    const row = await db.prepare(sql).bind(...SOLD_STATUSES, id).first();
+    let row = null;
+    if (productId) {
+      row = await db.prepare(sql).bind(...SOLD_STATUSES, productId).first();
+    }
+    if (!row && rawRef && rawRef !== productId) {
+      row = await db.prepare(sql).bind(...SOLD_STATUSES, rawRef).first();
+      if (row) productId = row.id;
+    }
+    if (!row) {
+      const fallbackId = await findProductIdBySlug(db, rawRef);
+      if (fallbackId) {
+        row = await db.prepare(sql).bind(...SOLD_STATUSES, fallbackId).first();
+        if (row) productId = row.id;
+      }
+    }
     if (!row) return jsonResponse({ ok: false, error: "NOT_FOUND" }, 404);
 
     const session = getSessionUser(context.request);
@@ -79,6 +166,7 @@ export async function onRequestGet(context) {
 
     const product = {
       id: row.id,
+      slug: buildProductSlug(row.name, row.id),
       shopId: row.shop_id,
       title: row.name,
       descriptionShort: row.description_short || toPlainText(row.description || ""),
@@ -129,6 +217,7 @@ export async function onRequestGet(context) {
     const otherRows = await db.prepare(otherSql).bind(row.shop_id, row.id).all();
     const others = (otherRows && Array.isArray(otherRows.results) ? otherRows.results : []).map((item) => ({
       id: item.id,
+      slug: buildProductSlug(item.name, item.id),
       title: item.name,
       price: Number(item.price || 0),
       priceMax: item.price_max != null ? Number(item.price_max || 0) : null,

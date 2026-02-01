@@ -60,6 +60,14 @@
     return escapeHtml(value).replace(/\r?\n/g, "<br>");
   };
 
+  const resolveThumbnailUrl = (item) => {
+    if (!item) return "";
+    if (item.thumbnailUrl) return item.thumbnailUrl;
+    const mediaId = item.thumbnailId || item.thumbnail_id || item.thumbnail_media_id;
+    if (!mediaId) return "";
+    return `/api/media?id=${encodeURIComponent(mediaId)}`;
+  };
+
   const renderSellerBadge = (data) => {
     const badgeValue = resolveBadgeValue(data);
     if (!badgeValue) return "";
@@ -368,8 +376,9 @@
     const ratingLabel = item.rating != null ? item.rating : "--";
     const fallbackMap = type === "service" ? categoryFallbackService : categoryFallbackProduct;
     const subLabel = item.subcategory || fallbackMap[item.category] || (type === "service" ? "DV" : "BK");
-    const media = item.thumbnailUrl
-      ? `<img src="${item.thumbnailUrl}" alt="${escapeHtml(item.title)}" loading="lazy" />`
+    const thumbUrl = resolveThumbnailUrl(item);
+    const media = thumbUrl
+      ? `<img src="${thumbUrl}" alt="${escapeHtml(item.title)}" loading="lazy" />`
       : `<div class="product-fallback">${String(subLabel || "BK").slice(0, 2)}</div>`;
     const priceLabel = formatPriceRange(item);
     const priceAttrs =
@@ -379,7 +388,9 @@
     const detailUrl =
       type === "service"
         ? `/dichvu/[id]/?id=${encodeURIComponent(item.id)}`
-        : `/sanpham/[id]/?id=${encodeURIComponent(item.id)}`;
+        : typeof getProductDetailPath === "function"
+          ? getProductDetailPath(item)
+          : `/products/${encodeURIComponent(item.slug || item.id || "")}/`;
     return `
       <a class="product-card" href="${detailUrl}">
         <div class="product-media">${media}</div>

@@ -19,6 +19,12 @@
     return formatVnd(price);
   };
 
+  const escapeHtml = (value) =>
+    String(value || "").replace(/[&<>"']/g, (char) => {
+      const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+      return map[char] || char;
+    });
+
   const renderSellerBadge = (data) => {
     if (!data) return "";
     let badgeValue = String(data.badge || "").trim();
@@ -47,15 +53,36 @@
     return "";
   };
 
-  const getProductId = () => {
+  const resolveShopRef = (product) => {
+    if (!product) return "";
+    if (product.shop && product.shop.slug != null && product.shop.slug !== "") return String(product.shop.slug).trim();
+    const seller = product.seller || {};
+    if (seller.slug != null && seller.slug !== "") return String(seller.slug).trim();
+    if (product.shopSlug != null && product.shopSlug !== "") return String(product.shopSlug).trim();
+    if (product.shopId != null && product.shopId !== "") return String(product.shopId).trim();
+    if (product.shop && product.shop.id != null && product.shop.id !== "") return String(product.shop.id).trim();
+    if (seller.storeId != null && seller.storeId !== "") return String(seller.storeId).trim();
+    if (seller.id != null && seller.id !== "") return String(seller.id).trim();
+    return "";
+  };
+
+  const resolveThumbnailUrl = (item) => {
+    if (!item) return "";
+    if (item.thumbnailUrl) return item.thumbnailUrl;
+    const mediaId = item.thumbnailId || item.thumbnail_id || item.thumbnail_media_id;
+    if (!mediaId) return "";
+    return `/api/media?id=${encodeURIComponent(mediaId)}`;
+  };
+
+  const getProductRef = () => {
     const params = new URLSearchParams(window.location.search);
-    let id = params.get("id");
-    if (!id) {
+    let ref = params.get("id") || params.get("slug");
+    if (!ref) {
       const parts = window.location.pathname.split("/").filter(Boolean);
       const last = parts[parts.length - 1];
-      if (last && last !== "[id]") id = last;
+      if (last && last !== "[id]" && last !== "[slug]") ref = last;
     }
-    return id ? String(id).trim() : "";
+    return ref ? String(ref).trim() : "";
   };
 
   const buildAuthHeaders = () => {
@@ -110,13 +137,13 @@
   };
 
   const init = async () => {
-    const productId = getProductId();
-    if (!productId) {
+    const productRef = getProductRef();
+    if (!productRef) {
       setHTML("detail-title", translate("product.detail.notFound", "Product not found"));
       return;
     }
 
-    const response = await fetch(`/api/products/${encodeURIComponent(productId)}`);
+    const response = await fetch(`/api/products/${encodeURIComponent(productRef)}`);
     const data = await response.json();
     if (!response.ok || !data || data.ok === false) {
       setHTML("detail-title", translate("product.detail.notFound", "Product not found"));
@@ -124,9 +151,17 @@
     }
 
     const product = data.product;
+    const productId = product && product.id ? String(product.id) : productRef;
     const seller = product.seller || {};
     const shop = product.shop || {};
     const priceLabel = formatPriceRange(product);
+    const shopRef = resolveShopRef(product);
+    const shopUrl =
+      shopRef && window.BKRoutes && typeof window.BKRoutes.getShopDetailPath === "function"
+        ? window.BKRoutes.getShopDetailPath(shopRef)
+        : shopRef
+          ? `/shops/${encodeURIComponent(shopRef)}`
+          : "";
 
     setText("detail-title", product.title);
     setText("detail-short", product.descriptionShort || "");
@@ -139,14 +174,20 @@
     const sellerLink = document.getElementById("detail-seller-link");
     if (sellerLink) {
       sellerLink.textContent = seller.name || shop.name || "Shop";
-      const root = typeof getProjectRoot === "function" ? getProjectRoot() : "/";
-      const isFile = window.location.protocol === "file:";
-      const base = isFile ? "seller/[id]/index.html" : "seller/[id]/";
-      const ref = shop.slug || product.shopId || "";
-      sellerLink.href = ref ? `${root}${base}?id=${encodeURIComponent(ref)}` : "#";
+      sellerLink.href = shopUrl || "#";
     }
     setHTML("detail-seller-badge", renderSellerBadge(seller));
-    setText("detail-shop-id", shop.slug || product.shopId || "--");
+    setText("detail-shop-id", shopRef || "--");
+    const shopLink = document.getElementById("detail-shop-link");
+    if (shopLink) {
+      if (shopUrl) {
+        shopLink.href = shopUrl;
+        shopLink.style.display = "inline-flex";
+      } else {
+        shopLink.href = "#";
+        shopLink.style.display = "none";
+      }
+    }
     setText("detail-rating-note", product.rating != null ? product.rating : "--");
     const ratingNote = document.getElementById("detail-rating-note");
     if (ratingNote) {
@@ -168,8 +209,9 @@
     const detailImage = document.getElementById("detail-image");
     if (detailImage) {
       const fallbackLabel = String(product.subcategory || product.category || "BK").slice(0, 2);
-      detailImage.innerHTML = product.thumbnailUrl
-        ? `<img src="${product.thumbnailUrl}" alt="${product.title}" loading="lazy" />`
+      const thumbUrl = resolveThumbnailUrl(product);
+      detailImage.innerHTML = thumbUrl
+        ? `<img src="${thumbUrl}" alt="${escapeHtml(product.title)}" loading="lazy" />`
         : `<div class="product-fallback">${fallbackLabel}</div>`;
     }
 
@@ -185,9 +227,12 @@
       } else {
         otherList.innerHTML = others
           .map((item) => {
-            const detailUrl = typeof getProductDetailPath === "function" ? getProductDetailPath(item.id) : `/sanpham/[id]/?id=${encodeURIComponent(item.id)}`;
+            const detailUrl =
+              typeof getProductDetailPath === "function"
+                ? getProductDetailPath(item)
+                : `/products/${encodeURIComponent(item.slug || item.id || "")}/`;
             const label = formatPriceRange(item);
-            return `<a class="detail-other-card" href="${detailUrl}"><strong>${item.title}</strong><span>${label}</span></a>`;
+            return `<a class="detail-other-card" href="${detailUrl}"><strong>${escapeHtml(item.title)}</strong><span>${label}</span></a>`;
           })
           .join("");
       }

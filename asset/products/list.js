@@ -22,6 +22,51 @@
     return formatVnd(price);
   };
 
+  const escapeHtml = (value) =>
+    String(value || "").replace(/[&<>"']/g, (char) => {
+      const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+      return map[char] || char;
+    });
+
+  const parseList = (value) =>
+    String(value || "")
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+  const resolveShopRef = (item) => {
+    if (!item) return "";
+    if (item.shopSlug != null && item.shopSlug !== "") return String(item.shopSlug).trim();
+    const seller = item.seller || {};
+    if (seller.slug != null && seller.slug !== "") return String(seller.slug).trim();
+    if (item.shopId != null && item.shopId !== "") return String(item.shopId).trim();
+    if (seller.storeId != null && seller.storeId !== "") return String(seller.storeId).trim();
+    if (seller.id != null && seller.id !== "") return String(seller.id).trim();
+    return "";
+  };
+
+  const buildShopUrl = (shopRef) => {
+    if (!shopRef) return "";
+    if (window.BKRoutes && typeof window.BKRoutes.getShopDetailPath === "function") {
+      return window.BKRoutes.getShopDetailPath(shopRef);
+    }
+    return `/shops/${encodeURIComponent(shopRef)}`;
+  };
+
+  const resolveThumbnailUrl = (item) => {
+    if (!item) return "";
+    if (item.thumbnailUrl) return item.thumbnailUrl;
+    const mediaId = item.thumbnailId || item.thumbnail_id || item.thumbnail_media_id;
+    if (!mediaId) return "";
+    return `/api/media?id=${encodeURIComponent(mediaId)}`;
+  };
+
+  const isPreviewMode = () => {
+    const params = new URLSearchParams(window.location.search);
+    const preview = params.get("preview");
+    return preview === "1" || preview === "true";
+  };
+
   const renderSellerBadge = (seller) => {
     if (!seller) return "";
     let badgeValue = String(seller.badge || "").trim();
@@ -115,13 +160,17 @@
     });
   });
 
+  const DEFAULT_CATEGORY = "email";
+  const SORT_OPTIONS = new Set(["popular", "rating", "newest"]);
+
   const state = {
-    category: "email",
+    category: DEFAULT_CATEGORY,
     sort: "popular",
     search: "",
     subcategories: new Set(),
     page: 1,
     totalPages: 1,
+    preview: false,
   };
 
   const categoryTitle = document.getElementById("category-title");
@@ -132,6 +181,61 @@
   const filterToggle = document.getElementById("filter-toggle");
   const pagination = document.getElementById("product-pagination");
   const grid = document.getElementById("product-list");
+  let activeController = null;
+
+  const normalizeCategory = (value) => {
+    const raw = String(value || "").trim().toLowerCase();
+    if (!raw || !filterOptions[raw]) return DEFAULT_CATEGORY;
+    return raw;
+  };
+
+  const normalizeSort = (value) => {
+    const raw = String(value || "").trim();
+    return SORT_OPTIONS.has(raw) ? raw : "popular";
+  };
+
+  const applyStateFromUrl = () => {
+    const params = new URLSearchParams(window.location.search);
+    state.category = normalizeCategory(params.get("category"));
+    state.sort = normalizeSort(params.get("sort"));
+    state.search = String(params.get("search") || params.get("q") || "").trim();
+    const subRaw = parseList(params.get("subcategory") || params.get("subcategories") || "");
+    const allowed = new Set((filterOptions[state.category] || []).map((option) => option.value));
+    state.subcategories = new Set(subRaw.filter((value) => allowed.has(value)));
+    const pageValue = Number(params.get("page") || 1);
+    state.page = Number.isFinite(pageValue) && pageValue > 0 ? Math.floor(pageValue) : 1;
+  };
+
+  const syncUrl = () => {
+    const params = new URLSearchParams(window.location.search);
+    params.set("category", state.category || DEFAULT_CATEGORY);
+    params.set("sort", state.sort || "popular");
+    if (state.search) params.set("search", state.search);
+    else params.delete("search");
+    if (state.subcategories.size) params.set("subcategory", Array.from(state.subcategories).join(","));
+    else params.delete("subcategory");
+    if (state.page > 1) params.set("page", String(state.page));
+    else params.delete("page");
+    if (state.preview) params.set("preview", "1");
+    const query = params.toString();
+    const nextUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+    window.history.replaceState({}, "", nextUrl);
+  };
+
+  const applyUiState = () => {
+    if (categoryTitle) {
+      const labelKey = categoryKeys[state.category];
+      categoryTitle.textContent = labelKey ? translate(labelKey, "Product") : "Product";
+      if (labelKey) categoryTitle.dataset.i18nKey = labelKey;
+    }
+    document.querySelectorAll(".category-pill").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.category === state.category);
+    });
+    document.querySelectorAll(".sort-pill").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.sort === state.sort);
+    });
+    if (searchInput) searchInput.value = state.search || "";
+  };
 
   const setFilterOpen = (open) => {
     if (!filterPanel || !filterToggle) return;
@@ -182,6 +286,34 @@
     grid.innerHTML = Array.from({ length: 6 }, () => skeleton).join("");
   };
 
+  const buildPreviewBadges = (item) => {
+    if (!state.preview) return "";
+    const badges = [];
+    if (item && item.isPublished === false) {
+      badges.push({ label: translate("label.unpublished", "Ch\u01b0a publish"), className: "warn" });
+    }
+    if (item && item.isActive === false) {
+      badges.push({ label: translate("label.inactive", "\u0110ang \u1ea9n"), className: "bad" });
+    }
+    if (!badges.length) return "";
+    return badges.map((badge) => `<span class="status-badge ${badge.className}">${badge.label}</span>`).join("");
+  };
+
+  const buildEmptyHint = () => {
+    const parts = [];
+    if (state.search) parts.push(`${translate("label.search", "T\u1eeb kh\u00f3a")}: &quot;${escapeHtml(state.search)}&quot;`);
+    if (state.subcategories.size) {
+      const tags = Array.from(state.subcategories).join(", ");
+      parts.push(`${translate("label.filters", "B\u1ed9 l\u1ecdc")}: ${escapeHtml(tags)}`);
+    }
+    if (state.category) {
+      const labelKey = categoryKeys[state.category];
+      const label = labelKey ? translate(labelKey, state.category) : state.category;
+      parts.push(`${translate("label.category", "Danh m\u1ee5c")}: ${escapeHtml(label)}`);
+    }
+    return parts.length ? `<div class="empty-state-meta">${parts.join(" \u2022 ")}</div>` : "";
+  };
+
   const renderPagination = (total) => {
     if (!pagination) return;
     pagination.innerHTML = "";
@@ -205,40 +337,55 @@
     const sellerBadge = renderSellerBadge(seller);
     const ratingLabel = item.rating != null ? item.rating : "--";
     const subLabel = item.subcategory || categoryFallback[item.category] || "BK";
-    const media = item.thumbnailUrl
-      ? `<img src="${item.thumbnailUrl}" alt="${item.title}" loading="lazy" />`
+    const safeTitle = escapeHtml(item.title || "");
+    const safeDesc = escapeHtml(item.descriptionShort || "");
+    const thumbUrl = resolveThumbnailUrl(item);
+    const media = thumbUrl
+      ? `<img src="${thumbUrl}" alt="${safeTitle}" loading="lazy" />`
       : `<div class="product-fallback">${String(subLabel || "BK").slice(0, 2)}</div>`;
     const priceLabel = formatPriceRange(item);
     const priceAttrs =
       item.priceMax != null && item.priceMax > item.price
         ? `data-base-min="${item.price}" data-base-max="${item.priceMax}" data-base-currency="VND"`
         : `data-base-amount="${item.price}" data-base-currency="VND"`;
-    const detailUrl = typeof getProductDetailPath === "function" ? getProductDetailPath(item.id) : `/sanpham/[id]/?id=${encodeURIComponent(item.id)}`;
+    const detailUrl =
+      typeof getProductDetailPath === "function"
+        ? getProductDetailPath(item)
+        : `/products/${encodeURIComponent(item.slug || item.id || "")}/`;
+    const shopRef = resolveShopRef(item);
+    const shopUrl = buildShopUrl(shopRef);
+    const previewBadges = buildPreviewBadges(item);
+    const actions = [];
+    if (previewBadges) actions.push(`<div class="card-badges">${previewBadges}</div>`);
+    if (shopUrl) actions.push(`<a class="shop-link" href="${shopUrl}">Gian h\u00e0ng</a>`);
     return `
-      <a class="product-card" href="${detailUrl}">
-        <div class="product-media">${media}</div>
-        <div class="product-body">
-          <div class="product-price" ${priceAttrs}>${priceLabel}</div>
-          <h3 class="product-title">
-            ${item.title}
-          </h3>
-          <div class="product-meta">
-            <div class="meta-col">
-              <span>${translate("label.stock", "Stock")}: <strong>${item.stockCount ?? "--"}</strong></span>
-              <span>${translate("label.sold", "Sold")}: <strong>${item.soldCount ?? "--"}</strong></span>
-              <span>${translate("label.rating", "Rating")}: <strong>${ratingLabel}</strong></span>
+      <div class="product-card">
+        <a class="product-card-link" href="${detailUrl}">
+          <div class="product-media">${media}</div>
+          <div class="product-body">
+            <div class="product-price" ${priceAttrs}>${priceLabel}</div>
+            <h3 class="product-title">
+              ${safeTitle}
+            </h3>
+            <div class="product-meta">
+              <div class="meta-col">
+                <span>${translate("label.stock", "Stock")}: <strong>${item.stockCount ?? "--"}</strong></span>
+                <span>${translate("label.sold", "Sold")}: <strong>${item.soldCount ?? "--"}</strong></span>
+                <span>${translate("label.rating", "Rating")}: <strong>${ratingLabel}</strong></span>
+              </div>
+              <div class="meta-col meta-right">
+                <span class="seller-line">
+                  <span class="seller-label">${translate("label.seller", "Seller")}:</span>
+                  <span class="seller-value"><strong class="seller-name">${escapeHtml(seller.name || "Shop")}</strong>${sellerBadge}</span>
+                </span>
+              </div>
             </div>
-            <div class="meta-col meta-right">
-              <span class="seller-line">
-                <span class="seller-label">${translate("label.seller", "Seller")}:</span>
-                <span class="seller-value"><strong class="seller-name">${seller.name || "Shop"}</strong>${sellerBadge}</span>
-              </span>
-            </div>
+            ${subLabel ? `<div class="product-type">${translate("label.type", "Type")}: <strong>${subLabel}</strong></div>` : ""}
+            <p class="product-desc">${safeDesc}</p>
           </div>
-          ${subLabel ? `<div class="product-type">${translate("label.type", "Type")}: <strong>${subLabel}</strong></div>` : ""}
-          <p class="product-desc">${item.descriptionShort || ""}</p>
-        </div>
-      </a>
+        </a>
+        ${actions.length ? `<div class="product-card-actions">${actions.join("")}</div>` : ""}
+      </div>
     `;
   };
 
@@ -249,6 +396,7 @@
         <div class="card empty-state product-empty" style="grid-column: 1 / -1;">
           <strong>${translate("empty.noData", "No data")}</strong>
           <div style="margin-top:4px;">${translate("empty.adjustCategory", "Adjust filters and try again.")}</div>
+          ${buildEmptyHint()}
         </div>
       `;
       if (pagination) pagination.innerHTML = "";
@@ -263,6 +411,9 @@
 
   const loadProducts = async () => {
     renderSkeleton();
+    if (activeController) activeController.abort();
+    activeController = new AbortController();
+    syncUrl();
     const params = new URLSearchParams();
     if (state.category) params.set("category", state.category);
     if (state.subcategories.size) params.set("subcategory", Array.from(state.subcategories).join(","));
@@ -270,16 +421,22 @@
     params.set("sort", state.sort);
     params.set("page", String(state.page));
     params.set("perPage", String(PAGE_SIZE));
+    if (state.preview) params.set("preview", "1");
     try {
-      const response = await fetch(`/api/products?${params.toString()}`);
+      const response = await fetch(`/api/products?${params.toString()}`, { signal: activeController.signal });
       const data = await response.json();
       if (!response.ok || !data || data.ok === false) {
         renderProducts([]);
         return;
       }
       state.totalPages = data.totalPages || 1;
+      if (state.page > state.totalPages) {
+        state.page = state.totalPages;
+        syncUrl();
+      }
       renderProducts(Array.isArray(data.items) ? data.items : []);
     } catch (error) {
+      if (error && error.name === "AbortError") return;
       renderProducts([]);
     }
   };
@@ -288,14 +445,7 @@
     state.category = key;
     state.subcategories = new Set();
     state.page = 1;
-    if (categoryTitle) {
-      const labelKey = categoryKeys[key];
-      categoryTitle.textContent = labelKey ? translate(labelKey, "Product") : "Product";
-      if (labelKey) categoryTitle.dataset.i18nKey = labelKey;
-    }
-    document.querySelectorAll(".category-pill").forEach((btn) => {
-      btn.classList.toggle("active", btn.dataset.category === key);
-    });
+    applyUiState();
     renderSubcategories();
     loadProducts();
   };
@@ -379,9 +529,18 @@
 
   const init = () => {
     if (!grid) return;
+    state.preview = isPreviewMode();
+    applyStateFromUrl();
     renderSubcategories();
+    applyUiState();
     initFilters();
     loadProducts();
+    window.addEventListener("popstate", () => {
+      applyStateFromUrl();
+      renderSubcategories();
+      applyUiState();
+      loadProducts();
+    });
   };
 
   document.addEventListener("DOMContentLoaded", init);

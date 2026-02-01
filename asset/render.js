@@ -3,7 +3,10 @@ function getProjectRoot() {
   const path = window.location.pathname.replace(/\\/g, "/");
   const lower = path.toLowerCase();
   const markers = [
+    "/products/",
     "/sanpham/",
+    "/shops/",
+    "/gian-hang/",
     "/dichvu/",
     "/nhiemvu/",
     "/profile/",
@@ -116,12 +119,99 @@ function ensureBadgeStyles() {
   document.head.appendChild(style);
 }
 
-function getProductDetailPath(productId) {
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const COMPACT_UUID_PATTERN = /^[0-9a-f]{32}$/i;
+const SAFE_ID_PATTERN = /^[a-z0-9]+$/i;
+
+function slugifyText(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  if (!raw) return "";
+  return raw
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function encodeProductSlugId(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^\d+$/.test(raw)) return raw;
+  if (UUID_PATTERN.test(raw)) return raw.replace(/-/g, "").toLowerCase();
+  if (SAFE_ID_PATTERN.test(raw)) return raw.toLowerCase();
+  return raw.replace(/[^a-z0-9]/gi, "").toLowerCase();
+}
+
+function expandCompactUuid(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  if (!COMPACT_UUID_PATTERN.test(raw)) return "";
+  return `${raw.slice(0, 8)}-${raw.slice(8, 12)}-${raw.slice(12, 16)}-${raw.slice(16, 20)}-${raw.slice(20)}`;
+}
+
+function parseSlugToId(slug) {
+  const raw = String(slug || "").trim();
+  if (!raw) return "";
+  if (UUID_PATTERN.test(raw)) return raw.toLowerCase();
+  const parts = raw.split("-").filter(Boolean);
+  if (!parts.length) return "";
+  const suffix = parts[parts.length - 1];
+  if (/^\d+$/.test(suffix)) return suffix;
+  if (COMPACT_UUID_PATTERN.test(suffix)) return expandCompactUuid(suffix);
+  if (SAFE_ID_PATTERN.test(suffix)) return suffix.toLowerCase();
+  return "";
+}
+
+function buildProductSlug(name, id) {
+  const base = slugifyText(name || "product");
+  const suffix = encodeProductSlugId(id);
+  if (!suffix) return base;
+  if (!base) return suffix;
+  return `${base}-${suffix}`;
+}
+
+function getProductDetailPath(input, titleOverride) {
   const root = getRootPath();
   const isFile = window.location.protocol === "file:";
-  const base = isFile ? "sanpham/[id]/index.html" : "sanpham/[id]/";
-  const suffix = productId ? `?id=${encodeURIComponent(productId)}` : "";
-  return root + base + suffix;
+  let id = "";
+  let title = "";
+  let slug = "";
+  if (input && typeof input === "object") {
+    id = input.id || input.productId || "";
+    title = input.title || input.name || "";
+    slug = input.slug || input.slugId || "";
+  } else {
+    id = input || "";
+    title = titleOverride || "";
+  }
+  const finalSlug = slug || buildProductSlug(title, id);
+  if (isFile) {
+    const base = "products/[slug]/index.html";
+    const suffix = id ? `?id=${encodeURIComponent(id)}` : "";
+    return root + base + suffix;
+  }
+  if (finalSlug) return root + "products/" + finalSlug + "/";
+  if (id) return root + "products/" + encodeURIComponent(id) + "/";
+  return root + "products/";
+}
+
+function getShopDetailPath(input) {
+  const root = getRootPath();
+  const isFile = window.location.protocol === "file:";
+  let ref = "";
+  if (input && typeof input === "object") {
+    ref = input.slug || input.storeSlug || input.id || "";
+  } else {
+    ref = input || "";
+  }
+  if (isFile) {
+    const base = "shops/[slug]/index.html";
+    const suffix = ref ? `?id=${encodeURIComponent(ref)}` : "";
+    return root + base + suffix;
+  }
+  if (!ref) return root + "shops/";
+  return root + "shops/" + encodeURIComponent(ref) + "/";
 }
 
 // Remove trailing /index.html from the current URL when served over HTTP(S)
@@ -152,7 +242,10 @@ function normalizeIndexLinks(isFile) {
 function normalizeInternalLinks(isFile) {
   if (isFile) return;
   const routes = [
+    "products/",
     "sanpham/",
+    "shops/",
+    "gian-hang/",
     "dichvu/",
     "nhiemvu/",
     "profile/",
@@ -363,7 +456,9 @@ const getMaintenanceRouteKeyForPath = (pathname) => {
   }
   const path = rawPath.replace(/\\/g, "/").toLowerCase();
   if (!path || path === "/" || path === "/index.html") return "home";
+  if (path.startsWith("/products")) return "products";
   if (path.startsWith("/sanpham")) return "products";
+  if (path.startsWith("/shops") || path.startsWith("/gian-hang")) return "seller_public";
   if (path.startsWith("/dichvu")) return "services";
   if (path.startsWith("/nhiemvu/tao")) return "task_posting";
   if (path.startsWith("/nhiemvu")) return "tasks_market";
@@ -4957,10 +5052,10 @@ function hydrateNavLinks() {
   const isFile = window.location.protocol === "file:";
   
   // For file://, point directly to index.html to avoid directory listings.
-  // When hosting via HTTP, you can rewrite /sanpham/ -> /sanpham/index.html.
+  // When hosting via HTTP, you can rewrite /products/ -> /products/index.html.
   const map = isFile
     ? {
-        sanpham: "sanpham/index.html",
+        sanpham: "products/index.html",
         dichvu: "dichvu/index.html",
         nhiemvu: "nhiemvu/index.html",
         topups: "profile/topups/index.html",
@@ -4969,7 +5064,7 @@ function hydrateNavLinks() {
         profile: "profile/index.html",
       }
     : {
-        sanpham: "sanpham/",
+        sanpham: "products/",
         dichvu: "dichvu/",
         nhiemvu: "nhiemvu/",
         topups: "profile/topups/",
@@ -4992,7 +5087,7 @@ function hydrateNavLinks() {
   // footer quick links
   document.querySelectorAll("footer a").forEach((a) => {
     const href = (a.getAttribute("href") || "").toLowerCase();
-    if (href.includes("/sanpham")) a.href = root + map.sanpham;
+    if (href.includes("/sanpham") || href.includes("/products")) a.href = root + map.sanpham;
     else if (href.includes("/dichvu")) a.href = root + map.dichvu;
     else if (href.includes("/nhiemvu")) a.href = root + map.nhiemvu;
     else if (href.includes("/profile")) a.href = root + map.profile;
@@ -5469,7 +5564,7 @@ function renderLandingFeaturedProducts(items, targetId = "product-grid") {
       const short = shortKey ? t(shortKey, p.short || "") : p.short || "";
       const desc = short || t("product.fallback.delivery");
       return `
-    <a class="card" href="${getProductDetailPath(p.id)}">
+    <a class="card" href="${getProductDetailPath(p)}">
       <h3>${name} ${p.badge ? `<span class="tag">${p.badge}</span>` : ""}</h3>
       <p class="hero-sub">${desc}</p>
       <div class="meta-row">
@@ -5517,7 +5612,7 @@ function renderProductGrid(items, filters = {}, targetId = "product-list") {
       const short = shortKey ? t(shortKey, p.short || "") : p.short || "";
       const desc = short || t("product.fallback.safe");
       return `
-    <a class="card" href="${getProductDetailPath(p.id)}">
+    <a class="card" href="${getProductDetailPath(p)}">
       <h3>${name} ${p.badge ? `<span class="tag">${p.badge}</span>` : ""}</h3>
       <p class="hero-sub">${desc}</p>
       <div class="meta-row">
@@ -5700,6 +5795,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const path = window.location.pathname;
   const map = [
+    { key: "sanpham", match: "/products/" },
     { key: "sanpham", match: "/sanpham/" },
     { key: "dichvu", match: "/dichvu/" },
     { key: "nhiemvu", match: "/nhiemvu/" },
@@ -5761,6 +5857,13 @@ window.BKUI = {
   applyNameWithBadge,
   getAdminAvatarUrl,
   getLinkPreviewUrl,
+};
+
+window.BKRoutes = {
+  getProductDetailPath,
+  getShopDetailPath,
+  buildProductSlug,
+  parseSlugToId,
 };
 
 
