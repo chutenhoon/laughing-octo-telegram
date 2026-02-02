@@ -44,6 +44,12 @@ const CATEGORY_ALIASES = new Map([
   ["misc", "other"],
   ["others", "other"],
 ]);
+const CATEGORY_DB_ALIASES = {
+  email: ["mail", "e-mail"],
+  tool: ["software", "phan mem", "phan-mem"],
+  account: ["tai khoan", "tai-khoan", "acc"],
+  other: ["khac", "misc", "others"],
+};
 
 function normalizeCategory(value) {
   const trimmed = String(value || "").trim();
@@ -143,6 +149,13 @@ function normalizeValue(value) {
   return String(value || "").trim().toLowerCase();
 }
 
+function getCategoryDbValues(category) {
+  const key = normalizeCategory(category);
+  if (!key) return [];
+  const base = [key, ...(CATEGORY_DB_ALIASES[key] || [])].map(normalizeValue).filter(Boolean);
+  return Array.from(new Set(base));
+}
+
 function resolveCategoryFromValue(value) {
   const key = normalizeValue(value);
   if (!key) return "";
@@ -173,14 +186,20 @@ function buildCategoryClause(category, binds) {
   if (!key) return "";
   const baseExpr = "lower(trim(COALESCE(NULLIF(p.category, ''), NULLIF(s.category, ''))))";
   const missingExpr = "(COALESCE(NULLIF(trim(p.category), ''), NULLIF(trim(s.category), '')) IS NULL)";
+  const baseValues = getCategoryDbValues(key);
+  const basePlaceholders = baseValues.map(() => "?").join(", ");
+  const baseClause = baseValues.length ? `${baseExpr} IN (${basePlaceholders})` : "";
   const fallbackBinds = [];
   const fallbackClause = buildCategoryFallbackClause(key, fallbackBinds);
-  if (fallbackClause) {
-    binds.push(key, ...fallbackBinds);
-    return `(${baseExpr} = ? OR (${missingExpr} AND ${fallbackClause}))`;
+  if (fallbackClause && baseClause) {
+    binds.push(...baseValues, ...fallbackBinds);
+    return `(${baseClause} OR (${missingExpr} AND ${fallbackClause}))`;
   }
-  binds.push(key);
-  return `${baseExpr} = ?`;
+  if (baseClause) {
+    binds.push(...baseValues);
+    return baseClause;
+  }
+  return "";
 }
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -303,6 +322,7 @@ export async function onRequestGet(context) {
         includeInactive = true;
       }
     }
+    const includeCounts = ["1", "true", "yes"].includes(String(url.searchParams.get("includeCounts") || "").toLowerCase());
     const shopId = String(url.searchParams.get("shop") || url.searchParams.get("shopId") || "").trim();
     const sortParam = url.searchParams.get("sort");
     const categoryValue = normalizeCategory(url.searchParams.get("category"));
@@ -331,6 +351,30 @@ export async function onRequestGet(context) {
     `;
     const countRow = await db.prepare(countSql).bind(...binds).first();
     const total = Number(countRow && countRow.total ? countRow.total : 0);
+
+    let subcategoryCounts = null;
+    if (includeCounts) {
+      const countParams = { ...params, subcategories: [] };
+      const countBinds = [];
+      const countWhere = buildWhere(countParams, countBinds, { includeUnapproved, includeUnpublished, includeInactive });
+      const subcategorySql = `
+        SELECT COALESCE(NULLIF(p.subcategory, ''), NULLIF(s.subcategory, '')) AS subcategory,
+               COUNT(1) AS total
+          FROM products p
+          JOIN shops s ON s.id = p.shop_id
+         ${countWhere}
+         GROUP BY COALESCE(NULLIF(p.subcategory, ''), NULLIF(s.subcategory, ''))
+      `;
+      const subRows = await db.prepare(subcategorySql).bind(...countBinds).all();
+      const counts = {};
+      const results = subRows && Array.isArray(subRows.results) ? subRows.results : [];
+      results.forEach((row) => {
+        const key = row && row.subcategory ? String(row.subcategory).trim() : "";
+        if (!key) return;
+        counts[key] = Number(row.total || 0);
+      });
+      subcategoryCounts = counts;
+    }
 
     const soldCondition = SOLD_STATUSES.map(() => "?").join(", ");
     const soldBinds = [...SOLD_STATUSES, ...binds, params.perPage, offset];
@@ -407,6 +451,7 @@ export async function onRequestGet(context) {
       perPage: params.perPage,
       total,
       totalPages: Math.max(1, Math.ceil(total / params.perPage)),
+      ...(subcategoryCounts ? { subcategoryCounts } : {}),
     });
   } catch (error) {
     return jsonResponse({ ok: false, error: "INTERNAL" }, 500);

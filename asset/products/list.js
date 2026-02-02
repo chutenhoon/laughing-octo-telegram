@@ -34,6 +34,8 @@
       .map((item) => item.trim())
       .filter(Boolean);
 
+  const normalizeFilterValue = (value) => String(value || "").trim().toLowerCase();
+
   const resolveShopRef = (item) => {
     if (!item) return "";
     if (item.shopSlug != null && item.shopSlug !== "") return String(item.shopSlug).trim();
@@ -163,7 +165,8 @@
   const filterMatchers = new Map();
   Object.keys(filterOptions).forEach((key) => {
     filterOptions[key].forEach((option) => {
-      filterMatchers.set(option.value, option.match || [option.value]);
+      const matches = option.match || [option.value];
+      filterMatchers.set(option.value, matches.map(normalizeFilterValue));
     });
   });
 
@@ -178,6 +181,8 @@
     page: 1,
     totalPages: 1,
     preview: false,
+    subcategoryCounts: {},
+    subcategoryLabels: {},
   };
 
   const categoryTitle = document.getElementById("category-title");
@@ -250,12 +255,64 @@
     filterToggle.setAttribute("aria-expanded", open ? "true" : "false");
   };
 
+  const setSubcategoryCounts = (counts) => {
+    const nextCounts = {};
+    const labels = {};
+    if (counts && typeof counts === "object") {
+      Object.keys(counts).forEach((key) => {
+        const normalized = normalizeFilterValue(key);
+        if (!normalized) return;
+        const value = Number(counts[key] || 0);
+        nextCounts[normalized] = (nextCounts[normalized] || 0) + value;
+        if (!labels[normalized]) labels[normalized] = key;
+      });
+    }
+    state.subcategoryCounts = nextCounts;
+    state.subcategoryLabels = labels;
+  };
+
+  const buildCountsFromItems = (items) => {
+    const counts = {};
+    (Array.isArray(items) ? items : []).forEach((item) => {
+      const raw = String(item && item.subcategory ? item.subcategory : "").trim();
+      if (!raw) return;
+      counts[raw] = (counts[raw] || 0) + 1;
+    });
+    return counts;
+  };
+
+  const getOptionCount = (option) => {
+    if (!option) return 0;
+    const matches = filterMatchers.get(option.value) || [normalizeFilterValue(option.value)];
+    return matches.reduce((sum, key) => sum + (state.subcategoryCounts[key] || 0), 0);
+  };
+
+  const buildFilterOptions = () => {
+    let options = filterOptions[state.category] || [];
+    const dynamicKeys = Object.keys(state.subcategoryCounts || {});
+    if (!options.length) {
+      return dynamicKeys.map((key) => {
+        const label = state.subcategoryLabels[key] || key;
+        return { value: label, label };
+      });
+    }
+    if (!dynamicKeys.length) return options;
+    const existing = new Set(options.map((option) => normalizeFilterValue(option.value)));
+    const extras = dynamicKeys
+      .filter((key) => !existing.has(key))
+      .map((key) => {
+        const label = state.subcategoryLabels[key] || key;
+        return { value: label, label };
+      });
+    return extras.length ? options.concat(extras) : options;
+  };
+
   const renderSubcategories = () => {
     if (!filterList) return;
-    let options = filterOptions[state.category] || [];
+    let options = buildFilterOptions();
     if (!options.length && state.category !== DEFAULT_CATEGORY) {
       state.category = DEFAULT_CATEGORY;
-      options = filterOptions[state.category] || [];
+      options = buildFilterOptions();
     }
     if (!options.length) {
       filterList.innerHTML = `<div class="empty-state">${translate("product.empty.noneInCategory", "No subcategories")}</div>`;
@@ -264,11 +321,13 @@
     filterList.innerHTML = options
       .map((option) => {
         const checked = state.subcategories.has(option.value) ? "checked" : "";
+        const count = getOptionCount(option);
         const label = option.labelKey ? translate(option.labelKey, option.label) : option.label;
         return `
           <label class="filter-item">
             <input type="checkbox" value="${option.value}" ${checked} />
             <span>${label}</span>
+            <em>(${count})</em>
           </label>
         `;
       })
@@ -432,22 +491,34 @@
     params.set("sort", state.sort);
     params.set("page", String(state.page));
     params.set("perPage", String(PAGE_SIZE));
+    params.set("includeCounts", "1");
     if (state.preview) params.set("preview", "1");
     try {
       const response = await fetch(`/api/products?${params.toString()}`, { signal: activeController.signal });
       const data = await response.json();
       if (!response.ok || !data || data.ok === false) {
+        setSubcategoryCounts({});
+        renderSubcategories();
         renderProducts([]);
         return;
       }
+      const items = Array.isArray(data.items) ? data.items : [];
+      const counts =
+        data.subcategoryCounts && Object.keys(data.subcategoryCounts || {}).length
+          ? data.subcategoryCounts
+          : buildCountsFromItems(items);
+      setSubcategoryCounts(counts);
+      renderSubcategories();
       state.totalPages = data.totalPages || 1;
       if (state.page > state.totalPages) {
         state.page = state.totalPages;
         syncUrl();
       }
-      renderProducts(Array.isArray(data.items) ? data.items : []);
+      renderProducts(items);
     } catch (error) {
       if (error && error.name === "AbortError") return;
+      setSubcategoryCounts({});
+      renderSubcategories();
       renderProducts([]);
     }
   };

@@ -396,6 +396,8 @@ const BK_CURRENCY_LANGUAGE = {
   JPY: "ja",
   CNY: "zh",
 };
+const BK_LANGUAGE_KEY = "bk_lang";
+const BK_LANGUAGE_SUPPORTED = Array.from(new Set(Object.values(BK_CURRENCY_LANGUAGE)));
 
 function setCookieValue(name, value, maxAgeSeconds) {
   if (typeof document === "undefined") return;
@@ -4142,6 +4144,28 @@ function getLanguageForCurrency(code) {
   return BK_CURRENCY_LANGUAGE[upper] || BK_LANGUAGE_DEFAULT;
 }
 
+function normalizeLanguage(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  return BK_LANGUAGE_SUPPORTED.includes(raw) ? raw : "";
+}
+
+function getStoredLanguage() {
+  try {
+    return normalizeLanguage(localStorage.getItem(BK_LANGUAGE_KEY) || "");
+  } catch (e) {
+    return "";
+  }
+}
+
+function setStoredLanguage(value) {
+  const normalized = normalizeLanguage(value);
+  if (!normalized) return "";
+  try {
+    localStorage.setItem(BK_LANGUAGE_KEY, normalized);
+  } catch (e) {}
+  return normalized;
+}
+
 function getStoredCurrency() {
   try {
     return localStorage.getItem("bk_currency_selected") || "VND";
@@ -4151,6 +4175,8 @@ function getStoredCurrency() {
 }
 
 function getCurrentLanguage() {
+  const stored = getStoredLanguage();
+  if (stored) return stored;
   const currencyApi = typeof globalThis !== "undefined" ? globalThis.BKCurrency : null;
   const currency = currencyApi && currencyApi.getSelected ? currencyApi.getSelected() : getStoredCurrency();
   return getLanguageForCurrency(currency);
@@ -4158,9 +4184,13 @@ function getCurrentLanguage() {
 
 function getI18nText(lang, key, fallback) {
   const language = lang || BK_LANGUAGE_DEFAULT;
-  const table = BK_I18N[language] || BK_I18N[BK_LANGUAGE_DEFAULT] || {};
+  const table = BK_I18N[language] || {};
   if (Object.prototype.hasOwnProperty.call(table, key)) {
     return table[key];
+  }
+  const fallbackTable = BK_I18N[BK_LANGUAGE_DEFAULT] || {};
+  if (Object.prototype.hasOwnProperty.call(fallbackTable, key)) {
+    return fallbackTable[key];
   }
   if (fallback !== undefined) return fallback;
   return key;
@@ -4987,6 +5017,7 @@ function applyFooterI18n(language) {
 
 function applyI18n(lang) {
   const language = lang || getCurrentLanguage();
+  setStoredLanguage(language);
   const navMap = {
     sanpham: "nav.products",
     dichvu: "nav.services",
