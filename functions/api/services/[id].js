@@ -1,6 +1,38 @@
 import { jsonResponse } from "../auth/_utils.js";
 import { getSessionUser, findUserByRef, toSafeHtml, toPlainText, jsonCachedResponse } from "../_catalog.js";
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const SAFE_ID_PATTERN = /^[a-z0-9]+$/i;
+
+function slugifyText(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  if (!raw) return "";
+  return raw
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function encodeShopSlugId(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^\d+$/.test(raw)) return raw;
+  if (UUID_PATTERN.test(raw)) return raw.replace(/-/g, "").toLowerCase();
+  if (SAFE_ID_PATTERN.test(raw)) return raw.toLowerCase();
+  return raw.replace(/[^a-z0-9]/gi, "").toLowerCase();
+}
+
+function buildShopSlug(name, id) {
+  const base = slugifyText(name || "shop");
+  const suffix = encodeShopSlugId(id);
+  if (!suffix) return base;
+  if (!base) return suffix;
+  return `${base}-${suffix}`;
+}
+
 function isApprovedStatus(status) {
   const value = String(status || "").toLowerCase();
   return value === "approved" || value === "active" || value === "published" || value === "pending_update";
@@ -73,6 +105,7 @@ export async function onRequestGet(context) {
       }
     }
 
+    const shopSlug = buildShopSlug(row.store_name || row.store_slug || "shop", row.shop_id);
     const service = {
       id: row.id,
       shopId: row.shop_id,
@@ -91,7 +124,7 @@ export async function onRequestGet(context) {
       thumbnailId: row.thumbnail_media_id || "",
       seller: {
         name: row.store_name || "",
-        slug: row.store_slug || "",
+        slug: shopSlug,
         badge: row.badge || "",
         role: row.role || "",
         username: row.username || "",
@@ -99,10 +132,11 @@ export async function onRequestGet(context) {
         title: row.title || "",
         rank: row.rank || "",
       },
+      shopSlug,
       shop: {
         id: row.shop_id,
         name: row.store_name || "",
-        slug: row.store_slug || "",
+        slug: shopSlug,
         rating: Number(row.shop_rating || 0),
         descriptionShort: row.short_desc || "",
         descriptionHtml: toSafeHtml(row.long_desc || row.shop_desc || ""),

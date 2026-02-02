@@ -158,7 +158,11 @@
     const shopRef = resolveShopRef(product);
     const shopUrl =
       shopRef && window.BKRoutes && typeof window.BKRoutes.getShopDetailPath === "function"
-        ? window.BKRoutes.getShopDetailPath(shopRef)
+        ? window.BKRoutes.getShopDetailPath({
+            id: product.shopId || (shop && shop.id) || "",
+            name: (shop && shop.name) || seller.name || "",
+            slug: shopRef,
+          })
         : shopRef
           ? `/shops/${encodeURIComponent(shopRef)}`
           : "";

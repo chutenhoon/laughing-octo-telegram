@@ -13,6 +13,38 @@ function buildSearch(value) {
   return `%${trimmed.replace(/\s+/g, "%")}%`;
 }
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const SAFE_ID_PATTERN = /^[a-z0-9]+$/i;
+
+function slugifyText(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  if (!raw) return "";
+  return raw
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function encodeShopSlugId(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^\d+$/.test(raw)) return raw;
+  if (UUID_PATTERN.test(raw)) return raw.replace(/-/g, "").toLowerCase();
+  if (SAFE_ID_PATTERN.test(raw)) return raw.toLowerCase();
+  return raw.replace(/[^a-z0-9]/gi, "").toLowerCase();
+}
+
+function buildShopSlug(name, id) {
+  const base = slugifyText(name || "shop");
+  const suffix = encodeShopSlugId(id);
+  if (!suffix) return base;
+  if (!base) return suffix;
+  return `${base}-${suffix}`;
+}
+
 function flagTrue(column) {
   return `(${column} = 1 OR lower(${column}) IN ('true','yes'))`;
 }
@@ -126,7 +158,7 @@ export async function onRequestGet(context) {
       items.push({
         id: row.id,
         name: row.store_name || "",
-        slug: row.store_slug || "",
+        slug: buildShopSlug(row.store_name || row.store_slug || "shop", row.id),
         storeType: row.store_type || "",
         category: row.category || "",
         subcategory: row.subcategory || "",

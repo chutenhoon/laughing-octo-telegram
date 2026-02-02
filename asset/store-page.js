@@ -135,7 +135,19 @@
       const last = parts[parts.length - 1];
       if (last && last !== "[id]") id = last;
     }
-    return id ? String(id).trim() : "";
+    if (!id) return "";
+    const raw = String(id).trim();
+    if (!raw) return "";
+    if (window.BKRoutes && typeof window.BKRoutes.parseShopSlugToId === "function") {
+      const parsed = window.BKRoutes.parseShopSlugToId(raw);
+      if (parsed) {
+        const isNumeric = /^\d+$/.test(parsed);
+        const isCompactUuid = /^[0-9a-f]{32}$/i.test(parsed);
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(parsed);
+        if (isNumeric || isCompactUuid || isUuid) return parsed;
+      }
+    }
+    return raw;
   };
 
   const isPreviewMode = () => {

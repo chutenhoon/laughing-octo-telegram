@@ -31,9 +31,156 @@ function flagTrueOrNull(column) {
   return `(${column} IS NULL OR ${flagTrue(column)})`;
 }
 
+const PRODUCT_CATEGORY_KEYS = new Set(["email", "tool", "account", "other"]);
+const CATEGORY_ALIASES = new Map([
+  ["software", "tool"],
+  ["phan mem", "tool"],
+  ["phan-mem", "tool"],
+  ["mail", "email"],
+  ["e-mail", "email"],
+  ["tai khoan", "account"],
+  ["acc", "account"],
+  ["khac", "other"],
+  ["misc", "other"],
+  ["others", "other"],
+]);
+
 function normalizeCategory(value) {
   const trimmed = String(value || "").trim();
-  return trimmed ? trimmed.toLowerCase() : "";
+  const key = trimmed ? trimmed.toLowerCase() : "";
+  if (PRODUCT_CATEGORY_KEYS.has(key)) return key;
+  return CATEGORY_ALIASES.get(key) || "";
+}
+
+const CATEGORY_FALLBACK_VALUES = {
+  email: [
+    "gmail",
+    "gmail edu",
+    "gmail.edu",
+    "hotmail",
+    "outlookmail",
+    "outlook",
+    "rumail",
+    "ru mail",
+    "domainemail",
+    "domain email",
+    "yahoomail",
+    "yahoo",
+    "protonmail",
+    "proton",
+    "emailkhac",
+    "email khac",
+    "email",
+    "mail",
+    "e-mail",
+  ],
+  tool: [
+    "toolfacebook",
+    "toolgoogle",
+    "toolyoutube",
+    "toolcrypto",
+    "toolptc",
+    "toolcaptcha",
+    "tooloffer",
+    "toolptu",
+    "toolkhac",
+    "tool other",
+    "facebook tool",
+    "google tool",
+    "youtube tool",
+    "crypto tool",
+    "ptc tool",
+    "captcha tool",
+    "offer tool",
+    "ptu tool",
+    "checker",
+    "phan mem",
+    "phan-mem",
+    "software",
+    "app",
+  ],
+  account: [
+    "accfacebook",
+    "accbm",
+    "acczalo",
+    "acctwitter",
+    "acctelegram",
+    "accinstagram",
+    "accshopee",
+    "accdiscord",
+    "acctiktok",
+    "keyantivirus",
+    "acccapcut",
+    "keywindows",
+    "acckhac",
+    "facebook account",
+    "tiktok account",
+    "discord account",
+    "zalo account",
+    "telegram account",
+    "instagram account",
+    "shopee account",
+    "twitter account",
+    "business manager",
+    "bm",
+    "account",
+    "tai khoan",
+    "tai-khoan",
+  ],
+  other: ["giftcard", "gift card", "vps", "khac", "other"],
+};
+
+const CATEGORY_VALUE_MAP = new Map();
+Object.entries(CATEGORY_FALLBACK_VALUES).forEach(([category, values]) => {
+  values.forEach((value) => {
+    const key = String(value || "").trim().toLowerCase();
+    if (!key) return;
+    if (!CATEGORY_VALUE_MAP.has(key)) CATEGORY_VALUE_MAP.set(key, category);
+  });
+});
+
+function normalizeValue(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function resolveCategoryFromValue(value) {
+  const key = normalizeValue(value);
+  if (!key) return "";
+  return CATEGORY_VALUE_MAP.get(key) || "";
+}
+
+function buildCategoryFallbackClause(category, binds) {
+  const values = CATEGORY_FALLBACK_VALUES[category] || [];
+  if (!values.length) return "";
+  const normalized = values.map(normalizeValue).filter(Boolean);
+  if (!normalized.length) return "";
+  const parts = [];
+  const subPlaceholders = normalized.map(() => "?").join(", ");
+  parts.push(`lower(trim(COALESCE(p.subcategory, s.subcategory, ''))) IN (${subPlaceholders})`);
+  binds.push(...normalized);
+  const tagClauses = normalized.map(() => "lower(COALESCE(p.tags_json, s.tags_json, '')) LIKE ?").join(" OR ");
+  if (tagClauses) {
+    parts.push(`(${tagClauses})`);
+    normalized.forEach((value) => {
+      binds.push(`%${value}%`);
+    });
+  }
+  return parts.length ? `(${parts.join(" OR ")})` : "";
+}
+
+function buildCategoryClause(category, binds) {
+  const key = normalizeCategory(category);
+  if (!key) return "";
+  const baseExpr = "lower(trim(COALESCE(NULLIF(p.category, ''), NULLIF(s.category, ''))))";
+  const missingExpr = "(COALESCE(NULLIF(trim(p.category), ''), NULLIF(trim(s.category), '')) IS NULL)";
+  const fallbackBinds = [];
+  const fallbackClause = buildCategoryFallbackClause(key, fallbackBinds);
+  if (fallbackClause) {
+    binds.push(key, ...fallbackBinds);
+    return `(${baseExpr} = ? OR (${missingExpr} AND ${fallbackClause}))`;
+  }
+  binds.push(key);
+  return `${baseExpr} = ?`;
 }
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -68,6 +215,28 @@ function buildProductSlug(name, id) {
   return `${base}-${suffix}`;
 }
 
+function buildShopSlug(name, id) {
+  const base = slugifyText(name || "shop");
+  const suffix = encodeProductSlugId(id);
+  if (!suffix) return base;
+  if (!base) return suffix;
+  return `${base}-${suffix}`;
+}
+
+function resolveCategory(row, tags) {
+  const direct = normalizeCategory(row.category || row.store_category || "");
+  if (direct) return direct;
+  const subValue = resolveCategoryFromValue(row.subcategory || row.store_subcategory || "");
+  if (subValue) return subValue;
+  if (Array.isArray(tags)) {
+    for (const tag of tags) {
+      const match = resolveCategoryFromValue(tag);
+      if (match) return match;
+    }
+  }
+  return "";
+}
+
 function buildWhere(params, binds, options = {}) {
   const clauses = [
     "(lower(trim(p.kind)) = 'product' OR (p.kind IS NULL AND (p.type IS NULL OR lower(trim(p.type)) <> 'service')))",
@@ -84,8 +253,8 @@ function buildWhere(params, binds, options = {}) {
   }
 
   if (params.category) {
-    clauses.push("lower(trim(COALESCE(p.category, s.category))) = ?");
-    binds.push(params.category);
+    const categoryClause = buildCategoryClause(params.category, binds);
+    if (categoryClause) clauses.push(categoryClause);
   }
   if (params.subcategories.length) {
     const placeholders = params.subcategories.map(() => "?").join(", ");
@@ -195,14 +364,16 @@ export async function onRequestGet(context) {
           tags = [];
         }
       }
+      const resolvedCategory = resolveCategory(row, tags);
+      const shopSlug = row.shop_id ? buildShopSlug(row.store_name || row.store_slug || "shop", row.shop_id) : row.store_slug || "";
       return {
         id: row.id,
         slug: buildProductSlug(row.name, row.id),
         shopId: row.shop_id,
-        shopSlug: row.store_slug || "",
+        shopSlug,
         title: row.name,
         descriptionShort: row.description_short || toPlainText(row.description || ""),
-        category: row.category || row.store_category || "",
+        category: resolvedCategory,
         subcategory: row.subcategory || row.store_subcategory || "",
         tags,
         price: Number(row.price || 0),
@@ -219,7 +390,7 @@ export async function onRequestGet(context) {
         thumbnailId: row.thumbnail_media_id || "",
         seller: {
           name: row.store_name || "",
-          slug: row.store_slug || "",
+          slug: shopSlug,
           badge: row.badge || "",
           role: row.role || "",
           displayName: row.display_name || "",

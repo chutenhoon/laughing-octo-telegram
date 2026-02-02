@@ -171,6 +171,18 @@ function buildProductSlug(name, id) {
   return `${base}-${suffix}`;
 }
 
+function buildShopSlug(name, id) {
+  const base = slugifyText(name || "shop");
+  const suffix = encodeProductSlugId(id);
+  if (!suffix) return base;
+  if (!base) return suffix;
+  return `${base}-${suffix}`;
+}
+
+function parseShopSlugToId(slug) {
+  return parseSlugToId(slug);
+}
+
 function getProductDetailPath(input, titleOverride) {
   const root = getRootPath();
   const isFile = window.location.protocol === "file:";
@@ -200,10 +212,20 @@ function getShopDetailPath(input) {
   const root = getRootPath();
   const isFile = window.location.protocol === "file:";
   let ref = "";
+  let name = "";
+  let slug = "";
+  let id = "";
   if (input && typeof input === "object") {
-    ref = input.slug || input.storeSlug || input.id || "";
+    slug = input.slug || input.storeSlug || input.store_slug || "";
+    id = input.id || input.shopId || input.storeId || "";
+    name = input.name || input.storeName || input.store_name || "";
+    ref = slug;
   } else {
     ref = input || "";
+  }
+  if (id) {
+    const candidate = buildShopSlug(name, id);
+    if (candidate) ref = candidate;
   }
   if (isFile) {
     const base = "shops/[slug]/index.html";
@@ -4197,6 +4219,28 @@ function getUserDisplayName(user, fallback = "BKUser") {
   return fallback;
 }
 
+function parseAuthPayload(raw) {
+  if (!raw) return null;
+  let data = null;
+  try {
+    data = JSON.parse(raw);
+  } catch (e) {
+    return null;
+  }
+  if (typeof data === "string") {
+    try {
+      data = JSON.parse(data);
+    } catch (e) {
+      return null;
+    }
+  }
+  if (data && typeof data === "object") {
+    if (data.user && typeof data.user === "object") return data.user;
+    if (data.loggedIn && data.user) return data.user;
+  }
+  return data && typeof data === "object" ? data : null;
+}
+
 function isAdminUser(user) {
   if (!user || typeof user !== "object") return false;
   if (user.is_admin === true || user.is_admin === 1 || user.is_admin === "1") return true;
@@ -4291,7 +4335,7 @@ function readAuthState() {
   try {
     const raw = localStorage.getItem(BK_AUTH_KEY);
     if (!raw) return { loggedIn: false, user: null };
-    const data = JSON.parse(raw);
+    const data = parseAuthPayload(raw);
     if (!data || typeof data !== "object") return { loggedIn: false, user: null };
     const normalized = normalizeAuthUser(data);
     if (!normalized) return { loggedIn: false, user: null };
@@ -4715,9 +4759,20 @@ function setupUserMenu(auth) {
     { key: "menu.logout", label: t("menu.logout", "\u0110\u0103ng xu\u1ea5t"), action: "logout" },
   ];
 
+  const normalizeText = (value) =>
+    String(value || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
   const containers = document.querySelectorAll("header .nav-actions, .mobile-actions");
   containers.forEach((container) => {
-    const loginLink = Array.from(container.querySelectorAll("a")).find((a) => (a.textContent || "").toLowerCase().includes("login"));
+    const loginLink =
+      container.querySelector("a.login-btn, a[data-auth-login]") ||
+      Array.from(container.querySelectorAll("a")).find((a) => {
+        const text = normalizeText(a.textContent || "");
+        return text.includes("login") || text.includes("dang nhap");
+      });
     if (!loginLink || container.querySelector(".user-menu")) return;
 
     const menu = document.createElement("div");
@@ -5050,6 +5105,11 @@ function applyI18n(lang) {
 function hydrateNavLinks() {
   const root = getRootPath();
   const isFile = window.location.protocol === "file:";
+  const normalizeLabel = (value) =>
+    String(value || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
   
   // For file://, point directly to index.html to avoid directory listings.
   // When hosting via HTTP, you can rewrite /products/ -> /products/index.html.
@@ -5080,8 +5140,10 @@ function hydrateNavLinks() {
 
   // login / balance links in nav-actions + mobile-actions
   document.querySelectorAll("header .nav-actions a, .mobile-actions a").forEach((a) => {
-    const text = (a.textContent || "").toLowerCase();
-    if (text.includes("login")) a.href = root + map.login;
+    const text = normalizeLabel(a.textContent || "");
+    if (a.classList.contains("login-btn") || a.dataset.authLogin !== undefined || text.includes("login") || text.includes("dang nhap")) {
+      a.href = root + map.login;
+    }
   });
 
   // footer quick links
@@ -5725,6 +5787,16 @@ document.addEventListener("DOMContentLoaded", () => {
   initGlobalNotifier();
   if (auth && auth.loggedIn) startHeartbeat(auth);
   applyI18n();
+  const refreshAuthUi = () => {
+    const current = readAuthState();
+    updateSellerCta(current);
+    updateTaskCta(current);
+    setupUserMenu(current);
+  };
+  refreshAuthUi();
+  window.addEventListener("storage", (event) => {
+    if (event && event.key === BK_AUTH_KEY) refreshAuthUi();
+  });
 
   const mobileNav = document.querySelector(".mobile-nav");
   const rootStyle = document.documentElement.style;
@@ -5864,6 +5936,8 @@ window.BKRoutes = {
   getShopDetailPath,
   buildProductSlug,
   parseSlugToId,
+  buildShopSlug,
+  parseShopSlugToId,
 };
 
 

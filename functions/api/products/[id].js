@@ -24,6 +24,20 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 const COMPACT_UUID_PATTERN = /^[0-9a-f]{32}$/i;
 const SAFE_ID_PATTERN = /^[a-z0-9]+$/i;
 
+const PRODUCT_CATEGORY_KEYS = new Set(["email", "tool", "account", "other"]);
+const CATEGORY_ALIASES = new Map([
+  ["software", "tool"],
+  ["phan mem", "tool"],
+  ["phan-mem", "tool"],
+  ["mail", "email"],
+  ["e-mail", "email"],
+  ["tai khoan", "account"],
+  ["acc", "account"],
+  ["khac", "other"],
+  ["misc", "other"],
+  ["others", "other"],
+]);
+
 function slugifyText(value) {
   const raw = String(value || "").trim().toLowerCase();
   if (!raw) return "";
@@ -51,6 +65,127 @@ function buildProductSlug(name, id) {
   if (!suffix) return base;
   if (!base) return suffix;
   return `${base}-${suffix}`;
+}
+
+function buildShopSlug(name, id) {
+  const base = slugifyText(name || "shop");
+  const suffix = encodeProductSlugId(id);
+  if (!suffix) return base;
+  if (!base) return suffix;
+  return `${base}-${suffix}`;
+}
+
+const CATEGORY_FALLBACK_VALUES = {
+  email: [
+    "gmail",
+    "gmail edu",
+    "gmail.edu",
+    "hotmail",
+    "outlookmail",
+    "outlook",
+    "rumail",
+    "ru mail",
+    "domainemail",
+    "domain email",
+    "yahoomail",
+    "yahoo",
+    "protonmail",
+    "proton",
+    "emailkhac",
+    "email khac",
+    "email",
+    "mail",
+    "e-mail",
+  ],
+  tool: [
+    "toolfacebook",
+    "toolgoogle",
+    "toolyoutube",
+    "toolcrypto",
+    "toolptc",
+    "toolcaptcha",
+    "tooloffer",
+    "toolptu",
+    "toolkhac",
+    "tool other",
+    "facebook tool",
+    "google tool",
+    "youtube tool",
+    "crypto tool",
+    "ptc tool",
+    "captcha tool",
+    "offer tool",
+    "ptu tool",
+    "checker",
+    "phan mem",
+    "phan-mem",
+    "software",
+    "app",
+  ],
+  account: [
+    "accfacebook",
+    "accbm",
+    "acczalo",
+    "acctwitter",
+    "acctelegram",
+    "accinstagram",
+    "accshopee",
+    "accdiscord",
+    "acctiktok",
+    "keyantivirus",
+    "acccapcut",
+    "keywindows",
+    "acckhac",
+    "facebook account",
+    "tiktok account",
+    "discord account",
+    "zalo account",
+    "telegram account",
+    "instagram account",
+    "shopee account",
+    "twitter account",
+    "business manager",
+    "bm",
+    "account",
+    "tai khoan",
+    "tai-khoan",
+  ],
+  other: ["giftcard", "gift card", "vps", "khac", "other"],
+};
+
+const CATEGORY_VALUE_MAP = new Map();
+Object.entries(CATEGORY_FALLBACK_VALUES).forEach(([category, values]) => {
+  values.forEach((value) => {
+    const key = String(value || "").trim().toLowerCase();
+    if (!key) return;
+    if (!CATEGORY_VALUE_MAP.has(key)) CATEGORY_VALUE_MAP.set(key, category);
+  });
+});
+
+function normalizeCategory(value) {
+  const trimmed = String(value || "").trim().toLowerCase();
+  if (PRODUCT_CATEGORY_KEYS.has(trimmed)) return trimmed;
+  return CATEGORY_ALIASES.get(trimmed) || "";
+}
+
+function resolveCategoryFromValue(value) {
+  const key = String(value || "").trim().toLowerCase();
+  if (!key) return "";
+  return CATEGORY_VALUE_MAP.get(key) || "";
+}
+
+function resolveCategory(row, tags) {
+  const direct = normalizeCategory(row.category || row.store_category || "");
+  if (direct) return direct;
+  const subValue = resolveCategoryFromValue(row.subcategory || row.store_subcategory || "");
+  if (subValue) return subValue;
+  if (Array.isArray(tags)) {
+    for (const tag of tags) {
+      const match = resolveCategoryFromValue(tag);
+      if (match) return match;
+    }
+  }
+  return "";
 }
 
 function expandCompactUuid(value) {
@@ -164,6 +299,8 @@ export async function onRequestGet(context) {
       }
     }
 
+    const resolvedCategory = resolveCategory(row, tags);
+    const shopSlug = buildShopSlug(row.store_name || row.store_slug || "shop", row.shop_id);
     const product = {
       id: row.id,
       slug: buildProductSlug(row.name, row.id),
@@ -171,7 +308,7 @@ export async function onRequestGet(context) {
       title: row.name,
       descriptionShort: row.description_short || toPlainText(row.description || ""),
       descriptionHtml: row.description_html ? row.description_html : toSafeHtml(row.description || ""),
-      category: row.category || row.store_category || "",
+      category: resolvedCategory,
       subcategory: row.subcategory || row.store_subcategory || "",
       tags,
       price: Number(row.price || 0),
@@ -184,7 +321,7 @@ export async function onRequestGet(context) {
       thumbnailId: row.thumbnail_media_id || "",
       seller: {
         name: row.store_name || "",
-        slug: row.store_slug || "",
+        slug: shopSlug,
         badge: row.badge || "",
         role: row.role || "",
         username: row.username || "",
@@ -192,10 +329,11 @@ export async function onRequestGet(context) {
         title: row.title || "",
         rank: row.rank || "",
       },
+      shopSlug,
       shop: {
         id: row.shop_id,
         name: row.store_name || "",
-        slug: row.store_slug || "",
+        slug: shopSlug,
         rating: Number(row.shop_rating || 0),
         descriptionShort: row.short_desc || "",
         descriptionHtml: toSafeHtml(row.long_desc || row.shop_desc || ""),

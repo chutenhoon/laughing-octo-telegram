@@ -39,11 +39,18 @@
     return "";
   };
 
-  const buildShopUrl = (shopRef) => {
-    if (!shopRef) return "";
+  const buildShopUrl = (shopRef, item) => {
     if (window.BKRoutes && typeof window.BKRoutes.getShopDetailPath === "function") {
-      return window.BKRoutes.getShopDetailPath(shopRef);
+      if (item && typeof item === "object") {
+        return window.BKRoutes.getShopDetailPath({
+          id: item.shopId || "",
+          name: (item.seller && item.seller.name) || "",
+          slug: shopRef || item.shopSlug || "",
+        });
+      }
+      if (shopRef) return window.BKRoutes.getShopDetailPath(shopRef);
     }
+    if (!shopRef) return "";
     return `/shops/${encodeURIComponent(shopRef)}`;
   };
 
@@ -266,7 +273,7 @@
         ? `data-base-min="${item.price}" data-base-max="${item.priceMax}" data-base-currency="VND"`
         : `data-base-amount="${item.price}" data-base-currency="VND"`;
     const shopRef = resolveShopRef(item);
-    const shopUrl = buildShopUrl(shopRef);
+    const shopUrl = buildShopUrl(shopRef, item);
     const previewBadges = buildPreviewBadges(item);
     const actions = [];
     if (previewBadges) actions.push(`<div class="card-badges">${previewBadges}</div>`);

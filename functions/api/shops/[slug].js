@@ -8,6 +8,58 @@ import {
 } from "../_catalog.js";
 import { jsonResponse } from "../auth/_utils.js";
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const COMPACT_UUID_PATTERN = /^[0-9a-f]{32}$/i;
+const SAFE_ID_PATTERN = /^[a-z0-9]+$/i;
+
+function slugifyText(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  if (!raw) return "";
+  return raw
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function encodeShopSlugId(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^\d+$/.test(raw)) return raw;
+  if (UUID_PATTERN.test(raw)) return raw.replace(/-/g, "").toLowerCase();
+  if (SAFE_ID_PATTERN.test(raw)) return raw.toLowerCase();
+  return raw.replace(/[^a-z0-9]/gi, "").toLowerCase();
+}
+
+function buildShopSlug(name, id) {
+  const base = slugifyText(name || "shop");
+  const suffix = encodeShopSlugId(id);
+  if (!suffix) return base;
+  if (!base) return suffix;
+  return `${base}-${suffix}`;
+}
+
+function expandCompactUuid(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  if (!COMPACT_UUID_PATTERN.test(raw)) return "";
+  return `${raw.slice(0, 8)}-${raw.slice(8, 12)}-${raw.slice(12, 16)}-${raw.slice(16, 20)}-${raw.slice(20)}`;
+}
+
+function parseShopSlugToId(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (UUID_PATTERN.test(raw)) return raw.toLowerCase();
+  const parts = raw.split("-").filter(Boolean);
+  if (!parts.length) return "";
+  const suffix = parts[parts.length - 1];
+  if (/^\d+$/.test(suffix)) return suffix;
+  if (COMPACT_UUID_PATTERN.test(suffix)) return expandCompactUuid(suffix);
+  if (SAFE_ID_PATTERN.test(suffix)) return suffix.toLowerCase();
+  return "";
+}
+
 async function getShopBySlug(db, slug) {
   const sql = `
     SELECT s.id, s.user_id, s.store_name, s.store_slug, s.store_type, s.category, s.subcategory, s.tags_json,
@@ -112,11 +164,16 @@ export async function onRequestGet(context) {
   const db = context?.env?.DB;
   if (!db) return jsonResponse({ ok: false, error: "DB_NOT_CONFIGURED" }, 500);
 
-  const slug = context?.params?.slug ? String(context.params.slug) : "";
+  const slug = context?.params?.slug ? String(context.params.slug).trim() : "";
   if (!slug) return jsonResponse({ ok: false, error: "INVALID_SHOP" }, 400);
 
-  let shop = await getShopBySlug(db, slug);
-  if (!shop) shop = await getShopById(db, slug);
+  const parsedId = parseShopSlugToId(slug);
+  let shop = null;
+  if (parsedId) {
+    shop = await getShopById(db, parsedId);
+  }
+  if (!shop) shop = await getShopBySlug(db, slug);
+  if (!shop && !parsedId) shop = await getShopById(db, slug);
   if (!shop) return jsonResponse({ ok: false, error: "NOT_FOUND" }, 404);
 
   let isAdmin = false;
@@ -160,7 +217,7 @@ export async function onRequestGet(context) {
       id: shop.id,
       ownerUserId: shop.user_id,
       name: shop.store_name,
-      slug: shop.store_slug,
+      slug: buildShopSlug(shop.store_name || shop.store_slug || "shop", shop.id),
       storeType: shop.store_type || "",
       category: shop.category || "",
       subcategory: shop.subcategory || "",

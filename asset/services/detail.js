@@ -112,7 +112,11 @@
     const shopRef = resolveShopRef(service);
     const shopUrl =
       shopRef && window.BKRoutes && typeof window.BKRoutes.getShopDetailPath === "function"
-        ? window.BKRoutes.getShopDetailPath(shopRef)
+        ? window.BKRoutes.getShopDetailPath({
+            id: service.shopId || (shop && shop.id) || "",
+            name: (shop && shop.name) || seller.name || "",
+            slug: shopRef,
+          })
         : shopRef
           ? `/shops/${encodeURIComponent(shopRef)}`
           : "";

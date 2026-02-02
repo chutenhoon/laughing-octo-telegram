@@ -45,11 +45,18 @@
     return "";
   };
 
-  const buildShopUrl = (shopRef) => {
-    if (!shopRef) return "";
+  const buildShopUrl = (shopRef, item) => {
     if (window.BKRoutes && typeof window.BKRoutes.getShopDetailPath === "function") {
-      return window.BKRoutes.getShopDetailPath(shopRef);
+      if (item && typeof item === "object") {
+        return window.BKRoutes.getShopDetailPath({
+          id: item.shopId || "",
+          name: (item.seller && item.seller.name) || "",
+          slug: shopRef || item.shopSlug || "",
+        });
+      }
+      if (shopRef) return window.BKRoutes.getShopDetailPath(shopRef);
     }
+    if (!shopRef) return "";
     return `/shops/${encodeURIComponent(shopRef)}`;
   };
 
@@ -245,7 +252,11 @@
 
   const renderSubcategories = () => {
     if (!filterList) return;
-    const options = filterOptions[state.category] || [];
+    let options = filterOptions[state.category] || [];
+    if (!options.length && state.category !== DEFAULT_CATEGORY) {
+      state.category = DEFAULT_CATEGORY;
+      options = filterOptions[state.category] || [];
+    }
     if (!options.length) {
       filterList.innerHTML = `<div class="empty-state">${translate("product.empty.noneInCategory", "No subcategories")}</div>`;
       return;
@@ -353,7 +364,7 @@
         ? getProductDetailPath(item)
         : `/products/${encodeURIComponent(item.slug || item.id || "")}/`;
     const shopRef = resolveShopRef(item);
-    const shopUrl = buildShopUrl(shopRef);
+    const shopUrl = buildShopUrl(shopRef, item);
     const previewBadges = buildPreviewBadges(item);
     const actions = [];
     if (previewBadges) actions.push(`<div class="card-badges">${previewBadges}</div>`);
@@ -442,7 +453,8 @@
   };
 
   const setCategory = (key) => {
-    state.category = key;
+    const next = normalizeCategory(key);
+    state.category = next;
     state.subcategories = new Set();
     state.page = 1;
     applyUiState();
@@ -535,6 +547,10 @@
     applyUiState();
     initFilters();
     loadProducts();
+    document.addEventListener("bk:i18n", () => {
+      renderSubcategories();
+      applyUiState();
+    });
     window.addEventListener("popstate", () => {
       applyStateFromUrl();
       renderSubcategories();
