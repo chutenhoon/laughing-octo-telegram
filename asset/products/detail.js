@@ -53,6 +53,13 @@
     return "";
   };
 
+  const normalizeLabel = (value) =>
+    String(value || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
   const resolveShopRef = (product) => {
     if (!product) return "";
     if (product.shop && product.shop.slug != null && product.shop.slug !== "") return String(product.shop.slug).trim();
@@ -66,11 +73,26 @@
     return "";
   };
 
+  const resolveFallbackThumbnail = (item) => {
+    if (!item) return "";
+    const title = normalizeLabel(item.title || item.name || "");
+    const sub = normalizeLabel(item.subcategory || "");
+    const cat = normalizeLabel(item.category || "");
+    const text = `${title} ${sub} ${cat}`.trim();
+    if (!text) return "";
+    if (text.includes("edu")) return "/picture/mailedu.png";
+    if (text.includes("random")) return "/picture/gmailrandomnam.png";
+    if (text.includes("usa")) return "/picture/GMAILUSA.png";
+    if (text.includes("regio") || text.includes("region")) return "/picture/Gmailregiosnew.png";
+    if (cat === "email" || text.includes("gmail") || text.includes("mail")) return "/picture/mail-1.webp";
+    return "";
+  };
+
   const resolveThumbnailUrl = (item) => {
     if (!item) return "";
     if (item.thumbnailUrl) return item.thumbnailUrl;
     const mediaId = item.thumbnailId || item.thumbnail_id || item.thumbnail_media_id;
-    if (!mediaId) return "";
+    if (!mediaId) return resolveFallbackThumbnail(item);
     return `/api/media?id=${encodeURIComponent(mediaId)}`;
   };
 
@@ -255,7 +277,7 @@
         const detailUrl =
           typeof getProductDetailPath === "function"
             ? getProductDetailPath(item)
-            : `/products/${encodeURIComponent(item.slug || item.id || "")}/`;
+            : `/sanpham/${encodeURIComponent(item.slug || item.id || "")}/`;
         const ref = item.slug || item.id;
         const label = formatPriceRange(item);
         const stockCount = Number(item.stockCount || 0);

@@ -53,21 +53,26 @@
   };
 
   const state = {
+    category: "",
     search: "",
     sort: "popular",
     page: 1,
     totalPages: 1,
   };
   const SORT_OPTIONS = new Set(["popular", "rating", "newest"]);
+  const CATEGORY_OPTIONS = new Set(["", "email", "tool", "account", "other"]);
 
   const grid = document.getElementById("shop-list");
   const pagination = document.getElementById("shop-pagination");
   const searchInput = document.getElementById("shop-search");
+  const categoryTabs = document.getElementById("shop-category-tabs");
 
   let activeController = null;
 
   const applyStateFromUrl = () => {
     const params = new URLSearchParams(window.location.search);
+    const category = String(params.get("category") || "").trim().toLowerCase();
+    state.category = CATEGORY_OPTIONS.has(category) ? category : "";
     state.search = String(params.get("search") || params.get("q") || "").trim();
     const sort = String(params.get("sort") || "").trim();
     state.sort = SORT_OPTIONS.has(sort) ? sort : "popular";
@@ -77,6 +82,8 @@
 
   const syncUrl = () => {
     const params = new URLSearchParams(window.location.search);
+    if (state.category) params.set("category", state.category);
+    else params.delete("category");
     if (state.search) params.set("search", state.search);
     else params.delete("search");
     if (state.sort) params.set("sort", state.sort);
@@ -183,6 +190,7 @@
     activeController = new AbortController();
     syncUrl();
     const params = new URLSearchParams();
+    if (state.category) params.set("category", state.category);
     if (state.search) params.set("search", state.search);
     if (state.sort) params.set("sort", state.sort);
     params.set("page", String(state.page));
@@ -213,6 +221,23 @@
     document.querySelectorAll(".sort-pill").forEach((btn) => {
       btn.classList.toggle("active", btn.dataset.sort === state.sort);
     });
+    if (categoryTabs) {
+      categoryTabs.querySelectorAll(".category-pill").forEach((btn) => {
+        const key = String(btn.dataset.category || "").trim().toLowerCase();
+        btn.classList.toggle("active", key === state.category);
+      });
+      categoryTabs.addEventListener("click", (event) => {
+        const btn = event.target.closest("button.category-pill[data-category]");
+        if (!btn) return;
+        const next = String(btn.dataset.category || "").trim().toLowerCase();
+        const normalized = CATEGORY_OPTIONS.has(next) ? next : "";
+        if (normalized === state.category) return;
+        state.category = normalized;
+        state.page = 1;
+        categoryTabs.querySelectorAll(".category-pill").forEach((el) => el.classList.toggle("active", el === btn));
+        loadShops();
+      });
+    }
     if (searchInput) {
       let timer = null;
       searchInput.addEventListener("input", () => {
@@ -250,6 +275,12 @@
       document.querySelectorAll(".sort-pill").forEach((btn) => {
         btn.classList.toggle("active", btn.dataset.sort === state.sort);
       });
+      if (categoryTabs) {
+        categoryTabs.querySelectorAll(".category-pill").forEach((btn) => {
+          const key = String(btn.dataset.category || "").trim().toLowerCase();
+          btn.classList.toggle("active", key === state.category);
+        });
+      }
       loadShops();
     });
     loadShops();

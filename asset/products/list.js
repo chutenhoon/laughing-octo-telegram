@@ -34,6 +34,13 @@
       .map((item) => item.trim())
       .filter(Boolean);
 
+  const normalizeLabel = (value) =>
+    String(value || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
   const normalizeFilterValue = (value) => String(value || "").trim().toLowerCase();
 
   const resolveShopRef = (item) => {
@@ -44,6 +51,21 @@
     if (item.shopId != null && item.shopId !== "") return String(item.shopId).trim();
     if (seller.storeId != null && seller.storeId !== "") return String(seller.storeId).trim();
     if (seller.id != null && seller.id !== "") return String(seller.id).trim();
+    return "";
+  };
+
+  const resolveFallbackThumbnail = (item) => {
+    if (!item) return "";
+    const title = normalizeLabel(item.title || item.name || "");
+    const sub = normalizeLabel(item.subcategory || "");
+    const cat = normalizeLabel(item.category || "");
+    const text = `${title} ${sub} ${cat}`.trim();
+    if (!text) return "";
+    if (text.includes("edu")) return "/picture/mailedu.png";
+    if (text.includes("random")) return "/picture/gmailrandomnam.png";
+    if (text.includes("usa")) return "/picture/GMAILUSA.png";
+    if (text.includes("regio") || text.includes("region")) return "/picture/Gmailregiosnew.png";
+    if (cat === "email" || text.includes("gmail") || text.includes("mail")) return "/picture/mail-1.webp";
     return "";
   };
 
@@ -66,7 +88,7 @@
     if (!item) return "";
     if (item.thumbnailUrl) return item.thumbnailUrl;
     const mediaId = item.thumbnailId || item.thumbnail_id || item.thumbnail_media_id;
-    if (!mediaId) return "";
+    if (!mediaId) return resolveFallbackThumbnail(item);
     return `/api/media?id=${encodeURIComponent(mediaId)}`;
   };
 
@@ -421,7 +443,7 @@
     const detailUrl =
       typeof getProductDetailPath === "function"
         ? getProductDetailPath(item)
-        : `/products/${encodeURIComponent(item.slug || item.id || "")}/`;
+        : `/sanpham/${encodeURIComponent(item.slug || item.id || "")}/`;
     const shopRef = resolveShopRef(item);
     const shopUrl = buildShopUrl(shopRef, item);
     const previewBadges = buildPreviewBadges(item);

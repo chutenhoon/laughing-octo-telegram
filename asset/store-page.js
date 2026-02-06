@@ -10,6 +10,12 @@
     typeof formatI18n === "function" ? formatI18n(getLanguage(), key, fallback, vars) : fallback || key;
 
   const normalizeLabel = (value) => String(value || "").trim().toLowerCase();
+  const normalizeThumbKey = (value) =>
+    String(value || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
 
   const resolveBadgeValue = (data) => {
     if (!data) return "";
@@ -64,7 +70,20 @@
     if (!item) return "";
     if (item.thumbnailUrl) return item.thumbnailUrl;
     const mediaId = item.thumbnailId || item.thumbnail_id || item.thumbnail_media_id;
-    if (!mediaId) return "";
+    if (!mediaId) {
+      const title = normalizeThumbKey(item.title || item.name || "");
+      const sub = normalizeThumbKey(item.subcategory || "");
+      const cat = normalizeThumbKey(item.category || "");
+      const text = `${title} ${sub} ${cat}`.trim();
+      if (text) {
+        if (text.includes("edu")) return "/picture/mailedu.png";
+        if (text.includes("random")) return "/picture/gmailrandomnam.png";
+        if (text.includes("usa")) return "/picture/GMAILUSA.png";
+        if (text.includes("regio") || text.includes("region")) return "/picture/Gmailregiosnew.png";
+        if (cat === "email" || text.includes("gmail") || text.includes("mail")) return "/picture/mail-1.webp";
+      }
+      return "";
+    }
     return `/api/media?id=${encodeURIComponent(mediaId)}`;
   };
 
@@ -402,7 +421,7 @@
         ? `/dichvu/[id]/?id=${encodeURIComponent(item.id)}`
         : typeof getProductDetailPath === "function"
           ? getProductDetailPath(item)
-          : `/products/${encodeURIComponent(item.slug || item.id || "")}/`;
+          : `/sanpham/${encodeURIComponent(item.slug || item.id || "")}/`;
     return `
       <a class="product-card" href="${detailUrl}">
         <div class="product-media">${media}</div>

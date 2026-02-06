@@ -1,9 +1,11 @@
 /products/:slug /products/[slug]/ 200
 /products/:slug/ /products/[slug]/ 200
 
-/sanpham /products 301
-/sanpham/ /products/ 301
-/sanpham/* /products/:splat 301
+/products /shops 301
+/products/ /shops/ 301
+
+/sanpham/:slug /products/[slug]/ 200
+/sanpham/:slug/ /products/[slug]/ 200
 
 /dichvu/:id /dichvu/[id]/ 200
 /dichvu/:id/ /dichvu/[id]/ 200

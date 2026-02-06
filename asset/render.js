@@ -199,13 +199,14 @@ function getProductDetailPath(input, titleOverride) {
   }
   const finalSlug = slug || buildProductSlug(title, id);
   if (isFile) {
-    const base = "products/[slug]/index.html";
-    const suffix = id ? `?id=${encodeURIComponent(id)}` : "";
+    const base = "sanpham/[id]/index.html";
+    const ref = finalSlug || id;
+    const suffix = ref ? `?id=${encodeURIComponent(ref)}` : "";
     return root + base + suffix;
   }
-  if (finalSlug) return root + "products/" + finalSlug + "/";
-  if (id) return root + "products/" + encodeURIComponent(id) + "/";
-  return root + "products/";
+  if (finalSlug) return root + "sanpham/" + finalSlug + "/";
+  if (id) return root + "sanpham/" + encodeURIComponent(id) + "/";
+  return root + "sanpham/";
 }
 
 function getShopDetailPath(input) {
@@ -5151,10 +5152,10 @@ function hydrateNavLinks() {
       .replace(/[\u0300-\u036f]/g, "");
   
   // For file://, point directly to index.html to avoid directory listings.
-  // When hosting via HTTP, you can rewrite /products/ -> /products/index.html.
+  // When hosting via HTTP, you can rewrite /sanpham/ -> /sanpham/index.html.
   const map = isFile
     ? {
-        sanpham: "products/index.html",
+        sanpham: "sanpham/index.html",
         shops: "shops/index.html",
         dichvu: "dichvu/index.html",
         nhiemvu: "nhiemvu/index.html",
@@ -5164,7 +5165,7 @@ function hydrateNavLinks() {
         profile: "profile/index.html",
       }
     : {
-        sanpham: "products/",
+        sanpham: "sanpham/",
         shops: "shops/",
         dichvu: "dichvu/",
         nhiemvu: "nhiemvu/",
