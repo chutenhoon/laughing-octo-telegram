@@ -5175,29 +5175,6 @@ function hydrateNavLinks() {
         profile: "profile/",
       };
 
-  // Some pages don't include a "Gian hàng" entry in the navbar/mobile nav.
-  // Inject it here so buyers can always navigate to /shops (alias /gian-hang).
-  const ensureNavEntry = (container, key, label) => {
-    if (!container || !key) return;
-    const existing = Array.from(container.querySelectorAll("a")).some((a) => {
-      const nav = (a.getAttribute("data-nav") || "").trim();
-      if (nav === key) return true;
-      const href = String(a.getAttribute("href") || "").toLowerCase();
-      if (key === "shops" && (href.includes("/shops") || href.includes("/gian-hang"))) return true;
-      return false;
-    });
-    if (existing) return;
-    const a = document.createElement("a");
-    a.setAttribute("data-nav", key);
-    a.textContent = label || key;
-    const first = container.querySelector("a");
-    if (first && first.nextSibling) container.insertBefore(a, first.nextSibling);
-    else container.appendChild(a);
-  };
-
-  document.querySelectorAll(".nav-links").forEach((container) => ensureNavEntry(container, "shops", "Gian h\u00e0ng"));
-  document.querySelectorAll(".mobile-links").forEach((container) => ensureNavEntry(container, "shops", "Gian h\u00e0ng"));
-
   document.querySelectorAll("[data-nav]").forEach((a) => {
     const key = a.getAttribute("data-nav");
     if (map[key]) a.href = root + map[key];
@@ -5935,6 +5912,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const map = [
     { key: "sanpham", match: "/products/" },
     { key: "sanpham", match: "/sanpham/" },
+    { key: "sanpham", match: "/shops/" },
+    { key: "sanpham", match: "/gian-hang/" },
     { key: "dichvu", match: "/dichvu/" },
     { key: "nhiemvu", match: "/nhiemvu/" },
     { key: "topups", match: "/profile/topups/" },
