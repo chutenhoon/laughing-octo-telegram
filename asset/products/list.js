@@ -449,7 +449,6 @@
     const previewBadges = buildPreviewBadges(item);
     const actions = [];
     if (previewBadges) actions.push(`<div class="card-badges">${previewBadges}</div>`);
-    if (shopUrl) actions.push(`<a class="shop-link" href="${shopUrl}">Gian h\u00e0ng</a>`);
     return `
       <div class="product-card">
         <a class="product-card-link" href="${detailUrl}">

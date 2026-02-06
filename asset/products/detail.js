@@ -304,7 +304,7 @@
     // Prefetch to make "other items" navigation feel instant.
     shopItems
       .filter((item) => String(item.id) !== String(productId))
-      .slice(0, 6)
+      .slice(0, 12)
       .forEach((item) => {
         const ref = item.slug || item.id;
         if (!ref) return;
@@ -362,16 +362,6 @@
     }
     setHTML("detail-seller-badge", renderSellerBadge(seller));
     setText("detail-shop-id", shopRef || "--");
-    const shopLink = document.getElementById("detail-shop-link");
-    if (shopLink) {
-      if (shopUrl) {
-        shopLink.href = shopUrl;
-        shopLink.style.display = "inline-flex";
-      } else {
-        shopLink.href = "#";
-        shopLink.style.display = "none";
-      }
-    }
     setText("detail-rating-note", product.rating != null ? product.rating : "--");
     const ratingNote = document.getElementById("detail-rating-note");
     if (ratingNote) {
@@ -457,6 +447,8 @@
         if (!nextRef) return;
         const href = link.getAttribute("href") || "";
         event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
         if (href) window.history.pushState({}, "", href);
         loadProduct(nextRef);
       });
