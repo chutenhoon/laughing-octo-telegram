@@ -62,10 +62,19 @@
   const SORT_OPTIONS = new Set(["popular", "rating", "newest"]);
   const CATEGORY_OPTIONS = new Set(["", "email", "tool", "account", "other"]);
 
+  const categoryKeys = {
+    email: "product.category.email",
+    tool: "product.category.tool",
+    account: "product.category.account",
+    other: "product.category.other",
+  };
+
   const grid = document.getElementById("shop-list");
   const pagination = document.getElementById("shop-pagination");
   const searchInput = document.getElementById("shop-search");
   const categoryTabs = document.getElementById("shop-category-tabs");
+  const pageTitle = document.getElementById("shop-page-title");
+  const pageSubtitle = document.getElementById("shop-page-subtitle");
 
   let activeController = null;
 
@@ -92,6 +101,22 @@
     const query = params.toString();
     const nextUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
     window.history.replaceState({}, "", nextUrl);
+  };
+
+  const applyHeading = () => {
+    if (!pageTitle) return;
+    if (!state.category) {
+      pageTitle.textContent = translate("shops.title", "Gian hang");
+      if (pageTitle.dataset) pageTitle.dataset.i18nKey = "shops.title";
+    } else {
+      const key = categoryKeys[state.category];
+      pageTitle.textContent = key ? translate(key, state.category) : state.category;
+      if (pageTitle.dataset) pageTitle.dataset.i18nKey = key || "";
+    }
+    if (pageSubtitle) {
+      pageSubtitle.textContent = translate("shops.subtitle", "Tim kiem gian hang phu hop voi nhu cau cua ban.");
+      if (pageSubtitle.dataset) pageSubtitle.dataset.i18nKey = "shops.subtitle";
+    }
   };
 
   const renderSkeleton = () => {
@@ -218,6 +243,7 @@
     if (!grid) return;
     applyStateFromUrl();
     if (searchInput) searchInput.value = state.search || "";
+    applyHeading();
     document.querySelectorAll(".sort-pill").forEach((btn) => {
       btn.classList.toggle("active", btn.dataset.sort === state.sort);
     });
@@ -235,6 +261,7 @@
         state.category = normalized;
         state.page = 1;
         categoryTabs.querySelectorAll(".category-pill").forEach((el) => el.classList.toggle("active", el === btn));
+        applyHeading();
         loadShops();
       });
     }
@@ -272,6 +299,7 @@
     window.addEventListener("popstate", () => {
       applyStateFromUrl();
       if (searchInput) searchInput.value = state.search || "";
+      applyHeading();
       document.querySelectorAll(".sort-pill").forEach((btn) => {
         btn.classList.toggle("active", btn.dataset.sort === state.sort);
       });

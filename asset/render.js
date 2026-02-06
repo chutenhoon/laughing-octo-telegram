@@ -5152,10 +5152,10 @@ function hydrateNavLinks() {
       .replace(/[\u0300-\u036f]/g, "");
   
   // For file://, point directly to index.html to avoid directory listings.
-  // When hosting via HTTP, you can rewrite /sanpham/ -> /sanpham/index.html.
+  // "Sản phẩm" entry routes to the shop listing (gian hàng), so buyers go: shop -> products.
   const map = isFile
     ? {
-        sanpham: "sanpham/index.html",
+        sanpham: "shops/index.html",
         shops: "shops/index.html",
         dichvu: "dichvu/index.html",
         nhiemvu: "nhiemvu/index.html",
@@ -5165,7 +5165,7 @@ function hydrateNavLinks() {
         profile: "profile/index.html",
       }
     : {
-        sanpham: "sanpham/",
+        sanpham: "shops/",
         shops: "shops/",
         dichvu: "dichvu/",
         nhiemvu: "nhiemvu/",

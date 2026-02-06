@@ -98,15 +98,6 @@
     return preview === "1" || preview === "true";
   };
 
-  const buildShopsUrl = () => {
-    const params = new URLSearchParams();
-    if (state.category) params.set("category", state.category);
-    if (state.sort) params.set("sort", state.sort);
-    if (state.search) params.set("search", state.search);
-    const query = params.toString();
-    return query ? `/shops/?${query}` : "/shops/";
-  };
-
   const renderSellerBadge = (seller) => {
     if (!seller) return "";
     let badgeValue = String(seller.badge || "").trim();
@@ -568,10 +559,6 @@
     document.querySelectorAll(".category-pill").forEach((btn) => {
       btn.addEventListener("click", () => {
         const key = btn.dataset.category;
-        if (key === "shops") {
-          window.location.href = buildShopsUrl();
-          return;
-        }
         if (!key || key === state.category) return;
         setCategory(key);
       });
