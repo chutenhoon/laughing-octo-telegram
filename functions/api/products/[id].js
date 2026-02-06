@@ -8,6 +8,14 @@ function isApprovedStatus(status) {
   return value === "approved" || value === "active" || value === "published" || value === "pending_update";
 }
 
+function flagTrue(column) {
+  return `(${column} = 1 OR lower(${column}) IN ('true','yes'))`;
+}
+
+function flagTrueOrNull(column) {
+  return `(${column} IS NULL OR ${flagTrue(column)})`;
+}
+
 function isTruthyFlag(value) {
   if (value === true || value === 1) return true;
   const raw = String(value || "").trim().toLowerCase();
@@ -340,20 +348,22 @@ export async function onRequestGet(context) {
       },
     };
 
-    const otherSql = `
-      SELECT id, name, price, price_max, stock_count, thumbnail_media_id
+    const canPreviewShopItems = isOwner || isAdmin;
+    const visibilityClause = canPreviewShopItems
+      ? "1=1"
+      : `${flagTrueOrNull("is_active")} AND ${flagTrueOrNull("is_published")} AND lower(trim(coalesce(status,''))) NOT IN ('disabled','blocked','banned')`;
+
+    const shopItemsSql = `
+      SELECT id, name, price, price_max, stock_count, thumbnail_media_id, created_at
         FROM products
        WHERE shop_id = ?
          AND kind = 'product'
-         AND id != ?
-         AND is_active = 1
-         AND is_published = 1
-         AND status IN ('approved','active','published')
-       ORDER BY created_at DESC
-       LIMIT 4
+         AND ${visibilityClause}
+       ORDER BY CASE WHEN id = ? THEN 0 ELSE 1 END, created_at DESC
+       LIMIT 10
     `;
-    const otherRows = await db.prepare(otherSql).bind(row.shop_id, row.id).all();
-    const others = (otherRows && Array.isArray(otherRows.results) ? otherRows.results : []).map((item) => ({
+    const shopItemRows = await db.prepare(shopItemsSql).bind(row.shop_id, row.id).all();
+    const shopItems = (shopItemRows && Array.isArray(shopItemRows.results) ? shopItemRows.results : []).map((item) => ({
       id: item.id,
       slug: buildProductSlug(item.name, item.id),
       title: item.name,
@@ -361,9 +371,11 @@ export async function onRequestGet(context) {
       priceMax: item.price_max != null ? Number(item.price_max || 0) : null,
       stockCount: Number(item.stock_count || 0),
       thumbnailId: item.thumbnail_media_id || "",
+      createdAt: item.created_at || null,
     }));
+    const others = shopItems.filter((item) => String(item.id) !== String(row.id));
 
-    const payload = { ok: true, product, others };
+    const payload = { ok: true, product, shopItems, others };
     return jsonCachedResponse(context.request, payload, {
       cacheControl: "private, max-age=0, must-revalidate",
       vary: "Cookie",

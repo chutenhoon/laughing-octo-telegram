@@ -225,18 +225,59 @@
 
     const otherList = document.getElementById("detail-other-list");
     if (otherList) {
-      const others = Array.isArray(data.others) ? data.others : [];
-      if (!others.length) {
+      const normalizeItem = (item) => {
+        if (!item) return null;
+        const id = item.id != null ? String(item.id) : "";
+        if (!id) return null;
+        return {
+          id,
+          slug: item.slug || "",
+          title: item.title || item.name || "",
+          price: Number(item.price || 0),
+          priceMax: item.priceMax != null ? Number(item.priceMax || 0) : null,
+          stockCount: item.stockCount != null ? Number(item.stockCount || 0) : 0,
+        };
+      };
+
+      const rawShopItems = Array.isArray(data.shopItems) ? data.shopItems : [];
+      const fallbackOthers = Array.isArray(data.others) ? data.others : [];
+      const merged = [];
+      if (product) merged.push(normalizeItem(product));
+      rawShopItems.forEach((item) => merged.push(normalizeItem(item)));
+      fallbackOthers.forEach((item) => merged.push(normalizeItem(item)));
+      const shopItems = merged
+        .filter(Boolean)
+        .filter((item, idx, arr) => arr.findIndex((candidate) => candidate.id === item.id) === idx);
+
+      if (!shopItems.length) {
         otherList.innerHTML = `<div class="empty-state">${translate("product.detail.other.empty", "No other items.")}</div>`;
       } else {
-        otherList.innerHTML = others
+        otherList.innerHTML = shopItems
           .map((item) => {
+            const isCurrent = String(item.id) === String(productId);
             const detailUrl =
               typeof getProductDetailPath === "function"
                 ? getProductDetailPath(item)
                 : `/products/${encodeURIComponent(item.slug || item.id || "")}/`;
             const label = formatPriceRange(item);
-            return `<a class="detail-other-card" href="${detailUrl}"><strong>${escapeHtml(item.title)}</strong><span>${label}</span></a>`;
+            const stockCount = Number(item.stockCount || 0);
+            const stockLabel =
+              stockCount > 0
+                ? `${stockCount.toLocaleString("en-US")} ${translate("label.available", "available")}`
+                : translate("label.outOfStock", "H\u1ebft h\u00e0ng");
+            const stockClass = stockCount > 0 ? "ok" : "out";
+            return `
+              <a class="detail-other-item ${isCurrent ? "current" : ""}" href="${detailUrl}">
+                <span class="detail-other-name">
+                  ${isCurrent ? `<span class="detail-other-check" aria-hidden="true">\u2713</span>` : ""}
+                  <span>${escapeHtml(item.title)}</span>
+                </span>
+                <span class="detail-other-meta">
+                  <span class="price">${label}</span>
+                  <span class="detail-other-stock ${stockClass}">${escapeHtml(stockLabel)}</span>
+                </span>
+              </a>
+            `;
           })
           .join("");
       }
