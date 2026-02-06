@@ -4251,13 +4251,8 @@ function getUserDisplayName(user, fallback = "BKUser") {
 
 function parseAuthPayload(raw) {
   if (!raw) return null;
-  let data = null;
-  try {
-    data = JSON.parse(raw);
-  } catch (e) {
-    return null;
-  }
-  if (typeof data === "string") {
+  let data = raw;
+  for (let i = 0; i < 2 && typeof data === "string"; i += 1) {
     try {
       data = JSON.parse(data);
     } catch (e) {
@@ -4265,6 +4260,13 @@ function parseAuthPayload(raw) {
     }
   }
   if (data && typeof data === "object") {
+    if (typeof data.user === "string") {
+      try {
+        data.user = JSON.parse(data.user);
+      } catch (e) {
+        // ignore nested parse errors
+      }
+    }
     if (data.user && typeof data.user === "object") return data.user;
     if (data.loggedIn && data.user) return data.user;
   }
@@ -4797,13 +4799,13 @@ function setupUserMenu(auth) {
 
   const containers = document.querySelectorAll("header .nav-actions, .mobile-actions");
   containers.forEach((container) => {
+    if (container.querySelector(".user-menu")) return;
     const loginLink =
-      container.querySelector("a.login-btn, a[data-auth-login]") ||
-      Array.from(container.querySelectorAll("a")).find((a) => {
-        const text = normalizeText(a.textContent || "");
+      container.querySelector(".login-btn, [data-auth-login]") ||
+      Array.from(container.querySelectorAll("a, button")).find((el) => {
+        const text = normalizeText(el.textContent || "");
         return text.includes("login") || text.includes("dang nhap");
       });
-    if (!loginLink || container.querySelector(".user-menu")) return;
 
     const menu = document.createElement("div");
     menu.className = "user-menu";
@@ -4881,7 +4883,13 @@ function setupUserMenu(auth) {
     });
 
     menu.append(btn, dropdown);
-    container.replaceChild(menu, loginLink);
+    if (loginLink && typeof loginLink.replaceWith === "function") {
+      loginLink.replaceWith(menu);
+    } else if (loginLink && loginLink.parentNode) {
+      loginLink.parentNode.replaceChild(menu, loginLink);
+    } else {
+      container.appendChild(menu);
+    }
   });
 
   bindUserMenuInteractions();
@@ -5818,16 +5826,17 @@ document.addEventListener("DOMContentLoaded", () => {
   initGlobalNotifier();
   if (auth && auth.loggedIn) startHeartbeat(auth);
   applyI18n();
-  const refreshAuthUi = () => {
-    const current = readAuthState();
-    updateSellerCta(current);
-    updateTaskCta(current);
-    setupUserMenu(current);
-  };
-  refreshAuthUi();
-  window.addEventListener("storage", (event) => {
-    if (event && event.key === BK_AUTH_KEY) refreshAuthUi();
-  });
+    const refreshAuthUi = () => {
+      const current = readAuthState();
+      updateSellerCta(current);
+      updateTaskCta(current);
+      setupUserMenu(current);
+    };
+    refreshAuthUi();
+    document.addEventListener("bk:i18n", refreshAuthUi);
+    window.addEventListener("storage", (event) => {
+      if (event && event.key === BK_AUTH_KEY) refreshAuthUi();
+    });
 
   const mobileNav = document.querySelector(".mobile-nav");
   const rootStyle = document.documentElement.style;
