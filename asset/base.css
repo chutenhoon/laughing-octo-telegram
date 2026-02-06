@@ -4260,6 +4260,14 @@ body.modal-open {
   word-break: break-word;
 }
 
+.product-meta .seller-shop-link {
+  cursor: pointer;
+}
+
+.product-meta .seller-shop-link:hover {
+  text-decoration: underline;
+}
+
 .seller-line {
   display: inline-flex;
   flex-wrap: wrap;

@@ -446,7 +446,7 @@
               <div class="meta-col meta-right">
                 <span class="seller-line">
                   <span class="seller-label">${translate("label.seller", "Seller")}:</span>
-                  <span class="seller-value"><strong class="seller-name">${escapeHtml(seller.name || "Shop")}</strong>${sellerBadge}</span>
+                  <span class="seller-value"><strong class="seller-name seller-shop-link" data-shop-href="${escapeHtml(shopUrl || "")}">${escapeHtml(seller.name || "Shop")}</strong>${sellerBadge}</span>
                 </span>
               </div>
             </div>
@@ -617,6 +617,19 @@
     renderSubcategories();
     applyUiState();
     initFilters();
+
+    // Let users click the seller name to open the shop page (instead of the product detail).
+    grid.addEventListener("click", (event) => {
+      const target = event.target && event.target.closest ? event.target.closest(".seller-shop-link[data-shop-href]") : null;
+      if (!target) return;
+      const href = String(target.getAttribute("data-shop-href") || "").trim();
+      if (!href) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+      event.preventDefault();
+      event.stopPropagation();
+      window.location.href = href;
+    });
+
     loadProducts();
     document.addEventListener("bk:i18n", () => {
       renderSubcategories();

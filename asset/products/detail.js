@@ -136,22 +136,174 @@
     document.body.classList.remove("modal-open");
   };
 
-  const init = async () => {
-    const productRef = getProductRef();
-    if (!productRef) {
+  const API_CACHE_MAX = 25;
+  const apiCache = new Map();
+  const apiCacheOrder = [];
+  const apiInFlight = new Map();
+
+  const state = {
+    productRef: "",
+    productId: "",
+    product: null,
+    payload: null,
+  };
+
+  const dom = {
+    otherList: null,
+    orderBtn: null,
+    preorderBtn: null,
+    modalName: null,
+    modalPrice: null,
+    modalTotal: null,
+    modalError: null,
+    qtyInput: null,
+    qtyMinus: null,
+    qtyPlus: null,
+    modalConfirm: null,
+  };
+
+  let renderSeq = 0;
+
+  const rememberApiPayload = (key, payload) => {
+    if (!key || !payload) return;
+    const normalizedKey = String(key).trim();
+    if (!normalizedKey) return;
+    if (!apiCache.has(normalizedKey)) {
+      apiCacheOrder.push(normalizedKey);
+    }
+    apiCache.set(normalizedKey, payload);
+    while (apiCacheOrder.length > API_CACHE_MAX) {
+      const evict = apiCacheOrder.shift();
+      if (evict) apiCache.delete(evict);
+    }
+  };
+
+  const rememberProductPayload = (ref, payload) => {
+    if (!payload) return;
+    rememberApiPayload(ref, payload);
+    const product = payload.product || null;
+    if (!product) return;
+    if (product.id) rememberApiPayload(String(product.id), payload);
+    if (product.slug) rememberApiPayload(String(product.slug), payload);
+  };
+
+  const fetchProductPayload = (ref) => {
+    const key = String(ref || "").trim();
+    if (!key) return Promise.reject(new Error("INVALID_REF"));
+    if (apiCache.has(key)) return Promise.resolve(apiCache.get(key));
+    if (apiInFlight.has(key)) return apiInFlight.get(key);
+    const promise = fetch(`/api/products/${encodeURIComponent(key)}`)
+      .then(async (response) => {
+        const data = await response.json().catch(() => null);
+        if (!response.ok || !data || data.ok === false) {
+          const error = new Error("NOT_FOUND");
+          error.status = response.status;
+          throw error;
+        }
+        rememberProductPayload(key, data);
+        return data;
+      })
+      .finally(() => {
+        apiInFlight.delete(key);
+      });
+    apiInFlight.set(key, promise);
+    return promise;
+  };
+
+  const normalizeItem = (item) => {
+    if (!item) return null;
+    const id = item.id != null ? String(item.id) : "";
+    if (!id) return null;
+    return {
+      id,
+      slug: item.slug || "",
+      title: item.title || item.name || "",
+      price: Number(item.price || 0),
+      priceMax: item.priceMax != null ? Number(item.priceMax || 0) : null,
+      stockCount: item.stockCount != null ? Number(item.stockCount || 0) : 0,
+    };
+  };
+
+  const buildShopItems = (product, payload, productId) => {
+    const rawShopItems = Array.isArray(payload && payload.shopItems) ? payload.shopItems : [];
+    const fallbackOthers = Array.isArray(payload && payload.others) ? payload.others : [];
+    const merged = [];
+    if (product) merged.push(normalizeItem(product));
+    rawShopItems.forEach((item) => merged.push(normalizeItem(item)));
+    fallbackOthers.forEach((item) => merged.push(normalizeItem(item)));
+    return merged
+      .filter(Boolean)
+      .filter((item, idx, arr) => arr.findIndex((candidate) => candidate.id === item.id) === idx)
+      .sort((a, b) => {
+        if (String(a.id) === String(productId)) return -1;
+        if (String(b.id) === String(productId)) return 1;
+        return 0;
+      });
+  };
+
+  const renderOtherItems = (product, payload, productId) => {
+    if (!dom.otherList) return;
+    const shopItems = buildShopItems(product, payload, productId);
+    if (!shopItems.length) {
+      dom.otherList.innerHTML = `<div class="empty-state">${translate("product.detail.other.empty", "No other items.")}</div>`;
+      return;
+    }
+
+    dom.otherList.innerHTML = shopItems
+      .map((item) => {
+        const isCurrent = String(item.id) === String(productId);
+        const detailUrl =
+          typeof getProductDetailPath === "function"
+            ? getProductDetailPath(item)
+            : `/products/${encodeURIComponent(item.slug || item.id || "")}/`;
+        const ref = item.slug || item.id;
+        const label = formatPriceRange(item);
+        const stockCount = Number(item.stockCount || 0);
+        const stockLabel =
+          stockCount > 0
+            ? `${stockCount.toLocaleString("en-US")} ${translate("label.available", "available")}`
+            : translate("label.outOfStock", "H\u1ebft h\u00e0ng");
+        const stockClass = stockCount > 0 ? "ok" : "out";
+        return `
+          <a class="detail-other-item ${isCurrent ? "current" : ""}" href="${detailUrl}" data-product-ref="${escapeHtml(ref)}" ${isCurrent ? 'aria-current="true"' : ""}>
+            <span class="detail-other-name">
+              ${isCurrent ? `<span class="detail-other-check" aria-hidden="true">\u2713</span>` : ""}
+              <span>${escapeHtml(item.title)}</span>
+            </span>
+            <span class="detail-other-meta">
+              <span class="price">${label}</span>
+              <span class="detail-other-stock ${stockClass}">${escapeHtml(stockLabel)}</span>
+            </span>
+          </a>
+        `;
+      })
+      .join("");
+
+    // Prefetch to make "other items" navigation feel instant.
+    shopItems
+      .filter((item) => String(item.id) !== String(productId))
+      .slice(0, 6)
+      .forEach((item) => {
+        const ref = item.slug || item.id;
+        if (!ref) return;
+        if (apiCache.has(ref) || apiInFlight.has(ref)) return;
+        fetchProductPayload(ref).catch(() => {});
+      });
+  };
+
+  const renderProduct = (payload, productRef) => {
+    const product = payload && payload.product ? payload.product : null;
+    if (!product) {
       setHTML("detail-title", translate("product.detail.notFound", "Product not found"));
       return;
     }
 
-    const response = await fetch(`/api/products/${encodeURIComponent(productRef)}`);
-    const data = await response.json();
-    if (!response.ok || !data || data.ok === false) {
-      setHTML("detail-title", translate("product.detail.notFound", "Product not found"));
-      return;
-    }
+    const productId = product && product.id ? String(product.id) : String(productRef || "");
+    state.productRef = String(productRef || "");
+    state.productId = productId;
+    state.product = product;
+    state.payload = payload;
 
-    const product = data.product;
-    const productId = product && product.id ? String(product.id) : productRef;
     const seller = product.seller || {};
     const shop = product.shop || {};
     const priceLabel = formatPriceRange(product);
@@ -166,6 +318,12 @@
         : shopRef
           ? `/shops/${encodeURIComponent(shopRef)}`
           : "";
+
+    const crumbTitle = document.getElementById("crumb-title");
+    if (crumbTitle) crumbTitle.textContent = product.title || translate("breadcrumb.detail", "Detail");
+    if (product && product.title) {
+      document.title = `${product.title} | polyflux.xyz`;
+    }
 
     setText("detail-title", product.title);
     setText("detail-short", product.descriptionShort || "");
@@ -223,109 +381,91 @@
     setHTML("detail-reviews", `<div class="empty-state">${translate("product.detail.review.empty", "No reviews yet.")}</div>`);
     setHTML("detail-api", `<div class="empty-state">${translate("product.detail.api.empty", "API is coming soon.")}</div>`);
 
-    const otherList = document.getElementById("detail-other-list");
-    if (otherList) {
-      const normalizeItem = (item) => {
-        if (!item) return null;
-        const id = item.id != null ? String(item.id) : "";
-        if (!id) return null;
-        return {
-          id,
-          slug: item.slug || "",
-          title: item.title || item.name || "",
-          price: Number(item.price || 0),
-          priceMax: item.priceMax != null ? Number(item.priceMax || 0) : null,
-          stockCount: item.stockCount != null ? Number(item.stockCount || 0) : 0,
-        };
-      };
+    renderOtherItems(product, payload, productId);
 
-      const rawShopItems = Array.isArray(data.shopItems) ? data.shopItems : [];
-      const fallbackOthers = Array.isArray(data.others) ? data.others : [];
-      const merged = [];
-      if (product) merged.push(normalizeItem(product));
-      rawShopItems.forEach((item) => merged.push(normalizeItem(item)));
-      fallbackOthers.forEach((item) => merged.push(normalizeItem(item)));
-      const shopItems = merged
-        .filter(Boolean)
-        .filter((item, idx, arr) => arr.findIndex((candidate) => candidate.id === item.id) === idx);
+    // Reset order modal content for the new product.
+    const deliveredBox = document.querySelector(".order-modal-delivered");
+    if (deliveredBox) deliveredBox.remove();
+    if (dom.modalName) dom.modalName.textContent = product.title || "--";
+    if (dom.modalPrice) dom.modalPrice.textContent = priceLabel;
+    if (dom.modalTotal) dom.modalTotal.textContent = priceLabel;
+    if (dom.qtyInput) dom.qtyInput.value = "1";
+    if (dom.qtyMinus) dom.qtyMinus.disabled = true;
+    if (dom.qtyPlus) dom.qtyPlus.disabled = true;
+    if (dom.modalError) dom.modalError.textContent = "";
+  };
 
-      if (!shopItems.length) {
-        otherList.innerHTML = `<div class="empty-state">${translate("product.detail.other.empty", "No other items.")}</div>`;
-      } else {
-        otherList.innerHTML = shopItems
-          .map((item) => {
-            const isCurrent = String(item.id) === String(productId);
-            const detailUrl =
-              typeof getProductDetailPath === "function"
-                ? getProductDetailPath(item)
-                : `/products/${encodeURIComponent(item.slug || item.id || "")}/`;
-            const label = formatPriceRange(item);
-            const stockCount = Number(item.stockCount || 0);
-            const stockLabel =
-              stockCount > 0
-                ? `${stockCount.toLocaleString("en-US")} ${translate("label.available", "available")}`
-                : translate("label.outOfStock", "H\u1ebft h\u00e0ng");
-            const stockClass = stockCount > 0 ? "ok" : "out";
-            return `
-              <a class="detail-other-item ${isCurrent ? "current" : ""}" href="${detailUrl}">
-                <span class="detail-other-name">
-                  ${isCurrent ? `<span class="detail-other-check" aria-hidden="true">\u2713</span>` : ""}
-                  <span>${escapeHtml(item.title)}</span>
-                </span>
-                <span class="detail-other-meta">
-                  <span class="price">${label}</span>
-                  <span class="detail-other-stock ${stockClass}">${escapeHtml(stockLabel)}</span>
-                </span>
-              </a>
-            `;
-          })
-          .join("");
-      }
+  const loadProduct = async (productRef) => {
+    const ref = String(productRef || "").trim();
+    if (!ref) {
+      setHTML("detail-title", translate("product.detail.notFound", "Product not found"));
+      return;
     }
 
-    const orderBtn = document.getElementById("detail-order");
-    const preorderBtn = document.getElementById("detail-preorder");
-    const modalName = document.getElementById("order-modal-name");
-    const modalPrice = document.getElementById("order-modal-price");
-    const modalTotal = document.getElementById("order-modal-total");
-    const modalError = document.getElementById("order-modal-error");
-    const qtyInput = document.getElementById("order-qty-input");
-    const qtyMinus = document.getElementById("order-qty-minus");
-    const qtyPlus = document.getElementById("order-qty-plus");
-    const modalConfirm = document.getElementById("order-modal-confirm");
+    const seq = (renderSeq += 1);
+    try {
+      const payload = await fetchProductPayload(ref);
+      if (seq !== renderSeq) return;
+      renderProduct(payload, ref);
+    } catch (error) {
+      if (seq !== renderSeq) return;
+      setHTML("detail-title", translate("product.detail.notFound", "Product not found"));
+    }
+  };
+
+  const init = () => {
+    dom.otherList = document.getElementById("detail-other-list");
+    dom.orderBtn = document.getElementById("detail-order");
+    dom.preorderBtn = document.getElementById("detail-preorder");
+    dom.modalName = document.getElementById("order-modal-name");
+    dom.modalPrice = document.getElementById("order-modal-price");
+    dom.modalTotal = document.getElementById("order-modal-total");
+    dom.modalError = document.getElementById("order-modal-error");
+    dom.qtyInput = document.getElementById("order-qty-input");
+    dom.qtyMinus = document.getElementById("order-qty-minus");
+    dom.qtyPlus = document.getElementById("order-qty-plus");
+    dom.modalConfirm = document.getElementById("order-modal-confirm");
+
+    if (dom.otherList) {
+      dom.otherList.addEventListener("click", (event) => {
+        const link = event.target.closest("a.detail-other-item");
+        if (!link) return;
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+        const nextRef = String(link.dataset.productRef || "").trim();
+        if (!nextRef) return;
+        const href = link.getAttribute("href") || "";
+        event.preventDefault();
+        if (href) window.history.pushState({}, "", href);
+        loadProduct(nextRef);
+      });
+    }
+
     const modalClose = document.getElementById("order-modal-close");
     const modalCancel = document.getElementById("order-modal-cancel");
-
-    if (modalName) modalName.textContent = product.title;
-    if (modalPrice) modalPrice.textContent = priceLabel;
-    if (modalTotal) modalTotal.textContent = priceLabel;
-    if (qtyInput) qtyInput.value = "1";
-    if (qtyMinus) qtyMinus.disabled = true;
-    if (qtyPlus) qtyPlus.disabled = true;
-
-    if (orderBtn) {
-      orderBtn.addEventListener("click", () => {
-        if (Number(product.stockCount || 0) <= 0) {
-          if (modalError) modalError.textContent = translate("product.detail.outOfStock", "Out of stock.");
-          return;
-        }
-        if (modalError) modalError.textContent = "";
-        openModal();
-      });
-    }
-    if (preorderBtn) {
-      preorderBtn.addEventListener("click", () => {
-        if (modalError) modalError.textContent = translate("product.detail.preorderSoon", "Preorder is not available yet.");
-      });
-    }
-
-    const closeButtons = [modalClose, modalCancel];
-    closeButtons.forEach((btn) => {
+    [modalClose, modalCancel].forEach((btn) => {
       if (btn) btn.addEventListener("click", closeModal);
     });
 
-    if (modalConfirm) {
-      modalConfirm.addEventListener("click", async () => {
+    if (dom.orderBtn) {
+      dom.orderBtn.addEventListener("click", () => {
+        const product = state.product || {};
+        if (Number(product.stockCount || 0) <= 0) {
+          if (dom.modalError) dom.modalError.textContent = translate("product.detail.outOfStock", "Out of stock.");
+          return;
+        }
+        if (dom.modalError) dom.modalError.textContent = "";
+        openModal();
+      });
+    }
+
+    if (dom.preorderBtn) {
+      dom.preorderBtn.addEventListener("click", () => {
+        if (dom.modalError) dom.modalError.textContent = translate("product.detail.preorderSoon", "Preorder is not available yet.");
+      });
+    }
+
+    if (dom.modalConfirm) {
+      dom.modalConfirm.addEventListener("click", async () => {
         const headers = buildAuthHeaders();
         if (!headers["x-user-id"]) {
           if (window.BKAuth && typeof window.BKAuth.showToast === "function") {
@@ -333,9 +473,13 @@
           }
           return;
         }
-        modalConfirm.disabled = true;
-        modalConfirm.setAttribute("aria-busy", "true");
-        if (modalError) modalError.textContent = "";
+
+        const productId = state.productId || "";
+        if (!productId) return;
+
+        dom.modalConfirm.disabled = true;
+        dom.modalConfirm.setAttribute("aria-busy", "true");
+        if (dom.modalError) dom.modalError.textContent = "";
         try {
           const response = await fetch(`/api/orders/product/${encodeURIComponent(productId)}`, {
             method: "POST",
@@ -344,7 +488,7 @@
           });
           const result = await response.json();
           if (!response.ok || !result || result.ok === false) {
-            if (modalError) modalError.textContent = translate("product.detail.orderFailed", "Order failed. Please try again.");
+            if (dom.modalError) dom.modalError.textContent = translate("product.detail.orderFailed", "Order failed. Please try again.");
           } else {
             let deliveredText = result.delivered || "";
             if (!deliveredText && result.downloadUrl) {
@@ -366,18 +510,24 @@
             `;
             const body = document.querySelector(".order-modal-body");
             if (body && !deliveredBox) body.appendChild(container);
-            setText("detail-stock", result.stockCount != null ? result.stockCount : product.stockCount);
+            setText("detail-stock", result.stockCount != null ? result.stockCount : (state.product && state.product.stockCount));
           }
         } catch (error) {
-          if (modalError) modalError.textContent = translate("product.detail.orderFailed", "Order failed. Please try again.");
+          if (dom.modalError) dom.modalError.textContent = translate("product.detail.orderFailed", "Order failed. Please try again.");
         } finally {
-          modalConfirm.disabled = false;
-          modalConfirm.removeAttribute("aria-busy");
+          dom.modalConfirm.disabled = false;
+          dom.modalConfirm.removeAttribute("aria-busy");
         }
       });
     }
 
+    window.addEventListener("popstate", () => {
+      const ref = getProductRef();
+      if (ref) loadProduct(ref);
+    });
+
     bindTabs();
+    loadProduct(getProductRef());
   };
 
   document.addEventListener("DOMContentLoaded", init);
