@@ -1,5 +1,6 @@
-/products/index.html /products/ 301
-/products /products/ 301
+/products/index.html /sanpham/ 301
+/products/ /sanpham/ 301
+/products /sanpham/ 301
 
 /products/:slug /products/[slug]/ 200
 /products/:slug/ /products/[slug]/ 200
