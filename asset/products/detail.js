@@ -60,6 +60,31 @@
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "");
 
+  const formatShortId = (value) => {
+    const raw = String(value || "").trim();
+    if (!raw) return "--";
+    if (raw.length <= 12) return raw;
+    return `${raw.slice(0, 6)}...${raw.slice(-4)}`;
+  };
+
+  const looksLikeIdSuffix = (value) => {
+    const raw = String(value || "").trim();
+    if (!raw) return false;
+    if (/^\d+$/.test(raw)) return true;
+    return /^[0-9a-f]{8,}$/i.test(raw);
+  };
+
+  const formatShopId = (value) => {
+    const raw = String(value || "").trim();
+    if (!raw) return "--";
+    const parts = raw.split("-").filter(Boolean);
+    if (parts.length >= 2) {
+      const suffix = parts[parts.length - 1];
+      if (looksLikeIdSuffix(suffix)) return formatShortId(suffix);
+    }
+    return formatShortId(raw);
+  };
+
   const resolveShopRef = (product) => {
     if (!product) return "";
     if (product.shop && product.shop.slug != null && product.shop.slug !== "") return String(product.shop.slug).trim();
@@ -250,17 +275,20 @@
     const rawShopItems = Array.isArray(payload && payload.shopItems) ? payload.shopItems : [];
     const fallbackOthers = Array.isArray(payload && payload.others) ? payload.others : [];
     const merged = [];
-    if (product) merged.push(normalizeItem(product));
     rawShopItems.forEach((item) => merged.push(normalizeItem(item)));
     fallbackOthers.forEach((item) => merged.push(normalizeItem(item)));
-    return merged
+    const items = merged
       .filter(Boolean)
-      .filter((item, idx, arr) => arr.findIndex((candidate) => candidate.id === item.id) === idx)
-      .sort((a, b) => {
-        if (String(a.id) === String(productId)) return -1;
-        if (String(b.id) === String(productId)) return 1;
-        return 0;
-      });
+      // De-dup while preserving order (first occurrence wins).
+      .filter((item, idx, arr) => arr.findIndex((candidate) => candidate.id === item.id) === idx);
+
+    const current = normalizeItem(product);
+    const currentId = String(productId || "");
+    if (current && currentId && !items.some((item) => String(item.id) === currentId)) {
+      // Ensure the current item still shows up (for the checkmark), but don't reorder the list.
+      items.push(current);
+    }
+    return items;
   };
 
   const renderOtherItems = (product, payload, productId) => {
@@ -313,6 +341,22 @@
       });
   };
 
+  const markOtherSelection = (link) => {
+    if (!dom.otherList || !link) return;
+    dom.otherList.querySelectorAll("a.detail-other-item").forEach((el) => {
+      el.classList.remove("current");
+      el.removeAttribute("aria-current");
+      const check = el.querySelector(".detail-other-check");
+      if (check) check.remove();
+    });
+    link.classList.add("current");
+    link.setAttribute("aria-current", "true");
+    const name = link.querySelector(".detail-other-name");
+    if (name && !name.querySelector(".detail-other-check")) {
+      name.insertAdjacentHTML("afterbegin", '<span class="detail-other-check" aria-hidden="true">\u2713</span>');
+    }
+  };
+
   const renderProduct = (payload, productRef) => {
     const product = payload && payload.product ? payload.product : null;
     if (!product) {
@@ -357,11 +401,21 @@
 
     const sellerLink = document.getElementById("detail-seller-link");
     if (sellerLink) {
-      sellerLink.textContent = seller.name || shop.name || "Shop";
+      const sellerName = seller.displayName || seller.username || seller.name || shop.name || "Shop";
+      sellerLink.textContent = sellerName;
       sellerLink.href = shopUrl || "#";
     }
     setHTML("detail-seller-badge", renderSellerBadge(seller));
-    setText("detail-shop-id", shopRef || "--");
+
+    const rawShopId =
+      (shop && (shop.storeSlug || shop.store_slug)) || product.shopId || (shop && shop.id) || shopRef || "";
+    const shopIdDisplay =
+      shop && (shop.storeSlug || shop.store_slug) ? String(shop.storeSlug || shop.store_slug) : formatShopId(rawShopId);
+    const shopIdEl = document.getElementById("detail-shop-id");
+    if (shopIdEl) {
+      shopIdEl.textContent = shopIdDisplay || "--";
+      shopIdEl.title = rawShopId ? String(rawShopId) : "";
+    }
     setText("detail-rating-note", product.rating != null ? product.rating : "--");
     const ratingNote = document.getElementById("detail-rating-note");
     if (ratingNote) {
@@ -449,6 +503,7 @@
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
+        markOtherSelection(link);
         if (href) window.history.pushState({}, "", href);
         loadProduct(nextRef);
       });

@@ -383,7 +383,7 @@ export async function onRequestGet(context) {
              p.price, p.price_max, p.stock_count, p.thumbnail_media_id, p.status, p.created_at,
              p.is_active, p.is_published, p.kind, p.type,
              s.store_name, s.store_slug, s.rating AS shop_rating, s.category AS store_category, s.subcategory AS store_subcategory, s.tags_json AS store_tags_json,
-             u.badge, u.role, u.display_name, u.title, u.rank,
+             u.badge, u.role, u.display_name, u.username, u.title, u.rank,
              (
                SELECT COALESCE(SUM(oi.quantity), 0)
                  FROM order_items oi
@@ -437,6 +437,7 @@ export async function onRequestGet(context) {
           slug: shopSlug,
           badge: row.badge || "",
           role: row.role || "",
+          username: row.username || "",
           displayName: row.display_name || "",
           title: row.title || "",
           rank: row.rank || "",

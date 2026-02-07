@@ -342,6 +342,7 @@ export async function onRequestGet(context) {
         id: row.shop_id,
         name: row.store_name || "",
         slug: shopSlug,
+        storeSlug: row.store_slug || "",
         rating: Number(row.shop_rating || 0),
         descriptionShort: row.short_desc || "",
         descriptionHtml: toSafeHtml(row.long_desc || row.shop_desc || ""),
@@ -354,15 +355,15 @@ export async function onRequestGet(context) {
       : `${flagTrueOrNull("is_active")} AND ${flagTrueOrNull("is_published")} AND lower(trim(coalesce(status,''))) NOT IN ('disabled','blocked','banned')`;
 
     const shopItemsSql = `
-      SELECT id, name, price, price_max, stock_count, thumbnail_media_id, created_at
+      SELECT id, name, price, price_max, stock_count, thumbnail_media_id, sort_order, created_at
         FROM products
        WHERE shop_id = ?
-         AND kind = 'product'
+         AND (lower(trim(kind)) = 'product' OR (kind IS NULL AND (type IS NULL OR lower(trim(type)) <> 'service')))
          AND ${visibilityClause}
-       ORDER BY CASE WHEN id = ? THEN 0 ELSE 1 END, created_at DESC
-       LIMIT 10
+       ORDER BY CASE WHEN sort_order IS NULL OR sort_order = 0 THEN 1 ELSE 0 END, sort_order ASC, created_at DESC
+       LIMIT 40
     `;
-    const shopItemRows = await db.prepare(shopItemsSql).bind(row.shop_id, row.id).all();
+    const shopItemRows = await db.prepare(shopItemsSql).bind(row.shop_id).all();
     const shopItems = (shopItemRows && Array.isArray(shopItemRows.results) ? shopItemRows.results : []).map((item) => ({
       id: item.id,
       slug: buildProductSlug(item.name, item.id),

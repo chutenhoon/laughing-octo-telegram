@@ -449,6 +449,7 @@
     const previewBadges = buildPreviewBadges(item);
     const actions = [];
     if (previewBadges) actions.push(`<div class="card-badges">${previewBadges}</div>`);
+    const sellerName = seller.displayName || seller.username || seller.name || "Shop";
     return `
       <div class="product-card">
         <a class="product-card-link" href="${detailUrl}">
@@ -467,7 +468,7 @@
               <div class="meta-col meta-right">
                 <span class="seller-line">
                   <span class="seller-label">${translate("label.seller", "Seller")}:</span>
-                  <span class="seller-value"><strong class="seller-name seller-shop-link" data-shop-href="${escapeHtml(shopUrl || "")}">${escapeHtml(seller.name || "Shop")}</strong>${sellerBadge}</span>
+                  <span class="seller-value"><strong class="seller-name seller-shop-link" data-shop-href="${escapeHtml(shopUrl || "")}">${escapeHtml(sellerName)}</strong>${sellerBadge}</span>
                 </span>
               </div>
             </div>

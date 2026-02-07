@@ -62,6 +62,53 @@
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "");
 
+  const getInitials = (value) => {
+    const text = String(value || "").trim();
+    if (!text) return "BK";
+    const parts = text.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return `${parts[0][0] || ""}${parts[1][0] || ""}`.toUpperCase();
+    }
+    return text.slice(0, 2).toUpperCase();
+  };
+
+  const formatShortId = (value) => {
+    const raw = String(value || "").trim();
+    if (!raw) return "--";
+    if (raw.length <= 12) return raw;
+    return `${raw.slice(0, 6)}...${raw.slice(-4)}`;
+  };
+
+  const looksLikeIdSuffix = (value) => {
+    const raw = String(value || "").trim();
+    if (!raw) return false;
+    if (/^\d+$/.test(raw)) return true;
+    return /^[0-9a-f]{8,}$/i.test(raw);
+  };
+
+  const formatShopId = (value) => {
+    const raw = String(value || "").trim();
+    if (!raw) return "--";
+    const parts = raw.split("-").filter(Boolean);
+    if (parts.length >= 2) {
+      const suffix = parts[parts.length - 1];
+      if (looksLikeIdSuffix(suffix)) return formatShortId(suffix);
+    }
+    return formatShortId(raw);
+  };
+
+  const renderShopMedia = (shop) => {
+    const detailImage = document.getElementById("detail-image");
+    if (!detailImage) return;
+    const images = shop && Array.isArray(shop.images) ? shop.images : [];
+    const heroUrl = (images.length && images[0] && images[0].url) || (shop && shop.avatarUrl) || "";
+    const name = (shop && shop.name) || "Shop";
+    detailImage.innerHTML = heroUrl
+      ? `<img src="${heroUrl}" alt="${escapeHtml(name)}" loading="lazy" />`
+      : `<div class="product-fallback">${escapeHtml(getInitials(name))}</div>`;
+    detailImage.dataset.shopMedia = "1";
+  };
+
   const resolveFallbackThumbnail = (item) => {
     if (!item) return "";
     const title = normalizeLabel(item.title || item.name || "");
@@ -298,17 +345,17 @@
   const renderOtherItems = (productId) => {
     if (!dom.otherList) return;
     const currentId = String(productId || "");
-    const merged = [];
-    if (state.product) merged.push(normalizeItem(state.product));
-    state.shopProducts.forEach((item) => merged.push(normalizeItem(item)));
-    const items = merged
+    const items = state.shopProducts
+      .map((item) => normalizeItem(item))
       .filter(Boolean)
-      .filter((item, idx, arr) => arr.findIndex((candidate) => candidate.id === item.id) === idx)
-      .sort((a, b) => {
-        if (String(a.id) === currentId) return -1;
-        if (String(b.id) === currentId) return 1;
-        return 0;
-      });
+      // De-dup while preserving order (first occurrence wins).
+      .filter((item, idx, arr) => arr.findIndex((candidate) => candidate.id === item.id) === idx);
+
+    const current = normalizeItem(state.product);
+    if (current && currentId && !items.some((item) => String(item.id) === currentId)) {
+      // Ensure the current item still shows up (for the checkmark), but don't reorder the list.
+      items.push(current);
+    }
 
     if (!items.length) {
       dom.otherList.innerHTML = `<div class="empty-state">${translate("product.detail.other.empty", "No other items.")}</div>`;
@@ -353,6 +400,22 @@
       });
   };
 
+  const markOtherSelection = (link) => {
+    if (!dom.otherList || !link) return;
+    dom.otherList.querySelectorAll("a.detail-other-item").forEach((el) => {
+      el.classList.remove("current");
+      el.removeAttribute("aria-current");
+      const check = el.querySelector(".detail-other-check");
+      if (check) check.remove();
+    });
+    link.classList.add("current");
+    link.setAttribute("aria-current", "true");
+    const name = link.querySelector(".detail-other-name");
+    if (name && !name.querySelector(".detail-other-check")) {
+      name.insertAdjacentHTML("afterbegin", '<span class="detail-other-check" aria-hidden="true">\u2713</span>');
+    }
+  };
+
   const renderProduct = (payload, productRef) => {
     const product = payload && payload.product ? payload.product : null;
     if (!product) {
@@ -383,14 +446,29 @@
 
     const seller = product.seller || {};
     const shop = state.shop || product.shop || {};
+    const owner = state.shop && state.shop.owner ? state.shop.owner : null;
 
     const sellerLink = document.getElementById("detail-seller-link");
     if (sellerLink) {
-      sellerLink.textContent = shop.name || seller.name || "Shop";
+      const sellerName =
+        (owner && (owner.displayName || owner.username)) ||
+        seller.displayName ||
+        seller.username ||
+        shop.name ||
+        seller.name ||
+        "Shop";
+      sellerLink.textContent = sellerName;
       sellerLink.href = buildShopPathname();
     }
     setHTML("detail-seller-badge", renderSellerBadge(seller));
-    setText("detail-shop-id", shop.slug || shop.id || "--");
+    const rawShopId = (shop && (shop.storeSlug || shop.store_slug)) || (state.shop && state.shop.id) || shop.slug || shop.id || "";
+    const shopIdDisplay =
+      shop && (shop.storeSlug || shop.store_slug) ? String(shop.storeSlug || shop.store_slug) : formatShopId(rawShopId);
+    const shopIdEl = document.getElementById("detail-shop-id");
+    if (shopIdEl) {
+      shopIdEl.textContent = shopIdDisplay || "--";
+      shopIdEl.title = rawShopId ? String(rawShopId) : "";
+    }
 
     setText("detail-rating-note", product.rating != null ? product.rating : "--");
     const ratingNote = document.getElementById("detail-rating-note");
@@ -408,15 +486,6 @@
         ratingNote.className = "rating-note";
         ratingNote.textContent = translate("product.detail.rating.none", "No rating yet");
       }
-    }
-
-    const detailImage = document.getElementById("detail-image");
-    if (detailImage) {
-      const fallbackLabel = String(product.subcategory || product.category || "BK").slice(0, 2);
-      const thumbUrl = resolveThumbnailUrl(product);
-      detailImage.innerHTML = thumbUrl
-        ? `<img src="${thumbUrl}" alt="${escapeHtml(product.title)}" loading="lazy" />`
-        : `<div class="product-fallback">${fallbackLabel}</div>`;
     }
 
     // Prefer sanitized shop description from product payload when available.
@@ -484,6 +553,7 @@
     try {
       state.shop = await fetchShopPayload(state.shopRef);
       applyShopCrumb();
+      renderShopMedia(state.shop);
       state.shopProducts = await fetchShopProducts(state.shop.id);
     } catch (error) {
       setHTML("detail-title", translate("shops.detail.notFound", "Shop not found"));
@@ -536,6 +606,7 @@
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
+        markOtherSelection(link);
         if (href) window.history.pushState({}, "", href);
         loadProduct(nextRef);
       });

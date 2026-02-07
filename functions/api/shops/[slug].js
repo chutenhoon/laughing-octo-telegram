@@ -218,6 +218,7 @@ export async function onRequestGet(context) {
       ownerUserId: shop.user_id,
       name: shop.store_name,
       slug: buildShopSlug(shop.store_name || shop.store_slug || "shop", shop.id),
+      storeSlug: shop.store_slug || "",
       storeType: shop.store_type || "",
       category: shop.category || "",
       subcategory: shop.subcategory || "",

@@ -33,7 +33,6 @@
     <meta name="twitter:image" content="../asset/logo-preview.png" />
     <link rel="stylesheet" href="../asset/base.css" />
     <link rel="stylesheet" href="../asset/catalog.css" />
-    <link rel="stylesheet" href="../asset/seller-shops.css" />
   </head>
   <body>
     <video class="video-bg" autoplay muted loop playsinline preload="metadata">
@@ -61,36 +60,57 @@
     </header>
 
     <main class="wrap">
-      <section class="section shop-page">
-        <div class="product-head" style="align-items: flex-end;">
-          <div>
-            <h2 id="shop-page-title" data-i18n-key="shops.title">Gian hang</h2>
-            <p class="hero-sub" id="shop-page-subtitle" data-i18n-key="shops.subtitle">Tim kiem gian hang phu hop voi nhu cau cua ban.</p>
-          </div>
-          <div class="sort-tabs" role="tablist">
-            <button class="sort-pill active" data-sort="popular" type="button" data-i18n-key="sort.popular">Pho bien</button>
-            <button class="sort-pill" data-sort="rating" type="button" data-i18n-key="sort.rating">Danh gia</button>
-            <button class="sort-pill" data-sort="newest" type="button" data-i18n-key="sort.newest">Moi nhat</button>
-          </div>
+      <section class="section product-page">
+        <div class="category-tabs glass" id="category-tabs">
+          <button class="category-pill active" data-category="email" type="button" data-i18n-key="product.category.email">Email</button>
+          <button class="category-pill" data-category="tool" type="button" data-i18n-key="product.category.tool">Ph&#7847;n m&#7873;m</button>
+          <button class="category-pill" data-category="account" type="button" data-i18n-key="product.category.account">T&#224;i Kho&#7843;n</button>
+          <button class="category-pill" data-category="other" type="button" data-i18n-key="product.category.other">Kh&#225;c</button>
         </div>
 
-        <div class="category-tabs glass" id="shop-category-tabs" style="margin-top: 14px;">
-          <button class="category-pill active" data-category="" type="button">Tat ca</button>
-          <button class="category-pill" data-category="email" type="button" data-i18n-key="product.category.email">Email</button>
-          <button class="category-pill" data-category="tool" type="button" data-i18n-key="product.category.tool">Phan mem</button>
-          <button class="category-pill" data-category="account" type="button" data-i18n-key="product.category.account">Tai khoan</button>
-          <button class="category-pill" data-category="other" type="button" data-i18n-key="product.category.other">Khac</button>
-        </div>
+        <div class="product-layout">
+          <aside class="product-sidebar" id="filter-panel">
+            <div class="card filter-card">
+              <div class="filter-head">
+                <h3 data-i18n-key="filter.title">L&#7885;c</h3>
+                <p data-i18n-key="filter.descSubcategories">Ch&#7885;n 1 ho&#7863;c nhi&#7873;u danh m&#7909;c con</p>
+              </div>
+              <div class="filter-list" id="filter-list"></div>
+              <div class="form-field" style="margin-top: 14px;">
+                <label for="filter-search" data-i18n-key="filter.searchLabel">T&#236;m ki&#7871;m</label>
+                <input id="filter-search" placeholder="Nh&#7853;p t&#234;n s&#7843;n ph&#7849;m..." data-i18n-placeholder="filter.searchPlaceholder.product" />
+              </div>
+              <button class="btn primary" id="filter-apply" type="button" data-i18n-key="filter.apply">T&#236;m ki&#7871;m</button>
+            </div>
+          </aside>
 
-        <div class="card" style="margin-top: 16px;">
-          <div class="form-field">
-            <label for="shop-search" data-i18n-key="filter.searchLabel">Tim kiem</label>
-            <input id="shop-search" placeholder="Nhap ten gian hang..." data-i18n-placeholder="filter.searchPlaceholder.shop" />
+          <div class="product-main">
+            <div class="mobile-filter-bar">
+              <button class="btn filter-toggle" id="filter-toggle" type="button" aria-expanded="false" aria-controls="filter-panel">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 6h16l-5.5 6.2v4.9l-5 2.7v-7.6L4 6z" fill="currentColor" />
+                </svg>
+                <span data-i18n-key="filter.title">L&#7885;c</span>
+              </button>
+            </div>
+            <div class="product-head">
+              <div>
+                <h2 id="category-title">Email</h2>
+                <p class="hero-sub" data-i18n-key="product.header.subtitle">
+                  S&#7855;p x&#7871;p theo nhu c&#7847;u v&#224; ch&#7885;n nhanh s&#7843;n ph&#7849;m ph&#249; h&#7907;p.
+                </p>
+              </div>
+              <div class="sort-tabs" role="tablist">
+                <button class="sort-pill active" data-sort="popular" type="button" data-i18n-key="sort.popular">Ph&#7893; bi&#7871;n</button>
+                <button class="sort-pill" data-sort="rating" type="button" data-i18n-key="sort.rating">&#272;&#225;nh gi&#225;</button>
+                <button class="sort-pill" data-sort="newest" type="button" data-i18n-key="sort.newest">M&#7899;i nh&#7845;t</button>
+              </div>
+            </div>
+
+            <div class="product-grid-luxe" id="product-list"></div>
+            <div class="table-pagination" id="product-pagination"></div>
           </div>
         </div>
-
-        <div class="seller-shop-grid" id="shop-list" style="margin-top: 18px;"></div>
-        <div class="table-pagination" id="shop-pagination"></div>
       </section>
 
       <footer>
@@ -152,7 +172,6 @@
     </nav>
 
     <script src="../asset/render.js"></script>
-    <script src="../asset/shops/list.js"></script>
+    <script src="../asset/products/list.js"></script>
   </body>
 </html>
-
