@@ -199,14 +199,14 @@ function getProductDetailPath(input, titleOverride) {
   }
   const finalSlug = slug || buildProductSlug(title, id);
   if (isFile) {
-    const base = "sanpham/[id]/index.html";
+    const base = "products/[slug]/index.html";
     const ref = finalSlug || id;
     const suffix = ref ? `?id=${encodeURIComponent(ref)}` : "";
     return root + base + suffix;
   }
-  if (finalSlug) return root + "sanpham/" + finalSlug + "/";
-  if (id) return root + "sanpham/" + encodeURIComponent(id) + "/";
-  return root + "sanpham/";
+  if (finalSlug) return root + "products/" + finalSlug + "/";
+  if (id) return root + "products/" + encodeURIComponent(id) + "/";
+  return root + "products/";
 }
 
 function getShopDetailPath(input) {
@@ -233,8 +233,8 @@ function getShopDetailPath(input) {
     const suffix = ref ? `?id=${encodeURIComponent(ref)}` : "";
     return root + base + suffix;
   }
-  if (!ref) return root + "shops/";
-  return root + "shops/" + encodeURIComponent(ref) + "/";
+  if (!ref) return root + "sanpham/";
+  return root + "sanpham/" + encodeURIComponent(ref) + "/";
 }
 
 // Remove trailing /index.html from the current URL when served over HTTP(S)

@@ -338,7 +338,7 @@
             slug: shopRef,
           })
         : shopRef
-          ? `/shops/${encodeURIComponent(shopRef)}`
+          ? `/sanpham/${encodeURIComponent(shopRef)}/`
           : "";
 
     const crumbTitle = document.getElementById("crumb-title");

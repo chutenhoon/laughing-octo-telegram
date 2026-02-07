@@ -51,7 +51,7 @@
       if (shopRef) return window.BKRoutes.getShopDetailPath(shopRef);
     }
     if (!shopRef) return "";
-    return `/shops/${encodeURIComponent(shopRef)}`;
+    return `/sanpham/${encodeURIComponent(shopRef)}/`;
   };
 
   const resolveThumbnailUrl = (item) => {

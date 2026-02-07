@@ -13,6 +13,163 @@ function buildSearch(value) {
   return `%${trimmed.replace(/\s+/g, "%")}%`;
 }
 
+const SHOP_CATEGORY_KEYS = new Set(["email", "tool", "account", "other"]);
+const CATEGORY_ALIASES = new Map([
+  ["software", "tool"],
+  ["phan mem", "tool"],
+  ["phan-mem", "tool"],
+  ["mail", "email"],
+  ["e-mail", "email"],
+  ["tai khoan", "account"],
+  ["tai-khoan", "account"],
+  ["acc", "account"],
+  ["khac", "other"],
+  ["misc", "other"],
+  ["others", "other"],
+]);
+const CATEGORY_DB_ALIASES = {
+  email: ["mail", "e-mail"],
+  tool: ["software", "phan mem", "phan-mem"],
+  account: ["tai khoan", "tai-khoan", "acc"],
+  other: ["khac", "misc", "others"],
+};
+
+function normalizeCategory(value) {
+  const trimmed = String(value || "").trim();
+  const key = trimmed ? trimmed.toLowerCase() : "";
+  if (SHOP_CATEGORY_KEYS.has(key)) return key;
+  return CATEGORY_ALIASES.get(key) || "";
+}
+
+const CATEGORY_FALLBACK_VALUES = {
+  email: [
+    "gmail",
+    "gmail edu",
+    "gmail.edu",
+    "hotmail",
+    "outlookmail",
+    "outlook",
+    "rumail",
+    "ru mail",
+    "domainemail",
+    "domain email",
+    "yahoomail",
+    "yahoo",
+    "protonmail",
+    "proton",
+    "emailkhac",
+    "email khac",
+    "email",
+    "mail",
+    "e-mail",
+  ],
+  tool: [
+    "toolfacebook",
+    "toolgoogle",
+    "toolyoutube",
+    "toolcrypto",
+    "toolptc",
+    "toolcaptcha",
+    "tooloffer",
+    "toolptu",
+    "toolkhac",
+    "tool other",
+    "facebook tool",
+    "google tool",
+    "youtube tool",
+    "crypto tool",
+    "ptc tool",
+    "captcha tool",
+    "offer tool",
+    "ptu tool",
+    "checker",
+    "phan mem",
+    "phan-mem",
+    "software",
+    "app",
+  ],
+  account: [
+    "accfacebook",
+    "accbm",
+    "acczalo",
+    "acctwitter",
+    "acctelegram",
+    "accinstagram",
+    "accshopee",
+    "accdiscord",
+    "acctiktok",
+    "keyantivirus",
+    "acccapcut",
+    "keywindows",
+    "acckhac",
+    "facebook account",
+    "tiktok account",
+    "discord account",
+    "zalo account",
+    "telegram account",
+    "instagram account",
+    "shopee account",
+    "twitter account",
+    "business manager",
+    "bm",
+    "account",
+    "tai khoan",
+    "tai-khoan",
+  ],
+  other: ["giftcard", "gift card", "vps", "khac", "other"],
+};
+
+function normalizeValue(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function getCategoryDbValues(category) {
+  const key = normalizeCategory(category);
+  if (!key) return [];
+  const base = [key, ...(CATEGORY_DB_ALIASES[key] || [])].map(normalizeValue).filter(Boolean);
+  return Array.from(new Set(base));
+}
+
+function buildCategoryFallbackClause(category, binds) {
+  const values = CATEGORY_FALLBACK_VALUES[category] || [];
+  if (!values.length) return "";
+  const normalized = values.map(normalizeValue).filter(Boolean);
+  if (!normalized.length) return "";
+  const parts = [];
+  const subPlaceholders = normalized.map(() => "?").join(", ");
+  parts.push(`lower(trim(COALESCE(p.subcategory, s.subcategory, ''))) IN (${subPlaceholders})`);
+  binds.push(...normalized);
+  const tagClauses = normalized.map(() => "lower(COALESCE(p.tags_json, s.tags_json, '')) LIKE ?").join(" OR ");
+  if (tagClauses) {
+    parts.push(`(${tagClauses})`);
+    normalized.forEach((value) => {
+      binds.push(`%${value}%`);
+    });
+  }
+  return parts.length ? `(${parts.join(" OR ")})` : "";
+}
+
+function buildCategoryClause(category, binds) {
+  const key = normalizeCategory(category);
+  if (!key) return "";
+  const baseExpr = "lower(trim(COALESCE(NULLIF(p.category, ''), NULLIF(s.category, ''))))";
+  const missingExpr = "(COALESCE(NULLIF(trim(p.category), ''), NULLIF(trim(s.category), '')) IS NULL)";
+  const baseValues = getCategoryDbValues(key);
+  const basePlaceholders = baseValues.map(() => "?").join(", ");
+  const baseClause = baseValues.length ? `${baseExpr} IN (${basePlaceholders})` : "";
+  const fallbackBinds = [];
+  const fallbackClause = buildCategoryFallbackClause(key, fallbackBinds);
+  if (fallbackClause && baseClause) {
+    binds.push(...baseValues, ...fallbackBinds);
+    return `(${baseClause} OR (${missingExpr} AND ${fallbackClause}))`;
+  }
+  if (baseClause) {
+    binds.push(...baseValues);
+    return baseClause;
+  }
+  return "";
+}
+
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SAFE_ID_PATTERN = /^[a-z0-9]+$/i;
 
@@ -62,8 +219,21 @@ function buildWhere(params, binds, options = {}) {
     clauses.push("lower(trim(coalesce(s.status,''))) IN ('approved','active','published','pending_update')");
   }
   if (params.category) {
-    clauses.push("lower(trim(s.category)) = ?");
-    binds.push(params.category);
+    const categoryClause = buildCategoryClause(params.category, binds);
+    if (categoryClause) {
+      clauses.push(`
+        EXISTS (
+          SELECT 1
+            FROM products p
+           WHERE p.shop_id = s.id
+             AND (lower(trim(p.kind)) = 'product' OR (p.kind IS NULL AND (p.type IS NULL OR lower(trim(p.type)) <> 'service')))
+             AND ${flagTrueOrNull("p.is_active")}
+             AND ${flagTrueOrNull("p.is_published")}
+             AND ${categoryClause}
+           LIMIT 1
+        )
+      `);
+    }
   }
   if (params.storeType) {
     clauses.push("lower(trim(s.store_type)) = ?");
@@ -100,7 +270,7 @@ export async function onRequestGet(context) {
     }
 
     const params = {
-      category: String(url.searchParams.get("category") || "").trim().toLowerCase(),
+      category: normalizeCategory(url.searchParams.get("category")),
       storeType: String(url.searchParams.get("type") || url.searchParams.get("storeType") || "").trim().toLowerCase(),
       search: buildSearch(url.searchParams.get("search") || url.searchParams.get("q") || ""),
       sort: String(url.searchParams.get("sort") || "popular").trim(),

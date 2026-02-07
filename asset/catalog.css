@@ -2,17 +2,7 @@
   pointer-events: none;
 }
 
-.product-media {
-  width: 100%;
-  max-width: 800px;
-  max-height: 800px;
-  aspect-ratio: 1 / 1;
-  height: auto;
-}
-
-.product-media img {
-  object-position: center;
-}
+/* Keep base.css sizing for real cards. Only skeletons use square media blocks. */
 
 .product-card.is-skeleton .product-media,
 .product-card.is-skeleton .product-title,

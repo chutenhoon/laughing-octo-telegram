@@ -118,7 +118,7 @@
             slug: shopRef,
           })
         : shopRef
-          ? `/shops/${encodeURIComponent(shopRef)}`
+          ? `/sanpham/${encodeURIComponent(shopRef)}/`
           : "";
     setText("service-seller-name", seller.name || shop.name || "Shop");
     const badgeEl = document.getElementById("service-seller-badge");

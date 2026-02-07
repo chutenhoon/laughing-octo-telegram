@@ -1,13 +1,12 @@
-/products/index.html /sanpham/ 301
+/products/index.html /products/ 301
+/products /products/ 301
+
 /products/:slug /products/[slug]/ 200
 /products/:slug/ /products/[slug]/ 200
 
-/products /sanpham 301
-/products/ /sanpham/ 301
-
 /sanpham/index.html /sanpham/ 301
-/sanpham/:slug /products/[slug]/ 200
-/sanpham/:slug/ /products/[slug]/ 200
+/sanpham/:slug /shops/[slug]/ 200
+/sanpham/:slug/ /shops/[slug]/ 200
 
 /dichvu/:id /dichvu/[id]/ 200
 /dichvu/:id/ /dichvu/[id]/ 200
@@ -15,10 +14,10 @@
 /shops/:slug /shops/[slug]/ 200
 /shops/:slug/ /shops/[slug]/ 200
 
-/gian-hang /shops 301
-/gian-hang/ /shops/ 301
-/gian-hang/nguoi-ban/* /shops/:splat 301
-/gian-hang/* /shops/:splat 301
+/gian-hang /sanpham 301
+/gian-hang/ /sanpham/ 301
+/gian-hang/nguoi-ban/* /sanpham/:splat 301
+/gian-hang/* /sanpham/:splat 301
 
 /u /profile/public/ 200
 /u/ /profile/public/ 200

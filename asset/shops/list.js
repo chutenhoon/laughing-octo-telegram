@@ -169,7 +169,7 @@
     const detailUrl =
       window.BKRoutes && typeof window.BKRoutes.getShopDetailPath === "function"
         ? window.BKRoutes.getShopDetailPath(shop)
-        : `/shops/${encodeURIComponent(shop.slug || shop.id || "")}/`;
+        : `/sanpham/${encodeURIComponent(shop.slug || shop.id || "")}/`;
     const metaParts = [];
     if (shop.category) metaParts.push(escapeHtml(shop.category));
     if (Array.isArray(shop.tags) && shop.tags.length) metaParts.push(escapeHtml(shop.tags.join(", ")));
